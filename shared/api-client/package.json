@@ -1,0 +1,10 @@
+{
+  "name": "@techshop/api-client",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Typed client for the TechShop Go API, shared by web and mobile.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

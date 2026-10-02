@@ -1,0 +1,20 @@
+{
+  "name": "techshop-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "npm@11.15.0",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "customer": "npm run start --workspace=@techshop/mobile-customer",
+    "logistics": "npm run start --workspace=@techshop/mobile-logistics",
+    "lint": "npm run lint --workspaces",
+    "typecheck": "npm run typecheck --workspaces",
+    "doctor": "npm exec --workspaces -- expo-doctor"
+  },
+  "overrides": {
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  }
+}

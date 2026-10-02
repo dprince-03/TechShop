@@ -29,4 +29,10 @@ go.work.sum
 
 # Editor/IDE
 # .idea/
-# .vscode/
+.vscode/
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+_web_old

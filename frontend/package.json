@@ -1,0 +1,27 @@
+{
+  "name": "techshop-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "npm@11.15.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:corporate": "turbo run dev --filter=@techshop/web-corporate",
+    "dev:market": "turbo run dev --filter=@techshop/web-market",
+    "dev:wholesale": "turbo run dev --filter=@techshop/web-wholesale",
+    "dev:seller": "turbo run dev --filter=@techshop/web-seller",
+    "dev:staff": "turbo run dev --filter=@techshop/web-staff",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^3.9.9",
+    "turbo": "^2"
+  }
+}

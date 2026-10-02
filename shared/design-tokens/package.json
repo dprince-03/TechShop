@@ -1,0 +1,15 @@
+{
+  "name": "@techshop/design-tokens",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Single source of truth for TechShop design tokens (web + mobile).",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens.css": "./css/tokens.css"
+  },
+  "scripts": {
+    "build": "node scripts/build-css.ts",
+    "check": "node scripts/build-css.ts --check"
+  }
+}

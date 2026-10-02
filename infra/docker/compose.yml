@@ -1,0 +1,39 @@
+# Local development services. Run from the repo root:
+#   docker compose -f infra/docker/compose.yml up -d
+# (or: make infra-up)
+name: techshop
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: techshop-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-techshop}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-techshop}
+      POSTGRES_DB: ${POSTGRES_DB:-techshop}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Reverse proxy: routes *.techshop.localhost to the dev servers running on the host.
+  nginx:
+    image: nginx:1.29-alpine
+    container_name: techshop-nginx
+    restart: unless-stopped
+    ports:
+      - "${NGINX_PORT:-80}:80"
+    volumes:
+      - ../nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ../nginx/conf.d:/etc/nginx/conf.d:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  postgres_data:

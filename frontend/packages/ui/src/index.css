@@ -1,0 +1,19 @@
+/*
+ * TechShop design system entry point. Import once per app, in the root layout:
+ *   import "@techshop/ui/styles.css";
+ *
+ * Cascade layers fix precedence regardless of selector specificity:
+ *   reset < tokens < base < layout < components < utilities
+ * CSS Modules are unlayered, so component-scoped styles always win over
+ * these globals without needing higher specificity or !important.
+ *
+ * Tokens are generated from shared/design-tokens — edit them there.
+ */
+@layer reset, tokens, base, layout, components, utilities;
+
+@import "@techshop/design-tokens/tokens.css";
+@import "./reset.css";
+@import "./base.css";
+@import "./layout.css";
+@import "./components.css";
+@import "./utilities.css";
