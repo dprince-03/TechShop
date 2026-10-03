@@ -1,0 +1,15 @@
+.columns {
+  display: grid;
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.title {
+  font-size: var(--text-2xl);
+}
+
+@media (min-width: 64rem) {
+  .columns {
+    grid-template-columns: 1fr 1.3fr;
+  }
+}

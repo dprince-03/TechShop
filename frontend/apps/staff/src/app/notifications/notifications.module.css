@@ -1,0 +1,36 @@
+.title {
+  font-size: var(--text-3xl);
+  letter-spacing: var(--tracking-snug);
+}
+
+.list {
+  --card-padding: 0;
+  --card-gap: 0;
+  overflow: hidden;
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: var(--border);
+}
+
+.list li:last-child .item {
+  border-bottom: 0;
+}
+
+.item:hover {
+  background: var(--color-surface);
+}
+
+.item[data-unread="true"] {
+  background: var(--color-accent-subtle);
+}
+
+.icon {
+  flex: none;
+  margin-top: 0.125rem;
+  color: var(--color-link);
+}

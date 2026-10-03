@@ -1,0 +1,64 @@
+.wrap {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  align-self: flex-start;
+  gap: var(--space-1);
+}
+
+.label {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  height: var(--control-md);
+  border: var(--border-strong);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.button {
+  display: grid;
+  place-items: center;
+  width: var(--control-md);
+  height: 100%;
+  color: var(--color-text);
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.button:hover:not(:disabled) {
+  background: var(--color-surface);
+}
+
+.button:disabled {
+  color: var(--color-text-subtle);
+  cursor: not-allowed;
+}
+
+.button:focus-visible {
+  outline-offset: -3px;
+}
+
+.input {
+  width: 3rem;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.input::-webkit-inner-spin-button,
+.input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.input:focus-visible {
+  outline-offset: -3px;
+}

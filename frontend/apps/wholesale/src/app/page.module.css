@@ -1,0 +1,206 @@
+/* ---------- Hero ---------- */
+.hero {
+  display: grid;
+  gap: var(--space-7);
+  align-items: center;
+}
+
+.heroTitle {
+  max-width: 16ch;
+}
+
+.heroCard {
+  --card-padding: var(--space-5);
+  --card-gap: var(--space-4);
+  box-shadow: var(--shadow-md);
+}
+
+.heroCardHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.heroThumb {
+  flex: none;
+  width: 4.5rem;
+  --frame-radius: var(--radius-md);
+}
+
+.heroCardTitle {
+  font-size: var(--text-xl);
+  letter-spacing: var(--tracking-normal);
+}
+
+@media (min-width: 64rem) {
+  .hero {
+    grid-template-columns: 1.3fr 1fr;
+  }
+}
+
+/* ---------- Shared ---------- */
+.accentIcon {
+  color: var(--color-link);
+}
+
+.cardTitle {
+  font-size: var(--text-2xl);
+}
+
+.benefitTitle {
+  font-size: var(--text-lg);
+  letter-spacing: var(--tracking-normal);
+}
+
+/* ---------- Two ways ---------- */
+.ways {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.ways :global(.card) {
+  --card-padding: var(--space-6);
+  --card-gap: var(--space-3);
+}
+
+@media (min-width: 48rem) {
+  .ways {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ---------- Benefits ---------- */
+.benefits {
+  display: grid;
+  gap: var(--space-6);
+}
+
+@media (min-width: 48rem) {
+  .benefits {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 64rem) {
+  .benefits {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* ---------- Bulk ---------- */
+.bulkGrid {
+  --grid-min: 19rem;
+  --grid-gap: var(--space-4);
+}
+
+/* ---------- Categories ---------- */
+.categories {
+  --grid-min: 15rem;
+  --grid-gap: var(--space-3);
+}
+
+.categoryTile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: 100%;
+  padding: var(--space-3);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+
+.categoryTile:hover {
+  border-color: var(--color-border-strong);
+}
+
+.categoryName {
+  font-weight: var(--weight-semibold);
+}
+
+/* ---------- Steps ---------- */
+.steps {
+  display: grid;
+  gap: var(--space-6);
+  list-style: none;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.stepNumber {
+  display: grid;
+  place-items: center;
+  width: var(--control-md);
+  height: var(--control-md);
+  border-radius: var(--radius-round);
+  background: var(--color-surface-inverse);
+  color: var(--color-text-inverse);
+  font-weight: var(--weight-semibold);
+}
+
+@media (min-width: 48rem) {
+  .steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 64rem) {
+  .steps {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* ---------- Audiences ---------- */
+.audiences {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.audience {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
+@media (min-width: 64rem) {
+  .audiences {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* ---------- CTA ---------- */
+.cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+}
+
+.ctaTitle {
+  font-size: var(--text-4xl);
+}
+
+.ctaText {
+  max-width: 48ch;
+  opacity: 0.85;
+}
+
+.ctaButton {
+  --btn-bg: var(--color-text-inverse);
+  --btn-fg: var(--color-surface-inverse);
+}
+
+.ctaButton:hover {
+  opacity: 0.9;
+}

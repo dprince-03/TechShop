@@ -122,3 +122,134 @@ Entry format: `## YYYY-MM-DD — Title`, followed by **Decision**, **Why**, and 
 - **Backend CORS** default now allows all five web apps on their ports and `*.techshop.localhost` hostnames.
 
 **Follow-ups:** replace app icons/splash with TechShop artwork; confirm bundle IDs; design the staff portal's role model (which roles see which of the 20 modules) before building the first module.
+
+## 2026-10-02 — First homepages for all five web apps
+
+**Owner's answers:** retail-overlap decision (market vs wholesale) deferred until the UI is visible; storefronts cover **all categories**; build homepages for **all 5 web apps**.
+
+**Plan & decisions:**
+- **UI/UX rulebook:** `.claude/rules/frontend-design.md` — laws of UX, Nielsen heuristics, WCAG 2.2 AA, visual/e-commerce/forms/motion/content/performance rules, and a definition of done. Scoped with `paths` to `frontend/**`, `mobile/**`, `shared/design-tokens/**` so it loads only for UI work. The `frontend-design` skill keeps the design-system *how*; the rule holds the *why*.
+- **Shared React components** go in `@techshop/ui` (alongside the CSS), each with a CSS Module: logo, icons, category illustrations, price, rating, product card, section header, site header, site footer, countdown. *Why:* five apps must look and behave consistently (Jakob's Law, heuristic #4).
+- **Domain types** (category, product, money, seller, car listing) go in `shared/api-client` — they are the future API contract, shared with mobile.
+- **Sample data** lives in a separate `@techshop/fixtures` web package, clearly labelled as sample data, to be replaced by API calls. Fictional brands and products only — no real brand names, logos, or photos.
+- **Money in kobo** (integer minor units), formatted as `₦1,250,000` via `Intl.NumberFormat("en-NG")`. *Why:* avoids floating-point errors; standard for NGN payment gateways (Paystack also uses kobo).
+- **Product imagery:** original simple SVG category illustrations as placeholders until real photography exists.
+- **Homepage concepts:**
+  - *Market* — search-first header with category scope, category nav, hero + side promos, trust strip, shop by category, flash deals with a real countdown, per-category shelves (phones, laptops by type, gaming, accessories, smart home, office & workstations), cars as listing cards (no add-to-cart), marketplace "Sold by" on every card, sell-on-TechShop band, footer with payment methods.
+  - *Wholesale & retail* — retail/wholesale mode, tiered price tables, MOQ, request-a-quote, business account CTA, how it works, who we serve.
+  - *Corporate* — restrained company site: mission hero, our businesses, what we sell, why TechShop, careers, newsroom placeholders, contact.
+  - *Seller centre* — vendor landing: benefits, how it works, requirements, FAQ (native `<details>`), start-selling CTA.
+  - *Staff portal* — app shell: grouped sidebar of all 20 modules, top bar, dashboard with sample KPIs, recent orders table, attention queue, module shortcuts. No auth or RBAC yet.
+- **No invented business claims presented as real:** policies, stats, and fees are placeholders marked as sample content.
+
+## 2026-10-02 — Homepage implementation decisions
+
+- **Sample-data honesty:** a `SampleDataNotice` banner appears on every page that shows sample products, prices or figures (market, wholesale, staff). Corporate and seller show no sample figures, so they don't have one. Their copy (payout timing, verification steps, policies) is **draft copy that the business must confirm** before launch.
+- **New token** `--color-on-fill` (text on sale/promo fills), replacing raw `#ffffff` in badges and the countdown.
+- **Staff dashboard renders per request** (`await connection()`) so dates and figures are never frozen at build time.
+- **Staff orders table:** the order time sits under the order ID instead of in its own column, so the table fits beside the attention panel at 1440px without clipping.
+- **`data-scroll-behavior="smooth"`** on every `<html>`: Next 16 no longer resets smooth scrolling on navigation by itself.
+- **Navigation without JavaScript:** mobile menus and the FAQ use native `<details>`; search is a plain GET form.
+- **Links point to routes that don't exist yet** (category, product, cart, account, help, …). They are the planned URL structure: `/c/[category]`, `/c/[category]/[sub]`, `/p/[slug]`, `/cars/[slug]`, `/deals`, `/search`.
+
+**Follow-ups:** real product photography (replace `CategoryArt`); confirm all policy and marketing copy; decide the market/wholesale retail overlap after reviewing the UI; catalogue API endpoints so fixtures can be removed; role model for the staff portal.
+
+## 2026-10-02 — Corporate dev port moved to 3005
+
+**Decision:** The corporate app runs on **3005** instead of 3000. Updated its `package.json` scripts, nginx routing, backend CORS defaults and `.env.example`, and the READMEs. Added "Changing an app's port" instructions to `infra/README.md`.
+**Why:** Port 3000 is taken by AdGuard on the owner's machine.
+**Supersedes:** "Dev ports: corporate 3000" in "Multi-app monorepo restructure".
+
+## 2026-10-02 — Market shopping journey (phase 1 of remaining pages)
+
+**Owner's answers:** build the market shopping journey first (about 70 linked pages exist in total; the others follow in later phases). Sign-in, registration, cart and checkout are **interface only**: real forms and states, no submission, no auth, no payments.
+
+**Pages:** `/c/[category]`, `/c/[category]/[sub]`, `/p/[slug]`, `/search`, `/deals`, `/best-sellers`, `/cars/[slug]` (cars listing at `/c/cars`), `/cart`, `/saved`, plus a market 404 page.
+
+**Decisions:**
+- **Filtering and sorting are server-side via URL query params** (`?condition=new&seller=techshop&min=…&max=…&sort=price-asc`), driven by a plain GET form. *Why:* works without JavaScript, is shareable and bookmarkable, back/forward behave correctly, and the same params map onto a future API query.
+- **Mobile filters** collapse into a `<details>` disclosure above the results; desktop shows a sidebar (`.with-sidebar`).
+- **Product and car pages are statically generated** from the catalogue (`generateStaticParams`, `dynamicParams = false`), so unknown slugs return 404. This will switch to on-demand rendering when the API exists.
+- **Cars use a viewing/enquiry flow, never add-to-cart** (rulebook §6). The viewing form is interface only.
+- **Cart is interface only:** it shows sample lines grouped by seller (marketplace rule), with client-side quantity and remove, and a summary marked with an estimated delivery fee. Nothing persists.
+- **Product page:** breadcrumbs, gallery placeholder, price/condition/seller/warranty/delivery near the buy button, a specs table, related products, and on mobile a sticky buy bar in the thumb zone.
+- **New shared components in `@techshop/ui`:** Breadcrumbs, EmptyState, QuantityStepper (client).
+
+**Implementation notes (shopping journey):**
+- New layout modifier `.section--page` (tight top padding for inner pages) added to the design system.
+- Subcategory links show as a scrollable chip row on mobile and a list in the sidebar from 1024px.
+- Search and the cart, saved, search and 404 pages are `noindex`. Product and car pages have per-item titles and descriptions.
+- Sample-only details are labelled on the page: delivery times and fees, warranty wording, the inspection checklist, and the cart contents.
+- Known gap: submitting filters can leave empty params in the URL (`?min=&max=`). Harmless (they're ignored), but it can be tidied later.
+
+## 2026-10-02 — Remaining pages (content, wholesale, seller, staff)
+
+**Owner's request:** "build the rest", meaning every page the five apps link to that doesn't exist yet. The interface-only rule for auth, forms and payments still applies. The staff portal has no role-based access yet (the role model is undecided).
+
+**Approach: templates, not one-off pages.**
+- **Shared templates in `@techshop/ui`:**
+  - `PageHeader`: breadcrumbs, eyebrow, h1, lead, actions.
+  - `Prose`: long-form text styling.
+  - `FaqList`: native `<details>`.
+  - `LegalDocument`: structured outline.
+  - `PreviewForm`: a client form driven by a field config, with validation on blur and submit, focus on the first error, `aria-invalid`/`aria-describedby`, Nigerian phone normalisation, and an honest "nothing was sent" confirmation.
+- **Phone normalisation moves to `shared/api-client`** (platform-neutral, so mobile reuses it).
+- **Staff modules** use one `ModulePage` template (header, figures, tabs, sample table) configured per module. Orders also gets a detail page.
+
+**Content honesty rules for these pages:**
+- **Legal pages** (terms, privacy, cookies, seller agreement) are **structured outlines marked "draft — to be written by legal counsel"**, never invented legal terms. Nigeria's NDPA 2023 governs privacy.
+- **Careers and newsroom:** no fake job posts or press releases. They show empty states plus a way to get in touch.
+- **No invented company facts** (founding year, headcount, office addresses, phone numbers). Contact pages use forms and email-style placeholders marked as sample.
+- **Fees and commissions** are not stated as numbers until the business sets them.
+
+**Routes:**
+- **Market:** `/account`, `/orders`, `/delivery`, `/help`, `/help/[topic]` (delivery, returns, warranty, contact), `/trade-in`, `/legal/[doc]`.
+- **Wholesale:** `/retail`, `/wholesale`, `/categories`, `/c/[category]`, `/p/[slug]`, `/quote`, `/business/register`, `/business/sign-in`, `/business/credit`, `/business/invoices`, `/contact`, `/help`, `/legal/[doc]`, 404.
+- **Corporate:** `/about`, `/partners`, `/careers`, `/news`, `/contact`, `/legal/[doc]`, 404.
+- **Seller:** `/register`, `/sign-in`, `/fees`, `/policies`, `/policies/prohibited`, `/help`, `/help/contact`, `/legal/[doc]` (incl. seller agreement), 404.
+- **Staff:** 19 module routes, `/orders/[id]`, `/notifications`, `/account`, `/search`, 404.
+
+**Verification plan:** build all apps, then a crawler that follows every internal link in all five apps and must find zero broken links, an overflow check at 390px on every page, screenshots of each template, and interaction tests for `PreviewForm`.
+
+**Implementation notes (remaining pages):**
+- Added the `.card--roomy` modifier and the `NavDisclosure` component. Every mobile menu now closes after navigation and on Escape (previously a `<details>` menu stayed open over the new page).
+- The staff sidebar is now path-aware (`usePathname`), so the current module gets `aria-current`.
+- Sample orders now carry real line items whose quantities and prices sum exactly to the order totals (the order detail page previously showed unrelated items). Wholesale sample stock is attributed to TechShop.
+- Corporate inner pages use bordered cards (borderless cards were invisible on white).
+- **Still interface only:** every form, sign-in, quote, cart and checkout. **Still draft:** legal outlines, help/policy copy, credit and fees wording. **Still undecided:** the staff role model (all modules visible to everyone).
+
+## 2026-10-02 — Database design plan (documentation only)
+
+**Owner's request:** a full database plan with relationships, schemas and every diagram.
+
+**Scope:** documentation in `docs/database/` only. No migrations and no changes to `backend/` (the owner's standing instruction). The SQL is a *proposal* to be turned into goose migrations later.
+
+**Decisions (proposed, for owner review):**
+- **PostgreSQL 17**, owned exclusively by the Go API (unchanged rule).
+- **Primary keys:** `uuid` with `gen_random_uuid()`. Human-facing references (order `TS-10482`, invoices, RMAs, tickets…) come from sequences. Revisit UUIDv7 when moving to Postgres 18.
+- **Money:** `bigint` kobo plus `char(3)` currency (default `NGN`), never floats. Matches the frontend `Money` type and Paystack's units.
+- **Status fields:** `text` with `CHECK` constraints instead of Postgres enum types. *Why:* adding a value is a one-line migration, and sqlc handles text cleanly.
+- **One marketplace model:** TechShop itself is a row in `sellers` (`type = first_party`). Products are catalogue entries; **listings** are seller offers (price, condition, stock) on a product variant. *Why:* one code path for own stock and vendors, Amazon-style.
+- **Order split:** one `orders` row per checkout, one `fulfilments` row per seller, `order_lines` snapshot names and prices.
+- **Money movements:** a **double-entry ledger** (`ledger_journals` and `ledger_entries`, balanced per journal by a deferred constraint trigger) for customer payments, commission, seller payables, payouts and refunds. *Why:* marketplace money must always reconcile.
+- **Serialised devices:** `device_units` (IMEI/serial) for phones and laptops, plus an IMEI blocklist.
+- **Cars:** their own tables (listings, inspections, documents, viewings, financing), separate from the product catalogue.
+- **Staff access:** RBAC (`roles`, `permissions`, `role_permissions`, `staff_roles`). A default role set is **proposed only**, because the role model is still the owner's decision.
+- **PII:** NIN, bank account numbers and similar are encrypted in the application (`bytea`), with only the last 4 digits stored in plain text (NDPA 2023).
+- **Platform:** `audit_log` (append-only), `outbox_events` (reliable notifications/integrations), `idempotency_keys`, `feature_flags`.
+- **Table comments carry the domain and purpose**, so the ER diagrams and the table index are generated from the live schema and can't drift.
+
+**Deliverables:**
+- `README.md`: principles, domain map, table index, migration phases.
+- `schema.sql`.
+- `erd.md`: generated ER diagrams.
+- `states.md`: state machines.
+- `flows.md`: sequence and money-flow diagrams.
+- `access.md`: RBAC proposal and data ownership by app.
+- `tools/` to regenerate, plus rendered SVGs.
+
+**Verification:** load `schema.sql` into a throwaway Postgres 17 container, run constraint tests (ledger balance, money checks, uniqueness), and render every Mermaid diagram with mermaid-cli.
+
+## 2026-10-03 — Database plan completed and verified
+
+**Outcome:** the full documentation set from the 2026-10-02 "Database design plan" entry exists and is verified. The proposals in that entry stand unchanged. Still open for the owner: the staff role model (`access.md` §3 is a proposal), commission rates, VAT treatment (journal templates are placeholders) and the retail overlap. Schema size: 96 tables in 15 domains, 185 foreign keys, 229 check constraints.

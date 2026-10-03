@@ -1,0 +1,239 @@
+/* ---------- Hero ---------- */
+.heroBand {
+  padding-block: var(--space-4) var(--space-5);
+}
+
+.hero {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.heroMain {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-6) var(--space-5);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface-inverse);
+  color: var(--color-text-inverse);
+}
+
+.heroMain :global(.eyebrow) {
+  color: var(--color-text-inverse);
+  opacity: 0.8;
+}
+
+.heroTitle {
+  max-width: 18ch;
+  font-size: var(--text-5xl);
+}
+
+.heroText {
+  max-width: 48ch;
+  font-size: var(--text-lg);
+  opacity: 0.85;
+}
+
+/* Outline button readable on the dark hero panel */
+.heroSecondary {
+  --btn-fg: var(--color-text-inverse);
+  --btn-border: var(--color-text-inverse);
+}
+
+.heroSecondary:hover {
+  --btn-bg: var(--color-text-inverse);
+  --btn-fg: var(--color-surface-inverse);
+}
+
+.heroSide {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.promo {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  transition: transform var(--duration-base) var(--ease-standard);
+}
+
+@media (hover: hover) {
+  .promo:hover {
+    transform: translateY(-2px);
+  }
+}
+
+.promoText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.promoTitle {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-snug);
+}
+
+@media (min-width: 64rem) {
+  .hero {
+    grid-template-columns: 2fr 1fr;
+  }
+
+  .heroMain {
+    padding: var(--space-8) var(--space-7);
+    min-height: 26rem;
+  }
+
+  .heroSide {
+    grid-template-columns: 1fr;
+  }
+
+  .promo {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+/* ---------- Trust strip ---------- */
+.trustBand {
+  border-block: var(--border);
+}
+
+.trust {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  padding-block: var(--space-5);
+}
+
+.trustItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.trustIcon {
+  flex: none;
+  color: var(--color-link);
+}
+
+.trustTitle {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
+
+@media (min-width: 64rem) {
+  .trust {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* ---------- Categories ---------- */
+.categoryGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-4) var(--space-2);
+}
+
+.categoryTile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.categoryTile:hover {
+  background: var(--color-surface);
+}
+
+.categoryName {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
+@media (min-width: 64rem) {
+  .categoryGrid {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+}
+
+/* ---------- Shelves ---------- */
+.chips {
+  --cluster-gap: var(--space-2);
+  margin-bottom: var(--space-5);
+}
+
+/* ---------- Cars ---------- */
+.carGrid {
+  --grid-min: 15rem;
+  --grid-gap: var(--space-4);
+}
+
+/* ---------- Sell / business band ---------- */
+.sell {
+  display: grid;
+  gap: var(--space-6);
+  align-items: center;
+}
+
+.sellTitle {
+  font-size: var(--text-4xl);
+}
+
+.inverseEyebrow {
+  color: var(--color-text-inverse);
+  opacity: 0.8;
+}
+
+.inverseText {
+  max-width: 48ch;
+  opacity: 0.85;
+}
+
+.sellCards {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.sellCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  border: var(--border-width) solid currentColor;
+  border-radius: var(--radius-lg);
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.sellCard:hover {
+  background: rgb(from var(--color-text-inverse) r g b / 0.08);
+}
+
+.sellCardTitle {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+}
+
+@media (min-width: 48rem) {
+  .sellCards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 64rem) {
+  .sell {
+    grid-template-columns: 1fr 1.3fr;
+  }
+}

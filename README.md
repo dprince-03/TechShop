@@ -6,7 +6,7 @@ Commerce platform for phones, laptops, accessories, gaming, smart home, office, 
 
 | App | Path | Stack | Local URL |
 | --- | --- | --- | --- |
-| Company site | `frontend/apps/corporate` | Next.js | http://techshop.localhost · :3000 |
+| Company site | `frontend/apps/corporate` | Next.js | http://techshop.localhost · :3005 |
 | Customer marketplace | `frontend/apps/market` | Next.js | http://market.techshop.localhost · :3001 |
 | Wholesale & retail | `frontend/apps/wholesale` | Next.js | http://wholesale.techshop.localhost · :3002 |
 | Seller centre | `frontend/apps/seller` | Next.js | http://seller.techshop.localhost · :3003 |

@@ -1,0 +1,22 @@
+.art {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border-radius: var(--radius-round);
+  background: var(--color-accent-subtle);
+  color: var(--color-link);
+}
+
+.sm {
+  width: 3.5rem;
+}
+
+.md {
+  width: 55%;
+  max-width: 10rem;
+}
+
+.lg {
+  width: 60%;
+  max-width: 14rem;
+}

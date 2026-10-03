@@ -1,0 +1,28 @@
+.card {
+  height: 100%;
+  --card-gap: var(--space-4);
+}
+
+.head {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.thumb {
+  flex: none;
+  width: 5rem;
+  --frame-radius: var(--radius-md);
+}
+
+.title {
+  font-size: var(--text-base);
+  letter-spacing: var(--tracking-normal);
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: auto;
+}

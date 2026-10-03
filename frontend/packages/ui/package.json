@@ -2,11 +2,31 @@
   "name": "@techshop/ui",
   "version": "0.1.0",
   "private": true,
-  "description": "TechShop global CSS design system for all web apps.",
+  "description": "TechShop design system for all web apps: global CSS and shared React components.",
   "exports": {
-    "./styles.css": "./src/index.css"
+    "./styles.css": "./src/index.css",
+    "./components": "./src/components/index.ts",
+    "./sites": "./src/sites.ts"
   },
   "dependencies": {
+    "@techshop/api-client": "file:../../../shared/api-client",
     "@techshop/design-tokens": "file:../../../shared/design-tokens"
+  },
+  "scripts": {
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "next": "^16",
+    "react": "^19"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "@types/node": "^20",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.8",
+    "next": "16.3.8",
+    "react": "19.2.8",
+    "typescript": "^5"
   }
 }

@@ -1,0 +1,26 @@
+.title {
+  font-size: var(--text-3xl);
+  letter-spacing: var(--tracking-snug);
+}
+
+.list {
+  --card-padding: 0;
+  --card-gap: 0;
+  overflow: hidden;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  border-bottom: var(--border);
+}
+
+.list li:last-child .item {
+  border-bottom: 0;
+}
+
+.item:hover {
+  background: var(--color-surface);
+}

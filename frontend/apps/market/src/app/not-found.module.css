@@ -1,0 +1,12 @@
+.center {
+  --cluster-justify: center;
+}
+
+.input {
+  height: var(--control-md);
+  padding-inline: var(--space-4);
+  border: var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-bg);
+  font-size: var(--text-base);
+}

@@ -1,0 +1,12 @@
+{
+  "name": "@techshop/fixtures",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SAMPLE DATA for UI development. Fictional brands and sellers. Replace with Go API calls.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@techshop/api-client": "file:../../../shared/api-client"
+  }
+}

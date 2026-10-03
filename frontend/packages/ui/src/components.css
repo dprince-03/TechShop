@@ -161,6 +161,12 @@
       transform var(--duration-base) var(--ease-standard);
   }
 
+  /* More generous padding for forms and content panels */
+  .card--roomy {
+    --card-padding: var(--space-6);
+    --card-gap: var(--space-5);
+  }
+
   /* Borderless card for use on a .section--surface band */
   .card--flat {
     border-color: transparent;
@@ -200,12 +206,12 @@
 
   .badge--sale {
     background: var(--color-sale-fill);
-    color: #ffffff;
+    color: var(--color-on-fill);
   }
 
   .badge--promo {
     background: var(--color-promo-fill);
-    color: #ffffff;
+    color: var(--color-on-fill);
   }
 
   .badge--outline {

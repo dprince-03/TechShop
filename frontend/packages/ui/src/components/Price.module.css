@@ -1,0 +1,20 @@
+.price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.current {
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+.md .current {
+  font-size: var(--text-base);
+}
+
+.lg .current {
+  font-size: var(--text-xl);
+}

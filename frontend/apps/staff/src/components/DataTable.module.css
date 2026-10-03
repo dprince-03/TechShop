@@ -1,0 +1,85 @@
+.wrap {
+  overflow-x: auto;
+}
+
+.wrap:focus-visible {
+  outline-offset: -2px;
+}
+
+.table {
+  width: 100%;
+  min-width: 36rem;
+  font-size: var(--text-sm);
+}
+
+.table th,
+.table td {
+  padding: var(--space-3);
+  text-align: start;
+  white-space: nowrap;
+  border-bottom: var(--border);
+}
+
+.table :is(th, td):first-child {
+  padding-inline-start: var(--space-5);
+}
+
+.table :is(th, td):last-child {
+  padding-inline-end: var(--space-5);
+}
+
+.table thead th {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+}
+
+.table tbody th {
+  font-weight: var(--weight-medium);
+}
+
+.table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+.table tbody tr:hover {
+  background: var(--color-surface);
+}
+
+.table .num {
+  font-variant-numeric: tabular-nums;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.status::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--radius-round);
+}
+
+.success::before {
+  background: var(--color-success);
+}
+
+.warning::before {
+  background: var(--color-warning);
+}
+
+.info::before {
+  background: var(--color-accent);
+}
+
+.danger::before {
+  background: var(--color-danger);
+}
+
+.neutral::before {
+  background: var(--color-text-subtle);
+}

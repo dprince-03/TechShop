@@ -41,6 +41,51 @@ Build every UI on it. No Tailwind or CSS frameworks on the web.
 | `frontend/packages/ui/src/utilities.css` | Text helpers, `.eyebrow`, `.line-clamp`, `.tabular-nums`, `.strike`, `.visually-hidden`, `.skip-link`, `.hide-mobile`/`.hide-desktop` |
 | `mobile/apps/*/src/theme/index.ts` | Mobile access to the tokens: `useColors()` and a navigation theme built from the tokens |
 
+## Shared React components (`@techshop/ui/components`)
+
+Reuse these before writing new ones. Each has a CSS Module next to it in `frontend/packages/ui/src/components/`.
+
+| Component | Use |
+|---|---|
+| `Logo` | Wordmark, with an optional `product` suffix ("Market", "Staff") |
+| `Icon` | Original 24px line icons. Decorative by default; pass `label` only when the icon is the sole content |
+| `CategoryArt` | **Placeholder** product/category artwork until real photography exists |
+| `Price` | Naira price, struck-through previous price and discount badge (amounts in kobo) |
+| `Rating` | Star rating with count, announced as a sentence to screen readers |
+| `ProductCard` | Standard product card. Its stretched title link makes the whole card clickable; shows "Sold by" |
+| `SectionHeader` | Eyebrow, `h2`, description, "see all ›" action, optional `aside` (e.g. a countdown) |
+| `SiteHeader` | Sticky header for marketing-style apps. Nav collapses into a native `<details>` menu below 1024px |
+| `SiteFooter`, `PaymentMethods` | Footer link columns and legal row; payment-method chips |
+| `Countdown` | Client countdown to a **real** deadline (default: midnight WAT) |
+| `SampleDataNotice` | Required on any page showing sample data |
+| `Breadcrumbs` | Breadcrumb trail; the last item is the current page (`aria-current`) |
+| `EmptyState` | Empty/no-results/404 states: icon, title, explanation, next action. Never a dead end |
+| `QuantityStepper` | Client − [n] + control with 44px targets, clamping, and labelled buttons |
+| `PageHeader` | Inner-page header: breadcrumbs, eyebrow, the single `h1`, lead, actions |
+| `Prose` | Long-form text (help, policies) with readable measure and rhythm |
+| `FaqList` | Q&A as native `<details>` |
+| `LegalDocument` | Legal page shell. Shows a **draft outline** (`legalOutlines.ts`) until counsel provides text |
+| `PreviewForm` | Config-driven accessible form: labels above fields, optional fields marked, blur and submit validation, focus to first error, Nigerian phone and email checks, `matches`, file inputs. Interface-only confirmation. Config must be plain data (server → client) |
+| `NavDisclosure` | `<details>` menu that closes on route change and on Escape (returns focus). Use for every mobile menu |
+
+- **Other shared code:**
+  - `@techshop/ui/sites` holds cross-app URLs (env-overridable).
+  - `@techshop/api-client` has `formatMoney` / `discountPercent` / `naira` and the domain types.
+  - `@techshop/fixtures` is SAMPLE DATA only, to be replaced by API calls.
+- **Patterns already established:**
+  - On dark (inverse) bands, buttons override the `--btn-*` variables in the page module.
+  - Status in tables is shown as a coloured dot plus text.
+  - Wide tables sit in a focusable `role="region"` scroll wrapper.
+  - Pages with per-request data call `await connection()` (Next 16).
+  - Every root layout sets `data-scroll-behavior="smooth"` on `<html>`.
+  - **Listings** (`frontend/apps/market/src/components/ProductListing.tsx`): filters are a GET form that writes URL params (works without JS); the sort control auto-submits; mobile filters collapse behind a toggle. Reuse it for any product listing.
+  - Flex children holding a horizontal scroll row need `min-width: 0`, or they widen the page.
+  - `.card--flat` is only for grey (`section--surface`) bands. On white pages use `.card`, or the cards have no visible edge.
+  - `.card--roomy` is for form and content panels.
+  - Staff modules are config, not pages: add or extend an entry in `frontend/apps/staff/src/lib/moduleData.ts`, and `ModulePage` renders header, figures, tabs, search and table.
+  - Never invent business facts in UI copy (fees, legal terms, job posts, press, company stats). Use empty states, outlines or clearly marked sample text.
+  - Client forms validate on blur and on submit, move focus to the first invalid field, and use `aria-invalid` plus `aria-describedby` errors. Interface-only forms say plainly that nothing was sent.
+
 ## Mobile (React Native)
 
 Mobile can't use the CSS, but it follows the same rules through the tokens:
@@ -92,7 +137,7 @@ Mobile can't use the CSS, but it follows the same rules through the tokens:
 
 ## Primitive usage
 
-- **Page band:** `<section class="section [section--surface|section--inverse]"><div class="container">…`. Alternate white and surface bands to separate sections instead of using borders or rules.
+- **Page band:** `<section class="section [section--surface|section--inverse]"><div class="container">…`. Inner pages (listings, product, cart) use `<main class="section section--page">` for a tight top under the header. Alternate white and surface bands to separate sections instead of using borders or rules.
 - **Product listing:** `.grid--catalog` gives 2 → 3 → 4 → 5 columns at md, lg and xl, so rows line up across sections. Use `.grid` with `--grid-min` for intrinsic grids such as category tiles.
 - **Filters + results:** `.with-sidebar`. The sidebar is set with `--sidebar-width` (default 16rem), and the layout stacks automatically when space runs out.
 - **Carousel/shelf:** `.scroller` is a horizontal scroll-snap row with no JS. Items are 70% wide on mobile, 40% at md and 23% at lg, so the next item always peeks in to show the row scrolls. Override the item width with `--scroller-item`.

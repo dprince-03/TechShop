@@ -1,0 +1,41 @@
+.cards {
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (min-width: 48rem) {
+  .cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 64rem) {
+  .cards3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.icon {
+  color: var(--color-link);
+}
+
+.cardTitle {
+  font-size: var(--text-xl);
+  letter-spacing: var(--tracking-normal);
+}
+
+.h2 {
+  font-size: var(--text-3xl);
+}
+
+.twoCol {
+  display: grid;
+  gap: var(--space-7);
+  align-items: start;
+}
+
+@media (min-width: 64rem) {
+  .twoCol {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+  }
+}

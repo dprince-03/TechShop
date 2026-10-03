@@ -1,0 +1,165 @@
+.accentIcon {
+  color: var(--color-link);
+}
+
+/* ---------- Hero ---------- */
+.hero {
+  padding-block: var(--space-9);
+}
+
+.heroTitle {
+  max-width: 16ch;
+}
+
+.heroText {
+  max-width: 46ch;
+}
+
+@media (min-width: 64rem) {
+  .hero {
+    padding-block: var(--space-10);
+  }
+}
+
+/* ---------- Businesses ---------- */
+.businesses {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.business {
+  height: 100%;
+  --card-padding: var(--space-6);
+  --card-gap: var(--space-3);
+}
+
+.businessTitle {
+  font-size: var(--text-2xl);
+}
+
+.businessLink {
+  margin-top: auto;
+}
+
+@media (min-width: 48rem) {
+  .businesses {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ---------- Categories ---------- */
+.categories {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-5) var(--space-2);
+}
+
+.category {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: center;
+}
+
+.categoryName {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
+@media (min-width: 64rem) {
+  .categories {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+}
+
+/* ---------- Principles ---------- */
+.principles {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.principleTitle {
+  font-size: var(--text-xl);
+  letter-spacing: var(--tracking-normal);
+}
+
+@media (min-width: 64rem) {
+  .principles {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* ---------- Careers ---------- */
+.careers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+}
+
+.careersTitle {
+  max-width: 20ch;
+  font-size: var(--text-4xl);
+}
+
+.inverseEyebrow {
+  color: var(--color-text-inverse);
+  opacity: 0.8;
+}
+
+.inverseText {
+  max-width: 48ch;
+  opacity: 0.85;
+}
+
+.inverseButton {
+  --btn-bg: var(--color-text-inverse);
+  --btn-fg: var(--color-surface-inverse);
+}
+
+.inverseButton:hover {
+  opacity: 0.9;
+}
+
+/* ---------- Newsroom empty state ---------- */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-8) var(--space-5);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.empty p {
+  max-width: 44ch;
+}
+
+.emptyTitle {
+  font-weight: var(--weight-semibold);
+}
+
+/* ---------- Contact ---------- */
+.contacts {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.contacts :global(.card) {
+  --card-padding: var(--space-5);
+}
+
+.contactTitle {
+  font-size: var(--text-lg);
+  letter-spacing: var(--tracking-normal);
+}
+
+@media (min-width: 64rem) {
+  .contacts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

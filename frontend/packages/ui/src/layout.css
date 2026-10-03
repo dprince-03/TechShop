@@ -36,6 +36,11 @@
     padding-block: var(--section-space);
   }
 
+  /* Inner pages: tight top under the header, normal rhythm at the bottom */
+  .section--page {
+    padding-top: var(--space-5);
+  }
+
   .section--surface {
     background: var(--color-surface);
   }

@@ -1,0 +1,29 @@
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-8) var(--space-5);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: var(--radius-round);
+  background: var(--color-accent-subtle);
+  color: var(--color-link);
+}
+
+.title {
+  font-size: var(--text-xl);
+  letter-spacing: var(--tracking-normal);
+}
+
+.text {
+  max-width: 46ch;
+}

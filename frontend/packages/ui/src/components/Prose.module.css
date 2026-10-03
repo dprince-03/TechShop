@@ -1,0 +1,39 @@
+.prose {
+  max-width: var(--measure);
+  line-height: var(--leading-relaxed);
+}
+
+.prose > * + * {
+  margin-top: var(--space-4);
+}
+
+.prose h2 {
+  margin-top: var(--space-7);
+  font-size: var(--text-2xl);
+  letter-spacing: var(--tracking-snug);
+}
+
+.prose h3 {
+  margin-top: var(--space-5);
+  font-size: var(--text-lg);
+  letter-spacing: var(--tracking-normal);
+}
+
+.prose ul,
+.prose ol {
+  padding-inline-start: var(--space-5);
+}
+
+.prose li + li {
+  margin-top: var(--space-2);
+}
+
+.prose a {
+  color: var(--color-link);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.prose strong {
+  font-weight: var(--weight-semibold);
+}

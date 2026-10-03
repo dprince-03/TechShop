@@ -1,0 +1,26 @@
+.nav {
+  font-size: var(--text-xs);
+}
+
+.list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  list-style: none;
+}
+
+.item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-text-muted);
+}
+
+.current {
+  color: var(--color-text);
+}
+
+.sep {
+  color: var(--color-text-subtle);
+}

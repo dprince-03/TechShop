@@ -1,0 +1,44 @@
+.chips {
+  --cluster-gap: var(--space-2);
+  margin-bottom: var(--space-6);
+}
+
+.categories {
+  --grid-min: 15rem;
+  --grid-gap: var(--space-3);
+}
+
+.categoryTile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: 100%;
+  padding: var(--space-3);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.categoryTile:hover {
+  border-color: var(--color-border-strong);
+}
+
+.bulkGrid {
+  --grid-min: 19rem;
+  --grid-gap: var(--space-4);
+}
+
+.twoCol {
+  display: grid;
+  gap: var(--space-7);
+  align-items: start;
+}
+
+@media (min-width: 64rem) {
+  .twoCol {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  }
+}
+
+.h2 {
+  font-size: var(--text-2xl);
+}

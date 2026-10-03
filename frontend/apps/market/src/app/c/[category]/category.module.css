@@ -1,0 +1,8 @@
+.title {
+  font-size: var(--text-4xl);
+}
+
+.carGrid {
+  --grid-min: 15rem;
+  --grid-gap: var(--space-4);
+}

@@ -32,6 +32,7 @@ const light = {
   promo: "#c2410c", // deal text
   saleFill: "#d1242f", // badge backgrounds — white text in both themes
   promoFill: "#c2410c",
+  onFill: "#ffffff", // text on sale/promo fills — passes on both themes' fills
   rating: "#f5a524", // stars (non-text)
   success: "#1a7f37",
   warning: "#9a6700",
