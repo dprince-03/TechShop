@@ -253,3 +253,91 @@ Entry format: `## YYYY-MM-DD — Title`, followed by **Decision**, **Why**, and 
 ## 2026-10-03 — Database plan completed and verified
 
 **Outcome:** the full documentation set from the 2026-10-02 "Database design plan" entry exists and is verified. The proposals in that entry stand unchanged. Still open for the owner: the staff role model (`access.md` §3 is a proposal), commission rates, VAT treatment (journal templates are placeholders) and the retail overlap. Schema size: 96 tables in 15 domains, 185 foreign keys, 229 check constraints.
+
+## 2026-10-03 — Mobile, backend and recommendation-system plans (documentation only)
+
+**Owner's request:** plan the complete mobile apps, the complete backend, and a Python recommendation system (three plans run in parallel). For recommendations: explain the integration and project impact first, answer every clarification, **use all industry approaches**, **combine all models (best of both worlds)**, and document everything.
+
+**Decisions:**
+1. **Recommendations follow the industry multi-stage architecture, with every pattern adopted:**
+   - event logging from day one;
+   - popularity and heuristics;
+   - Amazon item-to-item collaborative filtering;
+   - Netflix-style one strategy per shelf;
+   - two-stage retrieval → ranking;
+   - learning-to-rank;
+   - business-rule re-ranking.
+2. **Models: a hybrid ensemble.**
+   - Generators: popularity, content kNN, co-occurrence, ALS + BPR, item2vec, two-tower and SASRec, blended by a LightGBM LambdaMART ranker (feature-weighted blending until click logs exist).
+   - Every generator is built but **gated**: it is weighted only after meeting its data threshold and beating the baseline offline.
+   - LightFM is excluded (unmaintained).
+3. **Integration: combined, and "only Go touches the DB" is preserved.**
+   - Python nightly batch via Go internal export/import endpoints (pseudonymised, no DB access).
+   - Go live session re-ranking.
+   - A feature-flagged Python live service (FastAPI) for real-time models, behind an 80 ms timeout, circuit breaker and Go fallback.
+   - Read replica rejected.
+   - A `CLAUDE.md` amendment is **proposed only**.
+4. **Behaviour tracking at launch, with consent** (NDPA). Personal shelves only with consent.
+5. **Fairness, combined policy:** neutral ranking, a configurable vendor exposure floor, an optional capped first-party boost (default 0; legal review), and an exposure dashboard.
+6. **Plan reconciliations** are recorded in `docs/architecture-decisions.md`.
+7. **Schema deltas** are consolidated in `docs/schema-changes.md`. `schema.sql` is unchanged until the owner approves.
+8. **Not touched:** `backend/`, `frontend/`, `mobile/`, `shared/`, `CLAUDE.md`, `schema.sql`.
+
+## 2026-10-03 — Interactive mockups (prototype + system simulation)
+
+The owner asked for (1) a fully interactive mockup of every web app and both mobile apps, and (2) an interactive simulation of how the backend and recommendation system communicate.
+
+**Decisions:**
+1. Both are standalone private claude.ai artifact pages, **not** part of the repo or any app. They are throwaway visual aids; the real implementation still follows `frontend/`, `mobile/`, `backend.md`, `mobile.md` and `recommendations.md`.
+2. **Prototype** (https://claude.ai/artifact/R9tuhiEChYWm1vvVk9NSDK):
+   - All seven apps (Market, Wholesale, Corporate, Seller Centre, Staff portal, Customer app, Logistics app) share one in-memory state, so an order placed on one app shows up in the others.
+   - Uses the real design tokens and the fictional fixture data. Payments, SMS and approvals are simulated; nothing is sent anywhere.
+3. **Simulator** (https://claude.ai/artifact/LDLEc8UZvPVinrgcYpDv8N):
+   - Six scenarios: checkout and payment, delivery and OTP, nightly recs training, live recommendations, seller payout, and return and refund.
+   - Each has failure toggles and a recommender data-maturity selector. The flows mirror `backend.md` and `recommendations.md`, including the outbox, webhook verification, posting keys, gated generators, the 80 ms live-service fallback and consent.
+4. **Not touched:** `backend/`, `frontend/`, `mobile/`, `shared/`, `CLAUDE.md`, `schema.sql`.
+
+## 2026-10-03 — System plans, mockups and simulations (messaging, identity, payments, search, orders, trust)
+
+The owner asked for complete plans, an interactive UI mockup and an interactive system simulation for the mailing and marketing service, the auth system and "all other big and important systems", with files created and documented.
+
+**Decisions:**
+1. **Scope: six systems.** Messaging & marketing, identity & access, payments & finance, search & catalogue, orders/inventory/fulfilment, trust & safety. Logistics, recommendations and the general backend already have plans (`mobile.md`, `recommendations.md`, `backend.md`).
+2. **One plan doc per system** in `docs/` (status, summary, architecture, data model, API, screens, milestones, risks, open owner decisions), with Mermaid diagrams rendered to `docs/diagrams/`.
+3. **One interactive page per system** with two tabs: a clickable UI mockup and an animated system simulation with failure toggles. All pages are built from one shared kit (tokens, click framework, simulation engine), saved in `docs/mockups/` (with the earlier prototype and system simulator), and published privately as claude.ai artifacts. They are visual aids, not app code.
+4. **Key design choices:**
+   - **Messaging:** one send pipeline (`notify.Send`) with critical, transactional and marketing queues; marketing only with per-channel consent; separate transactional and marketing sending domains; approval with separation of duties for large campaigns.
+   - **Identity:** phone OTP for customers; password + TOTP for staff; 10/5-minute JWTs with no permissions inside; rotating refresh tokens with reuse detection; BFF cookies; step-up for sensitive permissions; Postgres-backed OTP limits against SMS pumping.
+   - **Payments:** webhook + verify + sweep + daily three-way reconciliation; posting keys; reversals only; period close; dual-control refunds and payout batches; pay-by-transfer with under- and overpayment handling.
+   - **Search:** Postgres read model with synonyms, intents, trigram fallback and an explainable ranking; buy box on one formula for TechShop and vendors; moderation with FCCPA was-price guard.
+   - **Orders:** fulfilments per seller with derived order status; race-free conditional reservations; single stock code path; scan-driven warehouse; seller SLAs; returns with serial match and grading.
+   - **Trust:** KYC behind a provider port; a Go rules engine with scores, holds and a test bench; case queue with a link graph; IMEI Luhn + blocklist at every intake; seller enforcement ladder with appeals.
+5. **Cross-system reconciliations:** recorded as #16–#22 in `docs/architecture-decisions.md`.
+6. **Schema:** 42 new proposals (#59–#100) added to `docs/schema-changes.md` §4–§9. **Not applied**; `schema.sql` unchanged until the owner approves.
+7. **Open owner decisions:** listed at the end of each system doc (providers, thresholds, role list, return policy, carriers, KYC provider, …).
+8. **Not touched:** `backend/`, `frontend/`, `mobile/`, `shared/`, `CLAUDE.md`, `schema.sql`.
+
+## 2026-10-05 — Project `.claude/` setup reconciled
+
+The owner added project-only Claude settings: `.claude/CLAUDE.md` working rules, security and compliance rules in `.claude/rules/` (00–10), 16 skills and `.claude/settings.json`.
+
+**Decisions (owner's answers):**
+1. **"The backend should never hit the DB directly"** means both of these:
+   - only the Go backend's data layer (sqlc queries used from repository and service code) touches PostgreSQL, with no SQL in HTTP handlers and no ad-hoc database access;
+   - connections go over the Docker network only.
+
+   This refines, and doesn't replace, "only the Go API touches PostgreSQL".
+2. **`.claude/CLAUDE.md` is rewritten** so it doesn't duplicate the root `CLAUDE.md`:
+   - the root file stays the codebase guide;
+   - `.claude/CLAUDE.md` holds the owner's working rules: ask before assuming or adding dependencies, simple explanations, no pushes or SSH, test every API, security and compliance via `.claude/rules/`, no weak secrets, Docker files in `infra/docker/`, dev-only test accounts.
+3. **Skills adjusted to this project (only `.claude/` edited):**
+   - **UI guidance:** Tailwind and shadcn advice replaced with TechShop's token + custom-CSS system.
+   - **Tenancy:** made optional in the scaffolding, conventions and migration skills, with TechShop's ownership scoping, goose + sqlc workflow and API conventions added.
+   - **DevOps:** project notes added.
+   - **Domain knowledge:** `project-domain-knowledge/references/techshop.md` created.
+4. **`.claude/settings.json` rewritten** to valid allow, ask and deny patterns so the owner's rules are actually enforced:
+   - **Ask:** new dependencies, deletes and moves, pushes, migrations up, docker down.
+   - **Deny:** git add/commit, force-push, hard reset, `rm -rf`, migrations down or reset, volume deletion, SSH/SCP/SFTP, reading or editing real `.env` files.
+
+   The free-text entries (not supported by Claude Code) moved into `.claude/CLAUDE.md`.
+5. **Backend items wait** until it's time for backend work: dev test accounts (seed, dev-only) and refusing weak or default secrets at startup.

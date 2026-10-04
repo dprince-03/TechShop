@@ -1,0 +1,106 @@
+openapi: 3.1.0
+info:
+  title: Example API
+  version: 1.0.0
+  description: Replace with the service description.
+servers:
+  - url: https://api.example.com/api/v1
+security:
+  - bearerAuth: []
+paths:
+  /invoices:
+    get:
+      summary: List invoices
+      operationId: listInvoices
+      tags: [Invoices]
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/Invoice' } }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      summary: Create invoice
+      operationId: createInvoice
+      tags: [Invoices]
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateInvoice' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Invoice' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  parameters:
+    Page: { in: query, name: page, schema: { type: integer, minimum: 1, default: 1 } }
+    Limit: { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+  schemas:
+    Invoice:
+      type: object
+      required: [id, number, amount_minor, currency, status, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        number: { type: string }
+        amount_minor: { type: integer, format: int64 }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+        status: { type: string, enum: [draft, sent, paid, void] }
+        created_at: { type: string, format: date-time }
+    CreateInvoice:
+      type: object
+      additionalProperties: false
+      required: [number, amount_minor, currency]
+      properties:
+        number: { type: string, maxLength: 50 }
+        amount_minor: { type: integer, format: int64, minimum: 1 }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+    PaginationMeta:
+      type: object
+      properties:
+        page: { type: integer }
+        limit: { type: integer }
+        total: { type: integer }
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+            details: { type: array, items: { type: object } }
+            request_id: { type: string }
+  responses:
+    BadRequest:
+      description: Validation failed
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Unauthorized:
+      description: Not authenticated
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Forbidden:
+      description: Not allowed
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }

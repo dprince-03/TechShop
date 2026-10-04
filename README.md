@@ -75,3 +75,22 @@ make dev-customer # customer mobile app (Expo)
 ## Design tokens
 
 Edit `shared/design-tokens/src/index.ts`, then run `make tokens` to regenerate the web CSS. CI fails if the generated file is out of date.
+
+## Planning docs
+
+| Doc | What it covers |
+| --- | --- |
+| [`docs/plan.md`](docs/plan.md) / [`docs/log.md`](docs/log.md) | Every decision (dated, append-only) and every action with verification |
+| [`docs/database.md`](docs/database.md) | Data model overview; schema, ER diagrams, state machines, flows and access in [`docs/database/`](docs/database/) |
+| [`docs/schema-changes.md`](docs/schema-changes.md) | Proposed schema changes awaiting approval |
+| [`docs/backend.md`](docs/backend.md) | Go API plan: architecture, endpoints, data layer, security, milestones |
+| [`docs/mobile.md`](docs/mobile.md) | Customer and logistics app plans |
+| [`docs/recommendations.md`](docs/recommendations.md) | Hybrid recommendation system (Python + Go) |
+| [`docs/architecture-decisions.md`](docs/architecture-decisions.md) | Decisions reconciling the plans |
+| [`docs/messaging-marketing.md`](docs/messaging-marketing.md) | SMS, email, push and in-app messaging; campaigns, audiences, journeys, consent |
+| [`docs/identity-access.md`](docs/identity-access.md) | Sign-in, tokens and sessions, MFA, staff roles and permissions, abuse protection |
+| [`docs/payments-finance.md`](docs/payments-finance.md) | Payment methods, ledger, reconciliation, refunds, chargebacks, seller payouts |
+| [`docs/search-catalogue.md`](docs/search-catalogue.md) | Product model, listing moderation, search, ranking, buy box |
+| [`docs/orders-fulfilment.md`](docs/orders-fulfilment.md) | Orders, stock reservation, warehouse operations, fulfilment models, returns |
+| [`docs/trust-safety.md`](docs/trust-safety.md) | KYC, risk engine, cases, stolen-device checks, seller enforcement |
+| [`docs/mockups/`](docs/mockups/) | Interactive mockups and system simulations (open any `.html` in a browser) |

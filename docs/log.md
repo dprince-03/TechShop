@@ -106,3 +106,68 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
     - Module ownership covers all 96 tables exactly once.
     - All 41 Mermaid diagrams render (mermaid-cli 12, system Chrome). Fixed 7 sequence diagrams that failed on `;` in message text.
     - Full `tools/generate.sh` run passes end to end; throwaway containers removed automatically.
+- Mobile, backend and recommendation plans (2026-10-03), documentation only:
+  - Three planning agents ran in parallel (mobile, backend, recommendations). For recommendations, the owner reviewed the integration options and project impact first, then asked for every clarification to be answered, all industry approaches to be adopted, all models to be combined, and everything to be documented.
+  - Written:
+    - `docs/recommendations.md` (industry approaches; 11-model catalogue with pros, cons, trade-offs and data gates; hybrid ensemble; combined integration; tracking/NDPA; fairness policy; evaluation; `recommender/` structure; project impact; cost; roadmap; risks; 5 diagrams).
+    - `docs/backend.md` (scaffold fixes, modular monolith, API/auth/RBAC conventions, all domain modules, revised migration order, data layer, config, observability, OWASP, realtime, testing, deployment readiness, milestones M0–M7; 8 diagrams).
+    - `docs/mobile.md` (decisions, shared architecture, customer and logistics apps with route trees, payment/offline/location flows, shared packages, endpoints, release/CI/CD, compliance, milestones; 5 diagrams).
+    - `docs/architecture-decisions.md` (15 reconciliations).
+    - `docs/schema-changes.md` (58 proposed items, not applied).
+  - Links added to `docs/database.md` and `README.md`.
+  - Verification:
+    - All 18 new Mermaid diagrams render to `docs/diagrams/`. Fixed 2 sequence diagrams that failed on `;` in message text.
+    - Every snake_case name in the new docs checked against the live schema introspection and the proposed tables. Only enum values, config names, proposed columns and deliberately rejected alternative names remain.
+    - 75 relative links resolve.
+    - No files changed under `backend/`, `frontend/`, `mobile/`, `shared/`, `CLAUDE.md` or `schema.sql`.
+    - No containers or test ports left running.
+- Interactive mockups (2026-10-03), outside the repo (claude.ai artifacts; sources in the session scratchpad):
+  - Prototype: https://claude.ai/artifact/R9tuhiEChYWm1vvVk9NSDK. System simulator: https://claude.ai/artifact/LDLEc8UZvPVinrgcYpDv8N.
+  - Verification (headless Chrome scripts, no servers started):
+    - Prototype: checkout with phone validation, then simulated payment, then a balanced journal in Staff › Finance. Then dispatch pack and assign, and Logistics delivery with the customer's OTP.
+    - Prototype: seller registration, then staff KYC approval, then a published listing. Also wholesale tier pricing and quote, and the customer-app cart.
+    - Simulator: every scenario stepped to the end with all failure toggles on.
+    - Zero page errors; no horizontal overflow at 400px; light and dark checked.
+    - Fixed during testing: the toast blocked clicks; the app switcher overflowed on phones; the stepper stretched in the app cart; numeric table headers were misaligned; the generator card ignored `hidden`; the canvas stretched vertically.
+- System plans, mockups and simulations (2026-10-03), documentation only:
+  - Written: `docs/messaging-marketing.md`, `docs/identity-access.md`, `docs/payments-finance.md`, `docs/search-catalogue.md`, `docs/orders-fulfilment.md`, `docs/trust-safety.md`; `docs/mockups/` (8 pages + README); `schema-changes.md` §4–§9 (#59–#100); `architecture-decisions.md` #16–#22; links added to `README.md` and `docs/database.md`.
+  - Published (private claude.ai artifacts):
+    - Messaging & marketing: https://claude.ai/artifact/JqjVaSjo3AQ5UW54tD5MRL
+    - Identity & access: https://claude.ai/artifact/8m29HNrhtdrxfF6v7sVscz
+    - Payments & finance: https://claude.ai/artifact/66AxZDYn9Et9dCHCifkyUZ
+    - Search & catalogue: https://claude.ai/artifact/87ugTiEZ65XKffZRw6JVEj
+    - Orders & fulfilment: https://claude.ai/artifact/Ap4dHGyjFv8y5QRh6Fb6qa
+    - Trust & safety: https://claude.ai/artifact/GdkcuahVsdkYZsn4i7tsTS
+    - (Earlier today) Prototype: https://claude.ai/artifact/R9tuhiEChYWm1vvVk9NSDK · System simulator: https://claude.ai/artifact/LDLEc8UZvPVinrgcYpDv8N
+  - Verification:
+    - **Headless Chrome scripts per page, for each UI:**
+      - messaging: campaign approval and send;
+      - identity: OTP limits, TOTP, step-up, reuse detection;
+      - payments: the trial balance stayed ₦0 through 22 journals;
+      - search: 9 query types;
+      - orders: Σ stock movements = on hand after every action;
+      - trust: risk presets and IMEI Luhn and blocklist checks.
+    - **Simulations:** every scenario stepped to the end with all toggles on.
+    - **Display:** zero page errors on all six; no horizontal overflow at 400px; light and dark checked.
+    - **Diagrams:** all 22 new Mermaid diagrams render.
+    - **Links:** 195 relative links resolve.
+    - **No code changes:** nothing changed under `backend/`, `frontend/`, `mobile/`, `shared/`.
+    - **No servers:** none started; only headless Chrome, which exits after each run.
+  - Fixed during testing:
+    - a modal backdrop swallowed form submits;
+    - the lock-screen icon colour;
+    - a duplicate synonym expansion ("used" applied twice);
+    - an invalid sample IMEI;
+    - the buy-box score column overflowing;
+    - long-button wrapping.
+- Project `.claude/` reconciliation (2026-10-05):
+  - Reviewed the owner's new `.claude/` files. Flagged conflicts and asked the owner:
+    - the DB-access wording;
+    - Tailwind/shadcn and multi-tenant defaults in the skills;
+    - free-text permission entries that Claude Code ignores.
+  - Edited (only under `.claude/`):
+    - `CLAUDE.md`, `settings.json` (validated as JSON);
+    - `skills/frontend-design-system/SKILL.md`, `skills/coding-conventions/{SKILL.md,references/go-gin.md,references/react-nextjs.md}`;
+    - `skills/module-scaffolding/{SKILL.md,references/go-gin-module.md}`, `skills/database-migrations/SKILL.md`, `skills/devops-deployment/SKILL.md`;
+    - `skills/project-domain-knowledge/{SKILL.md,references/techshop.md}` (new).
+  - Not touched: `backend/`, `frontend/`, `mobile/`, `shared/`, root `CLAUDE.md`. No commands that change the system were run.

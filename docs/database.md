@@ -12,6 +12,13 @@ The complete proposed data model for TechShop: schema, relationships, lifecycles
 | [`database/tools/`](database/tools/) | Scripts that load the schema into a throwaway Postgres, regenerate `erd.md` and the table index, and render diagrams |
 | [`database/diagrams/`](database/diagrams/) | Every diagram rendered as SVG |
 
+
+**Related plans:**
+- Proposed schema changes from the backend, mobile, recommendation and system plans (not yet applied): [`schema-changes.md`](schema-changes.md)
+- System plans: [`messaging-marketing.md`](messaging-marketing.md), [`identity-access.md`](identity-access.md), [`payments-finance.md`](payments-finance.md), [`search-catalogue.md`](search-catalogue.md), [`orders-fulfilment.md`](orders-fulfilment.md), [`trust-safety.md`](trust-safety.md)
+- How the API is built on this model: [`backend.md`](backend.md)
+- Cross-plan decisions: [`architecture-decisions.md`](architecture-decisions.md)
+
 ---
 
 ## 1. Context

@@ -1,0 +1,672 @@
+<title>TechShop Fulfilment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Tokens mirror shared/design-tokens. */
+:root{
+  --bg:#ffffff; --surface:#f4f5f7; --raised:#ffffff; --inverse:#111214;
+  --text:#16171a; --muted:#5f6368; --subtle:#6b7078; --text-inverse:#f7f8fa;
+  --border:#d9dbe0; --border-strong:#8e939b;
+  --accent:#1a56f0; --accent-hover:#1546c8; --accent-subtle:#e8efff; --on-accent:#ffffff; --link:#1a56f0;
+  --sale:#d1242f; --promo:#c2410c; --sale-fill:#d1242f; --promo-fill:#c2410c; --on-fill:#ffffff;
+  --rating:#f5a524; --success:#1a7f37; --warning:#9a6700; --danger:#d1242f; --violet:#7c3aed;
+  --success-subtle:#e6f4ea; --danger-subtle:#fdecee; --warning-subtle:#fdf6e3; --promo-subtle:#fdf0e7; --violet-subtle:#f1eafd;
+  --chrome:#e9ebef; --stage:#eceef2; --edge:#c9ccd3;
+  --shadow:0 4px 16px rgb(0 0 0 / .08); --shadow-lg:0 12px 32px rgb(0 0 0 / .14);
+  --font:"Geist",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --r-sm:8px; --r-md:12px; --r-lg:18px; --r-xl:28px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0b0c0e; --surface:#16181c; --raised:#1d2025; --inverse:#f4f5f7;
+  --text:#f2f3f5; --muted:#a3a8b0; --subtle:#8d939b; --text-inverse:#16171a;
+  --border:#2c3036; --border-strong:#5b616a;
+  --accent:#2563eb; --accent-hover:#3b74f5; --accent-subtle:#16244a; --link:#6b9bff;
+  --sale:#ff6b6b; --promo:#fb8c4b; --success:#4ac26b; --warning:#e3b341; --danger:#ff6b6b; --violet:#a78bfa;
+  --success-subtle:#12301c; --danger-subtle:#3a1619; --warning-subtle:#33280c; --promo-subtle:#3a2112; --violet-subtle:#261b42;
+  --chrome:#1a1c20; --stage:#08090a; --edge:#33373e;
+  --shadow:0 4px 16px rgb(0 0 0 / .45); --shadow-lg:0 12px 32px rgb(0 0 0 / .55);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0b0c0e; --surface:#16181c; --raised:#1d2025; --inverse:#f4f5f7;
+  --text:#f2f3f5; --muted:#a3a8b0; --subtle:#8d939b; --text-inverse:#16171a;
+  --border:#2c3036; --border-strong:#5b616a;
+  --accent:#2563eb; --accent-hover:#3b74f5; --accent-subtle:#16244a; --link:#6b9bff;
+  --sale:#ff6b6b; --promo:#fb8c4b; --success:#4ac26b; --warning:#e3b341; --danger:#ff6b6b; --violet:#a78bfa;
+  --success-subtle:#12301c; --danger-subtle:#3a1619; --warning-subtle:#33280c; --promo-subtle:#3a2112; --violet-subtle:#261b42;
+  --chrome:#1a1c20; --stage:#08090a; --edge:#33373e;
+  --shadow:0 4px 16px rgb(0 0 0 / .45); --shadow-lg:0 12px 32px rgb(0 0 0 / .55);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--stage);color:var(--text);font-family:var(--font);font-size:14.5px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3,h4{margin:0;line-height:1.2;letter-spacing:-.015em;text-wrap:balance}
+p{margin:0}
+.tnum{font-variant-numeric:tabular-nums}.mono{font-family:var(--mono)}
+.muted{color:var(--muted)}.subtle{color:var(--subtle)}.xs{font-size:12px}.sm{font-size:13.5px}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+
+/* Page shell */
+.wrap{max-width:1500px;margin:0 auto;padding:14px 16px 40px;display:flex;flex-direction:column;gap:14px}
+.top{display:flex;flex-wrap:wrap;gap:10px 20px;justify-content:space-between;align-items:flex-end}
+.top h1{font-size:22px}
+.top p.lead{color:var(--muted);font-size:13px;max-width:78ch}
+.brand{display:flex;align-items:center;gap:8px}
+.mark{width:26px;height:26px;border-radius:8px;background:var(--inverse);display:grid;place-items:center;flex:none}
+.mark svg{stroke:var(--text-inverse)}
+.viewtabs{display:flex;gap:4px;padding:4px;background:var(--raised);border:1px solid var(--border);border-radius:999px}
+.viewtabs button{border:0;background:transparent;padding:8px 16px;border-radius:999px;font-size:13.5px;font-weight:600;color:var(--muted);white-space:nowrap}
+.viewtabs button[aria-selected="true"]{background:var(--inverse);color:var(--text-inverse)}
+.pill-nav{display:flex;gap:4px;padding:4px;background:var(--raised);border:1px solid var(--border);border-radius:999px;overflow-x:auto;max-width:100%;scrollbar-width:none;min-width:0}
+.pill-nav button{border:0;background:transparent;padding:6px 12px;border-radius:999px;font-size:13px;font-weight:500;color:var(--muted);white-space:nowrap;display:flex;align-items:center;gap:6px}
+.pill-nav button[aria-pressed="true"]{background:var(--inverse);color:var(--text-inverse)}
+
+/* Frames */
+.browser{background:var(--bg);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column;min-width:0}
+.browser-bar{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--chrome);border-bottom:1px solid var(--border)}
+.dots{display:flex;gap:6px}.dots i{width:10px;height:10px;border-radius:50%;background:var(--border-strong);opacity:.6}
+.url{flex:1;min-width:0;display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:999px;padding:4px 12px;font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.page{min-height:600px;min-width:0}
+.phone{width:360px;max-width:100%;height:720px;background:var(--bg);border:10px solid var(--inverse);border-radius:44px;overflow:hidden;position:relative;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;flex:none}
+.phone-notch{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:100px;height:24px;background:var(--inverse);border-radius:20px;z-index:5}
+.phone-screen{flex:1;overflow-y:auto;padding-top:42px;position:relative}
+.duo{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
+@media (min-width:1180px){.duo{grid-template-columns:minmax(0,1fr) 360px}}
+.duo>.side-col{display:flex;flex-direction:column;gap:12px;align-items:center}
+.notice{background:var(--accent-subtle);color:var(--text);font-size:12px;text-align:center;padding:4px 12px}
+
+/* Components */
+.container{width:100%;max-width:1200px;margin:0 auto;padding-inline:clamp(14px,3vw,28px)}
+.section{padding-block:22px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 18px;border-radius:999px;border:1px solid transparent;background:transparent;font-weight:600;font-size:13.5px;color:var(--text);white-space:nowrap;transition:background-color .15s,border-color .15s,transform .15s}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--accent);color:var(--on-accent)}.btn-primary:hover{background:var(--accent-hover)}
+.btn-secondary{border-color:var(--border-strong)}.btn-secondary:hover{border-color:var(--text)}
+.btn-inverse{background:var(--inverse);color:var(--text-inverse)}
+.btn-danger{background:var(--danger);color:var(--on-fill)}
+.btn-ghost:hover{background:var(--surface)}
+.btn-sm{min-height:32px;padding:0 12px;font-size:12.5px}
+.btn-lg{min-height:50px;padding:0 24px;font-size:15px}
+.btn-block{width:100%}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.icon-btn{width:38px;height:38px;border-radius:999px;border:0;background:transparent;display:grid;place-items:center;color:var(--text);position:relative}
+.icon-btn:hover{background:var(--surface)}
+.count{position:absolute;top:1px;right:1px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:var(--accent);color:var(--on-accent);font-size:10.5px;font-weight:600;display:grid;place-items:center}
+.link{color:var(--link);text-decoration:underline;text-underline-offset:.2em;text-decoration-color:transparent;background:none;border:0;padding:0;font-weight:500;cursor:pointer}
+.link:hover{text-decoration-color:currentColor}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border-radius:4px;font-size:11.5px;font-weight:600;background:var(--surface);color:var(--text);width:fit-content;white-space:nowrap}
+.badge-accent{background:var(--accent-subtle);color:var(--link)}
+.badge-good{background:var(--success-subtle);color:var(--success)}
+.badge-warn{background:var(--warning-subtle);color:var(--warning)}
+.badge-bad{background:var(--danger-subtle);color:var(--danger)}
+.badge-violet{background:var(--violet-subtle);color:var(--violet)}
+.badge-outline{background:transparent;border:1px solid var(--border)}
+.card{background:var(--raised);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.stack{display:flex;flex-direction:column;gap:12px;min-width:0}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.nowrap{flex-wrap:nowrap}
+.between{justify-content:space-between}
+.grow{flex:1;min-width:0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-size:13px;font-weight:500}
+.field input,.field select,.field textarea,.input{min-height:40px;padding:7px 11px;border:1px solid var(--border-strong);border-radius:var(--r-sm);background:var(--bg);font-size:14.5px;width:100%;min-width:0}
+.field textarea{min-height:90px;resize:vertical}
+.field [aria-invalid="true"]{border-color:var(--danger)}
+.err{font-size:12px;color:var(--danger)}
+.hint{font-size:12px;color:var(--muted)}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.check{display:flex;align-items:center;gap:10px;min-height:30px;font-size:13.5px;cursor:pointer}
+.check input{width:17px;height:17px;accent-color:var(--accent);flex:none}
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+thead th{font-size:11.5px;font-weight:500;color:var(--muted);background:var(--surface)}
+tbody tr:hover{background:var(--surface)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.status{display:inline-flex;align-items:center;gap:6px}
+.status::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--subtle);flex:none}
+.st-good::before{background:var(--success)}.st-warn::before{background:var(--warning)}.st-info::before{background:var(--accent)}.st-bad::before{background:var(--danger)}.st-violet::before{background:var(--violet)}
+.toast{pointer-events:none;position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--inverse);color:var(--text-inverse);padding:10px 18px;border-radius:999px;font-size:13.5px;box-shadow:var(--shadow-lg);z-index:100;max-width:calc(100vw - 32px)}
+.empty{border:1px dashed var(--border-strong);border-radius:var(--r-lg);padding:28px 18px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px}
+.modal-back{position:fixed;inset:0;background:rgb(10 11 13 / .55);display:grid;place-items:center;z-index:90;padding:16px}
+.modal{background:var(--bg);border-radius:var(--r-lg);max-width:440px;width:100%;padding:22px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow-lg)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi b{font-size:21px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.kpi .delta{font-size:11.5px;color:var(--success)}
+.panel{background:var(--raised);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;min-width:0}
+.panel-h{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:11px 14px;border-bottom:1px solid var(--border)}
+.panel-h h3{font-size:14.5px}
+.panel-b{padding:14px;display:flex;flex-direction:column;gap:12px}
+.seg{display:inline-flex;border:1px solid var(--border-strong);border-radius:999px;overflow:hidden;flex:none}
+.seg button{border:0;background:transparent;padding:0 11px;min-height:32px;font-size:12.5px;color:var(--muted);white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--inverse);color:var(--text-inverse)}
+.switch{width:44px;height:26px;border-radius:999px;border:0;background:var(--border-strong);position:relative;flex:none;padding:0}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--bg);transition:transform .2s}
+.switch[aria-checked="true"]{background:var(--success)}.switch[aria-checked="true"]::after{transform:translateX(18px)}
+.switch[disabled]{opacity:.5;cursor:not-allowed}
+.steps{display:flex;gap:8px;font-size:12.5px;color:var(--muted);flex-wrap:wrap}
+.steps span{display:flex;align-items:center;gap:6px}
+.steps b{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--border-strong);font-size:11.5px}
+.steps .on{color:var(--text);font-weight:500}.steps .on b{background:var(--accent);border-color:transparent;color:var(--on-accent)}
+.bar{height:8px;background:var(--surface);border-radius:8px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:8px;transition:width .4s}
+.code{font-family:var(--mono);font-size:12px;background:var(--surface);border-radius:8px;padding:8px 10px;white-space:pre-wrap;word-break:break-word}
+
+/* App shell (staff-style) */
+.appbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg)}
+.applogo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:16px}
+.applogo small{font-weight:500;font-size:12.5px;color:var(--muted);padding-left:8px;border-left:1px solid var(--border-strong)}
+.shell{display:grid;grid-template-columns:minmax(0,1fr);min-height:620px}
+@media (min-width:960px){.shell{grid-template-columns:210px minmax(0,1fr)}}
+.side{border-right:1px solid var(--border);padding:14px 10px;display:flex;flex-direction:column;gap:2px;background:var(--bg)}
+@media (max-width:959px){.side{border-right:0;border-bottom:1px solid var(--border);flex-direction:row;overflow-x:auto;padding:8px}.side .grp-t{display:none}}
+.grp-t{font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:8px 10px 4px}
+.side button{border:0;background:transparent;display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:var(--r-sm);font-size:13.5px;color:var(--muted);white-space:nowrap;text-align:left}
+.side button:hover{background:var(--surface);color:var(--text)}
+.side button[aria-current="page"]{background:var(--accent-subtle);color:var(--link);font-weight:600}
+.main{padding:18px clamp(14px,2.4vw,26px);display:flex;flex-direction:column;gap:16px;min-width:0}
+.main h1{font-size:24px}
+
+/* Mobile app pieces */
+.app-head{position:sticky;top:0;z-index:3;background:var(--bg);padding:6px 16px 10px;display:flex;flex-direction:column;gap:8px;border-bottom:1px solid var(--border)}
+.app-body{padding:14px 16px 24px;display:flex;flex-direction:column;gap:14px}
+.lock{position:absolute;inset:0;background:linear-gradient(160deg,#1f2a44,#0d0f14);color:#fff;padding:60px 14px 20px;display:flex;flex-direction:column;gap:10px;z-index:4}
+.lock .time{font-size:56px;font-weight:300;text-align:center;letter-spacing:-.02em;line-height:1}
+.lock .date{text-align:center;font-size:14px;opacity:.85;margin-bottom:14px}
+.notif{background:rgb(255 255 255 / .16);backdrop-filter:blur(8px);border-radius:16px;padding:10px 12px;display:flex;gap:10px;align-items:flex-start;font-size:13px;color:#fff;border:0;text-align:left;width:100%}
+.notif .ap{width:30px;height:30px;border-radius:8px;background:#fff;display:grid;place-items:center;flex:none}
+
+.notif b{display:block;font-size:13px}
+.notif small{opacity:.75;font-size:11px}
+.sms-bubble{background:var(--surface);border-radius:16px 16px 16px 4px;padding:9px 12px;font-size:13.5px;max-width:85%;align-self:flex-start}
+.sms-meta{font-size:11px;color:var(--muted);align-self:flex-start}
+.email{border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;background:var(--bg)}
+.email-h{padding:10px 14px;border-bottom:1px solid var(--border);font-size:12.5px;display:flex;flex-direction:column;gap:2px}
+.email-b{padding:18px;display:flex;flex-direction:column;gap:12px;font-size:14px}
+
+/* Simulation */
+.sim{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+@media (min-width:1100px){.sim{grid-template-columns:minmax(0,1fr) 380px}.sim-canvas{position:sticky;top:12px}}
+.sim-canvas{align-self:start;background:var(--bg);border:1px solid var(--border);border-radius:18px;padding:8px;min-width:0}
+@media (max-width:760px){.sim-canvas{overflow-x:auto}svg.map{min-width:720px}}
+svg.map{width:100%;height:auto;display:block}
+.sim-panel{display:flex;flex-direction:column;gap:12px;min-width:0}
+.sim-panel .card h2{font-size:14px}
+.sim-controls{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.sim-controls .btn{min-height:34px;padding:0 13px;font-size:12.5px;border:1px solid var(--border-strong)}
+.sim-controls .btn-primary{border-color:transparent}
+.progress{height:4px;background:var(--surface);border-radius:4px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.toggles{display:flex;flex-direction:column;gap:6px}
+.tg{display:flex;align-items:flex-start;gap:10px;font-size:13px;cursor:pointer}
+.tg input{width:16px;height:16px;margin-top:2px;accent-color:var(--accent);flex:none}
+.tg small{display:block;color:var(--muted);font-size:11.5px}
+.now{border-left:3px solid var(--accent);padding-left:10px;display:flex;flex-direction:column;gap:6px}
+.now b{font-size:14.5px}
+.now p{color:var(--muted);font-size:13px}
+pre.payload{margin:0;font-family:var(--mono);font-size:11.5px;background:var(--surface);border-radius:10px;padding:10px;white-space:pre-wrap;word-break:break-word;max-height:200px;overflow:auto}
+.log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;max-height:300px;overflow:auto;counter-reset:s}
+.log li button{width:100%;text-align:left;border:0;background:transparent;padding:5px 8px;border-radius:8px;font-size:12.5px;color:var(--muted);display:flex;gap:8px;align-items:baseline}
+.log li button::before{counter-increment:s;content:counter(s);font-family:var(--mono);font-size:10.5px;min-width:18px;color:var(--subtle)}
+.log li.done button{color:var(--text)}
+.log li.cur button{background:var(--accent-subtle);color:var(--text);font-weight:600}
+.log .k{width:8px;height:8px;border-radius:50%;flex:none;align-self:center}
+.simstate{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.simstate div{background:var(--surface);border-radius:10px;padding:7px 9px;display:flex;flex-direction:column;gap:1px;min-width:0}
+.simstate span{font-size:11px;color:var(--muted)}
+.simstate b{font-size:12.5px;font-family:var(--mono);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.simstate .changed{animation:flash 1s}
+@keyframes flash{from{background:var(--accent-subtle)}to{background:var(--surface)}}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted);padding:6px 8px 2px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:18px;height:3px;border-radius:2px;display:inline-block}
+.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.chip{border:1px solid var(--border);border-radius:10px;padding:6px 8px;font-size:12px;display:flex;flex-direction:column;gap:1px}
+.chip b{font-size:12px}.chip span{font-size:11px;color:var(--muted)}
+.chip.on{border-color:var(--success);background:var(--success-subtle)}
+.chip.bad{border-color:var(--danger);background:var(--danger-subtle)}
+.node rect{fill:var(--raised);stroke:var(--border-strong);stroke-width:1;transition:fill .2s,stroke .2s}
+.node text{fill:var(--text);font-family:var(--font);font-size:12.5px;font-weight:600;pointer-events:none}
+.node text.sub{fill:var(--muted);font-size:10px;font-weight:400}
+.node{cursor:pointer}
+.node:hover rect{stroke:var(--text)}
+.node.active rect{stroke:var(--accent);stroke-width:2.5;fill:var(--accent-subtle)}
+.node.focus rect{stroke:var(--violet);stroke-width:2.5}
+.node.dim{opacity:.35}
+.node.down rect{stroke:var(--danger);stroke-dasharray:5 4;fill:var(--danger-subtle)}
+.group{fill:none;stroke:var(--border-strong);stroke-dasharray:4 4;stroke-width:1}
+.glabel{fill:var(--muted);font-family:var(--font);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.edge{stroke:var(--edge);stroke-width:1.2;fill:none}
+.edge.dim{opacity:.25}
+.edge.hot{stroke-width:2.5}
+.plabel text{font-family:var(--mono);font-size:11px}
+
+
+</style>
+<div class="wrap">
+  <header class="top">
+    <div class="stack" style="gap:6px">
+      <div class="brand"><span class="mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round"><path d="M6 7h12M12 7v12"/></svg></span><span class="eyebrow">TechShop · Orders, inventory & fulfilment</span></div>
+      <h1>Orders, inventory and fulfilment system</h1>
+      <p class="lead">One order, two fulfilments: TechShop’s warehouse picks, packs and hands over its part while the vendor accepts and packs theirs against an SLA. Race two buyers for the last console, run a cycle count, then return a faulty laptop through inspection. The stock log on the right proves every change. Switch to System simulation for the backend.</p>
+    </div>
+    <div class="viewtabs" role="tablist" aria-label="View">
+      <button type="button" role="tab" data-view="ui" aria-selected="true">UI mockup</button>
+      <button type="button" role="tab" data-view="sim" aria-selected="false">System simulation</button>
+    </div>
+  </header>
+  <section id="ui-view"></section>
+  <section id="sim-view" hidden></section>
+</div>
+<div id="overlay"></div>
+<script>
+"use strict";
+/* ===== Shared kit: icons, helpers, a tiny event framework, view tabs ===== */
+const P={
+ search:'<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/>',
+ cart:'<path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.4a2 2 0 0 0 1.9-1.4L21 8H6.2"/><circle cx="10" cy="20.5" r="1"/><circle cx="17" cy="20.5" r="1"/>',
+ user:'<circle cx="12" cy="8" r="4"/><path d="M4 20.5c1.5-3.6 4.4-5.5 8-5.5s6.5 1.9 8 5.5"/>',
+ users:'<circle cx="9" cy="8.5" r="3.5"/><path d="M2.5 20c1-3.3 3.4-5 6.5-5s5.5 1.7 6.5 5M16 5.2a3.5 3.5 0 0 1 0 6.6"/>',
+ heart:'<path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.2a4.3 4.3 0 0 1 7.5 2.6C19.5 15.4 12 20 12 20Z"/>',
+ home:'<path d="m3.5 11 8.5-7 8.5 7"/><path d="M5.5 9.5V20h13V9.5"/>',
+ grid:'<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/>',
+ phone:'<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/>',
+ laptop:'<rect x="5" y="5" width="14" height="10" rx="1.5"/><path d="M2.5 18.5h19l-1.5-3.5H4z"/>',
+ headphones:'<path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4.5" height="6.5" rx="1.5"/><rect x="16.5" y="14" width="4.5" height="6.5" rx="1.5"/>',
+ gamepad:'<path d="M7 7h10a4 4 0 0 1 4 4.5l-.6 4.6a2.5 2.5 0 0 1-4.3 1.3L14.5 15h-5l-1.6 2.4a2.5 2.5 0 0 1-4.3-1.3L3 11.5A4 4 0 0 1 7 7Z"/><path d="M8 10v3M6.5 11.5h3"/>',
+ monitor:'<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M9 20h6M12 16v4"/>',
+ car:'<path d="M4 16v-3.5L6 7.5A2 2 0 0 1 7.9 6h8.2a2 2 0 0 1 1.9 1.5l2 5V16"/><path d="M3 16h18v2.5H3zM4 12.5h16"/>',
+ check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+ x:'<path d="M6 6l12 12M18 6 6 18"/>',
+ chev:'<path d="m9 5 7 7-7 7"/>',
+ back:'<path d="m15 5-7 7 7 7"/>',
+ bolt:'<path d="M13 3 5 13.5h6L10 21l9-11.5h-6L13 3Z"/>',
+ star:'<path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.8L12 3.5Z"/>',
+ pin:'<path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.3"/>',
+ bell:'<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15l1.5-2Z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>',
+ truck:'<path d="M3 6h11v10H3zM14 9.5h3.8L21 13v3h-7"/><circle cx="7" cy="18" r="1.8"/><circle cx="17.5" cy="18" r="1.8"/>',
+ lock:'<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>',
+ key:'<circle cx="8" cy="15" r="4"/><path d="m11 12 8.5-8.5M16 7l2.5 2.5M14 9l2 2"/>',
+ verified:'<path d="M12 2.8 14.4 5l3.2-.3.6 3.2 2.8 1.6-1.3 3 1.3 3-2.8 1.6-.6 3.2-3.2-.3L12 21.2 9.6 19l-3.2.3-.6-3.2L3 14.5l1.3-3L3 8.5l2.8-1.6.6-3.2 3.2.3L12 2.8Z"/><path d="m8.8 12 2.2 2.2 4.3-4.4"/>',
+ returns:'<path d="M4 10h11a5 5 0 0 1 0 10H9"/><path d="m8 6-4 4 4 4"/>',
+ store:'<path d="M4 9.5 5.5 4h13L20 9.5"/><path d="M5.5 12.5V20h13v-7.5"/>',
+ briefcase:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5h6v2M3 12.5h18"/>',
+ box:'<path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/>',
+ chart:'<path d="M4 20h16M7 16v-5M12 16V6M17 16v-8"/>',
+ wallet:'<path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H18v3"/><rect x="4" y="8" width="16" height="11" rx="2"/>',
+ tag:'<path d="M3.5 12.5 11.5 4.5H19.5V12.5L11.5 20.5 3.5 12.5Z"/><circle cx="15.5" cy="8.5" r="1.3"/>',
+ shield:'<path d="M12 3 5 6v5.5c0 4.4 3 8 7 9.5 4-1.5 7-5.1 7-9.5V6l-7-3Z"/>',
+ settings:'<circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/>',
+ file:'<path d="M6 3h8l4 4v14H6z"/><path d="M9 12h6M9 16h6"/>',
+ mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 6.5 8.5 6.5 8.5-6.5"/>',
+ sms:'<path d="M4 5h16v11H9l-5 4z"/><path d="M8 10h8"/>',
+ send:'<path d="M21 3 10 14M21 3l-7 18-4-7-7-4 18-7Z"/>',
+ flow:'<rect x="3" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="16" width="7" height="5" rx="1.5"/><path d="M6.5 8v4.5h11V16"/>',
+ filter:'<path d="M4 5h16l-6 7.5V19l-4 1.5v-8z"/>',
+ clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+ card:'<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3 10h18"/>',
+ bank:'<path d="M3 9.5 12 4l9 5.5M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18"/>',
+ receipt:'<path d="M6 3h12v18l-2.5-1.5L13 21l-2.5-1.5L8 21l-2-1.2z"/><path d="M9 8h6M9 12h6"/>',
+ scale:'<path d="M12 4v16M6 20h12M4 8h16M4 8l-2 6a3 3 0 0 0 4 0zM20 8l-2 6a3 3 0 0 0 4 0z"/>',
+ scan:'<path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10"/>',
+ plus:'<path d="M12 5v14M5 12h14"/>',
+ globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+ eye:'<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/>',
+ flag:'<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
+ alert:'<path d="M12 3.5 2.5 20h19L12 3.5Z"/><path d="M12 10v4.5M12 17.5v.5"/>',
+ warehouse:'<path d="M3 9.5 12 4l9 5.5V20H3z"/><path d="M7 20v-6h10v6M7 17h10"/>',
+ swap:'<path d="M7 4 3.5 7.5 7 11M3.5 7.5H17M17 13l3.5 3.5L17 20M20.5 16.5H7"/>',
+ logout:'<path d="M14 4h5v16h-5M10 8l-4 4 4 4M6 12h10"/>',
+ fingerprint:'<path d="M12 11v3a8 8 0 0 0 1.5 4.7M8.5 9.5A4 4 0 0 1 16 11v1.5M5.5 7.5A8 8 0 0 1 20 12v1M5 14a14 14 0 0 0 1 4M9 13a10 10 0 0 0 1.5 6"/>',
+ history:'<path d="M3.5 12a8.5 8.5 0 1 0 2.5-6L3.5 8.5"/><path d="M3.5 4v4.5H8M12 7.5V12l3 2"/>'
+};
+const ic=(n,s=18,extra="")=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}>${P[n]||""}</svg>`;
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const naira=n=>(n<0?"−":"")+"₦"+Math.abs(Math.round(n)).toLocaleString("en-NG");
+const fmt=n=>Math.round(n).toLocaleString("en-NG");
+const pct=(a,b)=>b?(a/b*100).toFixed(1)+"%":"—";
+const logoMark=`<span class="mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round"><path d="M6 7h12M12 7v12"/></svg></span>`;
+const applogo=sfx=>`<span class="applogo">${logoMark}<span>TechShop</span>${sfx?`<small>${sfx}</small>`:""}</span>`;
+const browser=(host,path,body)=>`<div class="browser"><div class="browser-bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">${ic("lock",12)}<span>${esc(host)}${esc(path)}</span></div></div><div class="page">${body}</div></div>`;
+const phone=(screen,label="Phone")=>`<div class="phone" aria-label="${esc(label)}"><span class="phone-notch"></span><div class="phone-screen">${screen}</div></div>`;
+const notice=(t="Preview: names, figures and messages are sample data. Nothing is sent.")=>`<div class="notice">${t}</div>`;
+const status=(t,tone="")=>`<span class="status ${tone}">${esc(t)}</span>`;
+const sideNav=(groups,cur)=>`<nav class="side" aria-label="Sections">${groups.map(g=>`${g[0]?`<span class="grp-t">${g[0]}</span>`:""}${g[1].map(x=>`<button type="button" data-go="${x[0]}" ${x[0]===cur?'aria-current="page"':""}>${ic(x[2],16)}${x[1]}</button>`).join("")}`).join("")}</nav>`;
+function field(id,label,val="",o={}){const e=o.err;const attrs=`id="${id}" name="${id}" ${e?`aria-invalid="true" aria-describedby="${id}-e"`:""} ${o.attrs||""}`;
+ const ctl=o.select?`<select ${attrs}>${o.select.map(x=>{const [v,l]=Array.isArray(x)?x:[x,x];return `<option value="${esc(v)}" ${String(v)===String(val)?"selected":""}>${esc(l)}</option>`}).join("")}</select>`:o.area?`<textarea ${attrs}>${esc(val)}</textarea>`:`<input ${attrs} value="${esc(val)}" ${o.type?`type="${o.type}"`:""} ${o.ph?`placeholder="${esc(o.ph)}"`:""} ${o.inputmode?`inputmode="${o.inputmode}"`:""} ${o.ac?`autocomplete="${o.ac}"`:""}>`;
+ return `<div class="field" style="${o.span?"grid-column:1/-1":""}"><label for="${id}">${label}${o.optional?' <span class="muted" style="font-weight:400">(optional)</span>':""}</label>${ctl}${e?`<span class="err" id="${id}-e">${esc(e)}</span>`:o.hint?`<span class="hint">${esc(o.hint)}</span>`:""}</div>`}
+function table(cols,rows,opts={}){const numCol=cols.map((c,i)=>rows.some(r=>/^[−-]?₦|^\d[\d,.]*%?$/.test(String(r[i]??"").replace(/<[^>]+>/g,""))));
+ return `<div class="tbl-wrap"><table><thead><tr>${cols.map((c,i)=>`<th class="${numCol[i]?"num":""}">${c}</th>`).join("")}</tr></thead><tbody>${rows.length?rows.map(r=>`<tr>${r.map((c,i)=>`<td class="${numCol[i]?"num":""}">${c}</td>`).join("")}</tr>`).join(""):`<tr><td colspan="${cols.length}" class="muted" style="text-align:center;padding:20px">${opts.empty||"Nothing here yet"}</td></tr>`}</tbody></table></div>`}
+const switchBtn=(act,on,label,extra="")=>`<button type="button" class="switch" role="switch" aria-checked="${!!on}" aria-label="${esc(label)}" data-act="${act}" ${extra}></button>`;
+
+/* Event framework: data-act (click), data-go (nav), data-chg (change), data-inp (input), form[data-form] (submit) */
+const ACT={},FORM={},CHG={},INP={};
+let UI_RENDER=()=>{},GO=()=>{};
+function rerender(keepFocus){const a=document.activeElement;const id=a&&a.id;const pos=a&&a.selectionStart;UI_RENDER();if(keepFocus&&id){const n=document.getElementById(id);if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch{}}}renderOverlay()}
+let TOAST="";function toast(m){TOAST=m;renderOverlay();clearTimeout(toast.t);toast.t=setTimeout(()=>{TOAST="";renderOverlay()},2800)}
+let MODAL=null;function modal(html){MODAL=html;renderOverlay()}function closeModal(){MODAL=null;renderOverlay()}
+function renderOverlay(){const o=$("#overlay");if(!o)return;o.innerHTML=(MODAL?`<div class="modal-back" data-act="__backdrop"><div class="modal" role="dialog" aria-modal="true">${typeof MODAL==="function"?MODAL():MODAL}</div></div>`:"")+(TOAST?`<div class="toast" role="status">${esc(TOAST)}</div>`:"")}
+ACT.__backdrop=(d,el,e)=>{if(e.target===el)closeModal()};
+ACT.closeModal=()=>closeModal();
+document.addEventListener("click",e=>{if(e.target.closest("#sim-view"))return;
+ const g=e.target.closest("[data-go]");if(g){e.preventDefault();GO(g.dataset.go,g.dataset.arg,g);return}
+ const a=e.target.closest("[data-act]");if(!a||a.matches("input,select,textarea"))return;if(a.dataset.act==="__backdrop"&&e.target!==a)return;const h=ACT[a.dataset.act];if(h){e.preventDefault();h(a.dataset,a,e)}});
+document.addEventListener("change",e=>{const el=e.target;if(el.closest("#sim-view"))return;const h=CHG[el.dataset.chg];if(h)h(el.dataset,el)});
+document.addEventListener("input",e=>{const el=e.target;if(el.closest("#sim-view"))return;const h=INP[el.dataset.inp];if(h)h(el.dataset,el)});
+document.addEventListener("submit",e=>{const f=e.target.closest("form[data-form]");if(!f)return;e.preventDefault();const h=FORM[f.dataset.form];if(h)h(Object.fromEntries(new FormData(f)),f)});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&MODAL)closeModal()});
+
+/* View tabs (UI mockup | System simulation) */
+function initViews(){const tabs=$$(".viewtabs [role=tab]");tabs.forEach(t=>t.addEventListener("click",()=>{tabs.forEach(x=>x.setAttribute("aria-selected",x===t));$("#ui-view").hidden=t.dataset.view!=="ui";$("#sim-view").hidden=t.dataset.view!=="sim";if(t.dataset.view==="sim"&&window.SIM_INSTANCE)window.SIM_INSTANCE.refresh()}))}
+
+/* ===== Generic system simulator =====
+   cfg = { viewBox:[w,h], nodes:{key:{x,y,w,h,t,s,info}}, groups:[{x,y,w,h,t}],
+           toggles:{key:[label, sub]}, opts:{...defaults},
+           scenarios:{key:{t, intro?, toggles:[keys], build(opts)->steps, state:[[key,label]]}},
+           baseState()->{}, isDown?(node,opts,scen), onToggle?(key,opts), extra?(scen,opts)->{title,html}|null }
+   step = {f,t,l,d,p,k,fx}   k: req | res | async | ext | fail                                       */
+const R=(f,t,l,d,p,fx)=>({f,t,l,d,p,k:"req",fx}), S=(f,t,l,d,p,fx)=>({f,t,l,d,p,k:"res",fx}),
+      A=(f,t,l,d,p,fx)=>({f,t,l,d,p,k:"async",fx}), X=(f,t,l,d,p,fx)=>({f,t,l,d,p,k:"ext",fx}),
+      F=(f,t,l,d,p,fx)=>({f,t,l,d,p,k:"fail",fx});
+function createSim(root,cfg){
+ const N=cfg.nodes,[VW,VH]=cfg.viewBox;const opts={...cfg.opts};
+ let scen=Object.keys(cfg.scenarios)[0],steps=[],cur=-1,playing=false,speed=1,focus=null,anim=null,timer=null,prev={},EDGES=[];
+ const KIND={req:["var(--accent)","Request"],res:["var(--success)","Response"],async:["var(--promo)","Async (outbox, jobs, webhooks)"],ext:["var(--violet)",cfg.extLabel||"External or special"],fail:["var(--danger)","Failure, block or fallback"]};
+ const color=k=>KIND[k][0];
+ root.innerHTML=`<div class="pill-nav" role="group" aria-label="Scenario" data-s="scen"></div>
+ <div class="sim" style="margin-top:12px"><div class="sim-canvas"><svg class="map" viewBox="0 0 ${VW} ${VH}" role="img" aria-label="System diagram"></svg>
+ <div class="legend">${Object.values(KIND).map(([c,l])=>`<span><i style="background:${c}"></i>${l}</span>`).join("")}</div></div>
+ <div class="sim-panel"><div class="card"><div class="sim-controls"><button class="btn btn-primary" data-s="play" type="button">Play</button><button class="btn" data-s="prev" type="button" aria-label="Previous step">◀</button><button class="btn" data-s="next" type="button" aria-label="Next step">▶</button><button class="btn" data-s="restart" type="button">Restart</button><div class="seg" role="group" aria-label="Speed">${[0.5,1,2].map(v=>`<button type="button" data-speed="${v}" aria-pressed="${v===1}">${v}×</button>`).join("")}</div></div>
+ <div class="progress"><i data-s="bar"></i></div><div class="now" data-s="now" aria-live="polite"></div><pre class="payload" data-s="payload" hidden></pre></div>
+ <div class="card" data-s="tgcard"><h2>What can go wrong</h2><div class="toggles" data-s="toggles"></div></div>
+ <div class="card" data-s="extra" hidden></div>
+ <div class="card"><h2>System state</h2><div class="simstate" data-s="state"></div></div>
+ <div class="card"><h2>Steps</h2><ol class="log" data-s="log"></ol></div></div></div>`;
+ const q=s=>root.querySelector(`[data-s="${s}"]`);const svg=root.querySelector("svg.map");
+ const ctr=n=>({x:N[n].x+N[n].w/2,y:N[n].y+N[n].h/2});
+ function clip(a,b){const n=N[a],c=ctr(a);const dx=b.x-c.x,dy=b.y-c.y;if(!dx&&!dy)return c;const s=Math.min((n.w/2)/Math.abs(dx||1e-9),(n.h/2)/Math.abs(dy||1e-9));return{x:c.x+dx*s,y:c.y+dy*s}}
+ function allEdges(){const set=new Map();const all={...opts};Object.keys(cfg.toggles).forEach(k=>all[k]=true);Object.values(cfg.scenarios).forEach(sc=>[sc.build({...opts}),sc.build(all)].forEach(ss=>ss.forEach(s=>{if(s.f!==s.t)set.set([s.f,s.t].sort().join("|"),[s.f,s.t])})));return[...set.values()]}
+ function drawStatic(){let h=`<defs><marker id="sim-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="context-stroke"/></marker></defs>`;
+  h+=(cfg.groups||[]).map(g=>`<rect class="group" x="${g.x}" y="${g.y}" width="${g.w}" height="${g.h}" rx="14"/>${g.t?`<text class="glabel" x="${g.x+12}" y="${g.y+18}">${esc(g.t)}</text>`:""}`).join("");
+  EDGES=allEdges();h+=`<g>${EDGES.map(([a,b])=>{const p=clip(a,ctr(b)),r=clip(b,ctr(a));return `<line class="edge" data-e="${a}|${b}" x1="${p.x}" y1="${p.y}" x2="${r.x}" y2="${r.y}"/>`}).join("")}</g><g data-s="hot"></g>`;
+  h+=Object.entries(N).map(([k,n])=>{const tall=n.h>60;return `<g class="node" data-node="${k}" tabindex="0" role="button" aria-label="${esc(n.t)}: ${esc(n.s||"")}"><rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="${n.db?18:10}"/>${n.db?`<ellipse cx="${n.x+n.w/2}" cy="${n.y+16}" rx="${n.w/2-14}" ry="7" fill="none" stroke="var(--border-strong)"/>`:""}<text x="${n.x+n.w/2}" y="${n.y+n.h/2-(tall?8:2)}" text-anchor="middle">${esc(n.t)}</text>${n.s?`<text class="sub" x="${n.x+n.w/2}" y="${n.y+n.h/2+(tall?8:12)}" text-anchor="middle">${esc(n.s)}</text>`:""}</g>`}).join("");
+  h+=`<g data-s="packet"></g>`;svg.innerHTML=h}
+ function build(){steps=cfg.scenarios[scen].build({...opts});cur=-1;stop()}
+ function computeState(){const st=cfg.baseState(scen,opts);for(let i=0;i<=cur;i++)steps[i].fx&&steps[i].fx(st);return st}
+ function renderControls(){q("scen").innerHTML=Object.entries(cfg.scenarios).map(([k,s])=>`<button type="button" data-scen="${k}" aria-pressed="${k===scen}">${esc(s.t)}</button>`).join("");
+  const tg=cfg.scenarios[scen].toggles||[];q("tgcard").hidden=!tg.length;q("toggles").innerHTML=tg.map(k=>`<label class="tg"><input type="checkbox" data-tg="${k}" ${opts[k]?"checked":""}><span>${esc(cfg.toggles[k][0])}<small>${esc(cfg.toggles[k][1])}</small></span></label>`).join("");
+  const ex=cfg.extra?cfg.extra(scen,opts):null;q("extra").hidden=!ex;if(ex)q("extra").innerHTML=`<h2>${esc(ex.title)}</h2>${ex.html}`}
+ function renderLog(){q("log").innerHTML=steps.map((s,i)=>`<li class="${i<cur?"done":i===cur?"cur":""}"><button type="button" data-step="${i}"><span class="k" style="background:${color(s.k)}"></span><span>${esc(N[s.f].t)} → ${esc(N[s.t].t)}: ${esc(s.l)}</span></button></li>`).join("");const c=q("log").querySelector(".cur");if(c&&!root.hidden&&root.offsetParent)c.scrollIntoView({block:"nearest"})}
+ function renderNow(){const now=q("now"),pl=q("payload");q("bar").style.width=steps.length?`${(cur+1)/steps.length*100}%`:"0";
+  if(focus&&cur<0){const n=N[focus];const links=EDGES.filter(e=>e.includes(focus)).map(e=>N[e[0]===focus?e[1]:e[0]].t);now.style.borderColor="var(--violet)";now.innerHTML=`<span class="eyebrow">Component</span><b>${esc(n.t)}</b><p>${esc(n.info||"")}</p>${links.length?`<p><b style="font-size:12px">Talks to:</b> ${esc(links.join(", "))}</p>`:""}`;pl.hidden=true;return}
+  if(cur<0){const sc=cfg.scenarios[scen];now.style.borderColor="var(--accent)";now.innerHTML=`<span class="eyebrow">${esc(sc.t)}</span><b>${steps.length} steps · press Play</b><p>${esc(sc.intro||"Turn on a failure in “What can go wrong” to see how the system copes. Click any box for what it does.")}</p>`;pl.hidden=true;return}
+  const s=steps[cur];now.style.borderColor=color(s.k);now.innerHTML=`<span class="eyebrow">Step ${cur+1} of ${steps.length} · ${esc(N[s.f].t)} → ${esc(N[s.t].t)}</span><b>${esc(s.l)}</b><p>${esc(s.d||"")}</p>`;
+  if(s.p){pl.hidden=false;pl.textContent=s.p}else pl.hidden=true}
+ function renderState(){const st=computeState();q("state").innerHTML=cfg.scenarios[scen].state.map(([k,l])=>`<div class="${prev[k]!==undefined&&prev[k]!==st[k]?"changed":""}"><span>${esc(l)}</span><b title="${esc(st[k])}">${esc(st[k])}</b></div>`).join("");prev=st}
+ function label(x,y,t,k){const txt=t.length>46?t.slice(0,44)+"…":t;const w=Math.min(320,txt.length*6.8+18);const X=Math.max(4,Math.min(VW-4-w,x-w/2));q("packet").insertAdjacentHTML("beforeend",`<g class="plabel"><rect x="${X}" y="${y-11}" width="${w}" height="20" rx="10" style="fill:${color(k)}"/><text x="${X+w/2}" y="${y+3}" text-anchor="middle" style="fill:var(--bg)">${esc(txt)}</text></g>`)}
+ function renderMap(){const s=steps[cur];const inv=new Set(steps.flatMap(x=>[x.f,x.t]));
+  root.querySelectorAll(".node").forEach(g=>{const k=g.dataset.node;g.classList.toggle("active",!!s&&(s.f===k||s.t===k));
+   g.classList.toggle("dim",cur>=0||!focus?!inv.has(k):!(k===focus||EDGES.some(e=>e.includes(focus)&&e.includes(k))));g.classList.toggle("focus",focus===k);g.classList.toggle("down",!!(cfg.isDown&&cfg.isDown(k,opts,scen)))});
+  root.querySelectorAll(".edge").forEach(l=>{const [a,b]=l.dataset.e.split("|");const inS=steps.some(x=>(x.f===a&&x.t===b)||(x.f===b&&x.t===a));const foc=focus&&cur<0&&(a===focus||b===focus);l.classList.toggle("dim",foc?false:(focus&&cur<0)?true:!inS);l.style.stroke=foc?"var(--violet)":"";l.classList.toggle("hot",!!foc)});
+  q("hot").innerHTML="";q("packet").innerHTML="";cancelAnimationFrame(anim);if(!s)return;
+  if(s.f===s.t){const n=N[s.f];q("hot").innerHTML=`<rect x="${n.x-5}" y="${n.y-5}" width="${n.w+10}" height="${n.h+10}" rx="14" fill="none" stroke="${color(s.k)}" stroke-width="2.5"><animate attributeName="opacity" values="1;.25;1" dur="1s" repeatCount="indefinite"/></rect>`;label(ctr(s.f).x,n.y-16,s.l,s.k);return}
+  const p=clip(s.f,ctr(s.t)),r=clip(s.t,ctr(s.f));q("hot").innerHTML=`<line x1="${p.x}" y1="${p.y}" x2="${r.x}" y2="${r.y}" stroke="${color(s.k)}" stroke-width="2.5" ${s.k==="async"?'stroke-dasharray="6 4"':""} marker-end="url(#sim-arrow)"/>`;
+  const dur=900/speed,reduce=matchMedia("(prefers-reduced-motion: reduce)").matches,t0=performance.now();
+  const frame=t=>{const k=reduce?1:Math.min(1,(t-t0)/dur);const e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;q("packet").innerHTML=`<circle cx="${p.x+(r.x-p.x)*e}" cy="${p.y+(r.y-p.y)*e}" r="7" fill="${color(s.k)}" stroke="var(--bg)" stroke-width="2"/>`;label((p.x+r.x)/2,(p.y+r.y)/2-14,s.l,s.k);if(k<1)anim=requestAnimationFrame(frame)};anim=requestAnimationFrame(frame)}
+ function goTo(i){cur=Math.max(-1,Math.min(steps.length-1,i));if(cur>=0)focus=null;renderLog();renderNow();renderState();renderMap();q("prev").disabled=cur<0;q("next").disabled=cur>=steps.length-1}
+ function tick(){if(cur>=steps.length-1){stop();return}goTo(cur+1);timer=setTimeout(tick,2600/speed)}
+ function play(){if(cur>=steps.length-1)goTo(-1);playing=true;q("play").textContent="Pause";tick()}
+ function stop(){playing=false;clearTimeout(timer);q("play").textContent=cur>=steps.length-1&&steps.length?"Replay":"Play"}
+ function full(){build();renderControls();prev={};goTo(-1)}
+ root.addEventListener("click",e=>{const t=e.target.closest("[data-s],[data-scen],[data-speed],[data-step],[data-opt],.node");if(!t)return;
+  if(t.dataset.scen){scen=t.dataset.scen;focus=null;full()}
+  else if(t.dataset.speed){speed=+t.dataset.speed;root.querySelectorAll("[data-speed]").forEach(b=>b.setAttribute("aria-pressed",b===t))}
+  else if(t.dataset.step){stop();goTo(+t.dataset.step)}
+  else if(t.dataset.opt){opts[t.dataset.opt]=t.dataset.val;full()}
+  else if(t.classList.contains("node")){stop();const k=t.dataset.node;focus=focus===k?null:k;cur=-1;renderLog();renderNow();renderState();renderMap()}
+  else if(t.dataset.s==="play")playing?stop():play();
+  else if(t.dataset.s==="next"){stop();goTo(cur+1)}
+  else if(t.dataset.s==="prev"){stop();goTo(cur-1)}
+  else if(t.dataset.s==="restart"){stop();goTo(-1)}});
+ root.addEventListener("keydown",e=>{const n=e.target.closest?.(".node");if(n&&(e.key==="Enter"||e.key===" ")){e.preventDefault();n.dispatchEvent(new MouseEvent("click",{bubbles:true}))}});
+ root.addEventListener("change",e=>{const k=e.target.dataset.tg;if(!k)return;opts[k]=e.target.checked;cfg.onToggle&&cfg.onToggle(k,opts);full()});
+ drawStatic();full();
+ return{refresh(){renderMap()}}
+}
+
+/*META {"file":"orders-fulfilment","title":"TechShop Fulfilment","eyebrow":"Orders, inventory & fulfilment","heading":"Orders, inventory and fulfilment system","lead":"One order, two fulfilments: TechShop’s warehouse picks, packs and hands over its part while the vendor accepts and packs theirs against an SLA. Race two buyers for the last console, run a cycle count, then return a faulty laptop through inspection. The stock log on the right proves every change. Switch to System simulation for the backend."}*/
+const WH={ikeja:"Ikeja WH (Lagos)",abuja:"Wuse hub (Abuja)"};
+const fresh=()=>({frame:"customer",now:Date.now(),skew:0,
+ inv:{"kb14|ikeja":{name:"Kestrel Book 14 Business",sku:"KB14-I7-16-512",cost:1180000,on:5,res:1,bin:"A-03-2",serial:true},"pbp|ikeja":{name:"Pulse Buds Pro",sku:"PBP-ANC",cost:52000,on:39,res:1,bin:"C-11-4",serial:false},"ap5|ikeja":{name:"Arcadia Play 5 Console",sku:"AP5-1TB",cost:820000,on:1,res:0,bin:"B-07-1",serial:true},"o13|ikeja":{name:"Orbit One 13 (UK-used)",sku:"O13-128-UK",cost:520000,on:2,res:1,bin:"A-01-6",serial:true},"kb14|abuja":{name:"Kestrel Book 14 Business",sku:"KB14-I7-16-512",cost:1180000,on:2,res:0,bin:"—",serial:true},"vm27|ikeja":{name:"Vantage 27 QHD Monitor",sku:"VM27-QHD",cost:228000,on:0,res:0,bin:"D-02-1",serial:false}},
+ moves:[["09:00","kb14|ikeja",+6,"purchase_receipt","GRN-551"],["11:12","kb14|ikeja",-1,"sale","TS-10471"],["09:00","pbp|ikeja",+40,"purchase_receipt","GRN-548"],["12:40","pbp|ikeja",-1,"sale","TS-10477"],["09:00","ap5|ikeja",+1,"purchase_receipt","GRN-550"],["09:00","o13|ikeja",+2,"trade_in","TI-0731"],["09:00","kb14|abuja",+2,"transfer_in","TR-118"]],
+ units:{"kb14":["KB14-7Q2K-0931","KB14-7Q2K-0932","KB14-7Q2K-0933","KB14-7Q2K-0934","KB14-7Q2K-0935"],"o13":["356789104452212","356789104457719"]},
+ order:{n:"TS-10482",customer:"Adaeze Okafor",paid:true,f:[
+  {id:"A",seller:"TechShop",model:"TechShop warehouse · Ikeja",status:"pending",lines:[{key:"kb14",name:"Kestrel Book 14 Business",qty:1,price:1390000,serial:null,cancelled:false},{key:"pbp",name:"Pulse Buds Pro",qty:1,price:79000,cancelled:false}],weight:2.35},
+  {id:"B",seller:"Sabon Gari Mobile",model:"Seller-shipped · TechShop pickup",status:"pending",lines:[{key:"vpb",name:"Volt 20,000mAh Power Bank",qty:2,price:38500,cancelled:false}],acceptBy:Date.now()+4*3600e3,sellerStock:12}]},
+ wave:null,pack:{box:"M",weight:"",label:null,err:""},manifest:null,
+ race:null,count:null,ret:null,events:[],sla:[]});
+let st=fresh();
+const tnow=()=>new Date(Date.now()+st.skew*3600e3).toTimeString().slice(0,5);
+function move(key,delta,reason,ref){const l=st.inv[key];l.on+=delta;if(l.on<0)throw new Error("negative stock");st.moves.unshift([tnow(),key,delta,reason,ref])}
+const avail=l=>l.on-l.res;
+function ev(t){st.events.unshift(tnow()+" "+t)}
+const FST={pending:["Pending","st-warn"],accepted:["Accepted","st-info"],picking:["Picking","st-info"],packed:["Packed","st-info"],handed_over:["Handed over","st-violet"],in_transit:["Out for delivery","st-violet"],delivered:["Delivered","st-good"],cancelled:["Cancelled","st-bad"],returned:["Returned","st-bad"]};
+function orderStatus(){const fs=st.order.f.filter(f=>f.status!=="cancelled");if(!fs.length)return"cancelled";const s=fs.map(f=>f.status);if(s.every(x=>x==="delivered"))return"delivered";const shipped=s.filter(x=>["handed_over","in_transit","delivered"].includes(x)).length;if(shipped===s.length)return"shipped";if(shipped)return"partially_shipped";return s.some(x=>x!=="pending")?"processing":"paid"}
+const fA=()=>st.order.f[0],fB=()=>st.order.f[1];
+
+/* ================= Customer ================= */
+function customerView(){const o=st.order;const os=orderStatus();
+ return browser("market.techshop.ng","/orders/"+o.n,notice()+`<div class="appbar">${applogo("Market")}<span class="sm muted">${o.customer}</span></div><div class="container section stack" style="max-width:900px">
+ <div class="row between"><h1 style="font-size:28px">Order ${o.n}</h1><span class="badge badge-accent">Order status: ${os.replace("_"," ")}</span></div><p class="sm muted">The order’s status is derived from its parts. Each seller’s part moves on its own.</p>
+ ${o.f.map(f=>`<div class="panel"><div class="panel-h"><div><h3>Part ${f.id} · ${f.seller}</h3><span class="xs muted">${f.model}</span></div>${status(...FST[f.status])}</div><div class="panel-b">${f.lines.map((l,i)=>`<div class="row between nowrap"><span class="sm ${l.cancelled?"muted":""}" style="${l.cancelled?"text-decoration:line-through":""}">${l.qty} × ${l.name}${l.serial?` <span class="mono xs muted">${l.serial}</span>`:""}</span><span class="row nowrap"><b class="tnum sm">${naira(l.price*l.qty)}</b>${!l.cancelled&&["pending","accepted"].includes(f.status)&&f.lines.filter(x=>!x.cancelled).length>1?`<button class="btn btn-ghost btn-sm" type="button" data-act="cancelLine" data-f="${f.id}" data-i="${i}">Cancel item</button>`:""}${l.cancelled?`<span class="xs muted">Refunded</span>`:""}</span></div>`).join("")}
+ ${timeline(f)}${f.status==="in_transit"?`<div class="row"><span class="sm">Delivery code: <b class="mono">${f.otp}</b></span><button class="btn btn-secondary btn-sm" type="button" data-act="deliver" data-f="${f.id}">Demo: rider enters the code</button></div>`:""}
+ ${f.status==="delivered"&&f.id==="A"&&!st.ret?`<button class="btn btn-secondary btn-sm" type="button" data-act="startReturn" style="align-self:flex-start">Return the laptop (faulty)</button>`:""}${f.id==="A"&&st.ret?`<span class="sm">Return ${st.ret.rma}: <b>${st.ret.status}</b> <button class="link" type="button" data-act="frame" data-v="returns">open</button></span>`:""}</div></div>`).join("")}</div>`)}
+function timeline(f){const steps=f.id==="A"?["pending","picking","packed","handed_over","in_transit","delivered"]:["pending","accepted","packed","handed_over","in_transit","delivered"];if(f.status==="cancelled")return `<span class="sm" style="color:var(--danger)">Cancelled · ${esc(f.cancelReason||"")} · refunded automatically</span>`;const i=steps.indexOf(f.status);return `<div class="row xs" style="gap:4px">${steps.map((s,k)=>`<span class="badge ${k<=i?"badge-good":""}">${FST[s][0]}</span>`).join("→")}</div>`}
+
+/* ================= Warehouse ================= */
+function warehouseView(){const f=fA();let body="";
+ if(!st.wave)body=`<div class="empty"><b>No open wave</b><span class="sm muted">Paid fulfilments are released every 30 minutes as a pick list.</span><button class="btn btn-primary" type="button" data-act="releaseWave" ${f.status!=="pending"?"disabled":""}>Release the 14:30 wave</button></div>`;
+ else if(st.wave.status==="picking"){const w=st.wave;body=`<div class="row between"><h2 style="font-size:20px">Pick list ${w.id}</h2><span class="sm muted">Zone A–C · picker Musa</span></div>${table(["Bin","Item","Qty","Picked","Unit"],w.items.map(x=>[`<b class="mono">${x.bin}</b>`,esc(x.name),x.qty,x.picked>=x.qty?status("✓","st-good"):`${x.picked}/${x.qty}`,x.serial?(x.unit?`<span class="mono xs">${x.unit}</span>`:`<span class="xs muted">scan serial</span>`):"—"]))}
+  <form class="card stack" data-form="scan" novalidate style="background:var(--surface);border:0"><label class="sm" for="scan"><b>Scan</b> (bin, then item barcode or serial)</label><div class="row nowrap"><input class="input" id="scan" name="scan" autocomplete="off" placeholder="e.g. KB14-7Q2K-0931"><button class="btn btn-primary" type="submit">Enter</button></div>${w.err?`<span class="err">${esc(w.err)}</span>`:""}<div class="row xs"><span class="muted">Demo scans:</span>${w.items.filter(x=>x.picked<x.qty).map(x=>`<button class="link" type="button" data-act="scanAs" data-v="${x.serial?st.units[x.key][0]:x.sku}">${x.serial?st.units[x.key][0]:x.sku}</button>`).join(" ")}<button class="link" type="button" data-act="scanAs" data-v="AP5-1TB" style="color:var(--danger)">wrong item (AP5-1TB)</button></div></form>`}
+ else if(st.wave.status==="pack"){const p=st.pack;body=`<h2 style="font-size:20px">Pack ${st.order.n} · part A</h2><p class="sm muted">Expected weight ${f.weight} kg (items + box M). More than 10% off is flagged.</p><form class="stack" data-form="pack" novalidate><div class="form-grid">${field("pk-box","Box",p.box,{select:[["S","S · 30×20×10"],["M","M · 45×35×15"],["L","L · 60×40×30"]]})}${field("pk-w","Scale reading (kg)",p.weight,{inputmode:"decimal",err:p.err,hint:"Try 2.3 (ok) or 1.6 (something missing)"})}</div><button class="btn btn-primary" type="submit" style="align-self:flex-start">Weigh and print label</button></form>`}
+ else if(st.wave.status==="handover"){const m=st.manifest;body=`<h2 style="font-size:20px">Handover manifest ${m.id}</h2>${table(["Parcel","Order","Label","Scanned"],m.parcels.map(x=>[x.id,x.order,`<span class="mono xs">${x.label}</span>`,x.scanned?status("✓","st-good"):"—"]))}<div class="row"><button class="btn btn-secondary" type="button" data-act="manifestScan" ${m.parcels.every(x=>x.scanned)?"disabled":""}>Rider scans next parcel</button><button class="btn btn-primary" type="button" data-act="manifestSign" ${m.parcels.every(x=>x.scanned)?"":"disabled"}>Rider Emeka signs</button></div><span class="xs muted">Counts must match before the rider can sign. Then delivery jobs are created and the delivery code is texted.</span>`}
+ else body=`<div class="empty"><b>Wave done</b><span class="sm muted">Part A is with the rider. Follow it on the customer’s order page.</span><button class="btn btn-secondary btn-sm" type="button" data-act="frame" data-v="customer">Open the order</button></div>`;
+ return browser("wms.techshop.ng","/ikeja/wave",notice()+`<div class="appbar">${applogo("Warehouse · Ikeja")}<span class="sm muted">Tablet · Musa (warehouse)</span></div><div class="container section stack" style="max-width:900px"><div class="steps">${["Pick","Pack","Handover"].map((s,i)=>`<span class="${st.wave&&["picking","pack","handover","done"].indexOf(st.wave.status)>=i?"on":""}"><b>${i+1}</b>${s}</span>`).join("")}</div><div class="card" style="padding:20px">${body}</div></div>`)}
+
+/* ================= Seller ================= */
+function sellerView(){const f=fB();const left=Math.max(0,f.acceptBy-(Date.now()+st.skew*3600e3));const h=Math.floor(left/3600e3),m=Math.floor(left%3600e3/60000);
+ return browser("seller.techshop.ng","/orders",notice()+`<div class="appbar">${applogo("Seller Centre")}<span class="sm muted">Sabon Gari Mobile</span></div><div class="container section stack" style="max-width:900px"><h1 style="font-size:26px">Orders to ship</h1>
+ <div class="panel"><div class="panel-h"><div><h3>${st.order.n} · part B</h3><span class="xs muted">2 × Volt 20,000mAh Power Bank · ship to Lekki, Lagos</span></div>${status(...FST[f.status])}</div><div class="panel-b">
+ ${f.status==="pending"?`<div class="row between"><span class="sm">Accept within <b class="${h<2?"err":""}">${h} h ${m} min</b> (24 h SLA)</span><div class="row"><button class="btn btn-primary btn-sm" type="button" data-act="sAccept">Accept</button><button class="btn btn-ghost btn-sm" type="button" data-act="sCancel">Out of stock</button><button class="btn btn-secondary btn-sm" type="button" data-act="skip24">Demo: skip 24 hours</button></div></div>`:""}
+ ${f.status==="accepted"?`<div class="row"><button class="btn btn-primary btn-sm" type="button" data-act="sPack">Packed · print label</button><span class="xs muted">Pack within your 1-day handling time.</span></div>`:""}
+ ${f.status==="packed"?`<div class="row"><button class="btn btn-primary btn-sm" type="button" data-act="sPickup">Request TechShop pickup</button><button class="btn btn-secondary btn-sm" type="button" data-act="sCarrier">Use my carrier (enter tracking)</button></div>`:""}
+ ${["handed_over","in_transit","delivered"].includes(f.status)?`<span class="sm">${f.carrier?`Shipped with ${esc(f.carrier)} · tracking <span class="mono">${f.tracking}</span>`:"Collected by TechShop rider Aisha M."}</span>`:""}
+ ${f.status==="cancelled"?`<span class="sm" style="color:var(--danger)">${esc(f.cancelReason)}. The customer was refunded automatically and an SLA event was recorded.</span>`:""}
+ <span class="xs muted">Your stock for this listing: ${f.sellerStock} (reserved against when customers check out)</span></div></div>
+ <div class="panel"><div class="panel-h"><h3>SLA record (30 days)</h3></div>${table(["When","Event"],st.sla.map(x=>[x[0],x[1]]),{empty:"No breaches 👍"})}</div></div>`)}
+
+/* ================= Inventory ================= */
+function inventoryView(){const r=st.race,c=st.count;const ap=st.inv["ap5|ikeja"];
+ return browser("staff.techshop.ng","/inventory",notice()+`<div class="appbar">${applogo("Staff · Inventory")}</div><div class="main"><h1>Inventory</h1>
+ <div class="panel"><div class="panel-h"><h3>Stock by warehouse</h3><span class="xs muted">Available = on hand − reserved</span></div>${table(["Item","Warehouse","Bin","On hand","Reserved","Available"],Object.entries(st.inv).map(([k,l])=>[`<b>${esc(l.name)}</b><br><span class="mono xs muted">${l.sku}</span>`,WH[k.split("|")[1]],`<span class="mono">${l.bin}</span>`,String(l.on),String(l.res),avail(l)<=0?`<span class="badge badge-bad">${avail(l)}</span>`:avail(l)<=1?`<span class="badge badge-warn">${avail(l)}</span>`:String(avail(l))]))}</div>
+ <div class="grid2"><div class="panel"><div class="panel-h"><h3>Last-unit race</h3><span class="xs muted">Arcadia Play 5 · ${avail(ap)} available</span></div><div class="panel-b">
+ ${!r?`<p class="sm">Two buyers press “Pay” for the last console at the same moment.</p><button class="btn btn-primary btn-sm" type="button" data-act="race" style="align-self:flex-start" ${avail(ap)<1?"disabled":""}>Start the race</button>`:`<div class="code">${r.log.join("\n")}</div>${r.stage==="reserved"?`<div class="row"><button class="btn btn-secondary btn-sm" type="button" data-act="racePay">Buyer A pays</button><button class="btn btn-secondary btn-sm" type="button" data-act="raceExpire">Buyer A doesn’t pay (skip 31 min)</button></div>`:`<button class="btn btn-ghost btn-sm" type="button" data-act="raceReset" style="align-self:flex-start">Clear</button>`}`}</div></div>
+ <div class="panel"><div class="panel-h"><h3>Cycle count · Pulse Buds Pro</h3><span class="xs muted">Bin C-11-4</span></div><div class="panel-b">${!c?`<form class="row" data-form="count" novalidate><label class="sm" for="cnt">Counted</label><input class="input" id="cnt" name="cnt" inputmode="numeric" style="width:110px" placeholder="e.g. 36"><button class="btn btn-primary btn-sm" type="submit">Submit count</button></form><span class="xs muted">The counter doesn’t see the expected quantity (blind count).</span>`:`<span class="sm">Expected ${c.expected} · counted ${c.counted} · variance <b style="color:${c.diff?"var(--danger)":"var(--success)"}">${c.diff>0?"+":""}${c.diff}</b> (${naira(Math.abs(c.diff)*52000)} at cost)</span>${c.diff&&!c.done?`${Math.abs(c.diff)*52000>100000?`<span class="xs muted">Above ₦100,000: needs inventory.adjust ★ approval by a different person.</span>`:""}<button class="btn btn-primary btn-sm" type="button" data-act="approveCount" style="align-self:flex-start">Approve adjustment (as warehouse lead)</button>`:c.done?`<span class="sm">Adjustment posted: stock movement + write-off journal.</span>`:`<span class="sm">No variance.</span>`}<button class="btn btn-ghost btn-sm" type="button" data-act="countReset" style="align-self:flex-start">New count</button>`}</div></div></div></div>`)}
+
+/* ================= Returns ================= */
+function returnsView(){const r=st.ret;let body;
+ if(!r)body=`<div class="empty"><b>No returns yet</b><span class="sm muted">Deliver part A on the customer’s order page, then request a return.</span></div>`;
+ else body=`<div class="row between"><div><h2 style="font-size:20px">${r.rma} · Kestrel Book 14 · faulty</h2><span class="sm muted">Order ${st.order.n} · sold unit <span class="mono">${r.unit}</span></span></div>${status(r.status,r.status==="refunded"?"st-good":"st-info")}</div>
+ ${table(["Step","Result"],r.log.map(x=>[x[0],x[1]]))}
+ ${r.status==="received"?`<form class="card stack" data-form="inspect" novalidate style="background:var(--surface);border:0"><b class="sm">Inspect</b><div class="form-grid">${field("in-serial","Scan the returned unit’s serial",r.unit,{hint:"Change it to see a mismatch (swap fraud)"})}${field("in-grade","Grade",r.grade||"faulty",{select:[["A","A · like new"],["B","B · light wear"],["C","C · visible wear"],["faulty","Faulty"]]})}${field("in-disp","Disposition","repair",{select:[["restock_open_box","Restock as open box"],["repair","Repair, then refurbished stock"],["return_to_supplier","Back to supplier (warranty)"],["write_off","Write off"]]})}</div><button class="btn btn-primary btn-sm" type="submit" style="align-self:flex-start">Complete inspection</button></form>`:""}
+ ${r.status==="approved"?`<button class="btn btn-primary btn-sm" type="button" data-act="retPickup">Rider collects it (scan serial)</button>`:""}${r.status==="awaiting_pickup"?`<button class="btn btn-primary btn-sm" type="button" data-act="retReceive">Receive at Ikeja WH</button>`:""}`;
+ return browser("staff.techshop.ng","/returns",notice()+`<div class="appbar">${applogo("Staff · Returns")}</div><div class="main"><h1>Returns</h1><div class="card" style="padding:18px;gap:12px">${body}</div></div>`)}
+
+/* ================= Render ================= */
+function sidePanel(){const ok=Object.entries(st.inv).every(([k,l])=>st.moves.filter(m=>m[1]===k).reduce((a,m)=>a+m[2],0)===l.on);
+ return `<div class="card" style="width:100%;max-width:380px;gap:10px"><div class="row between"><b>Stock movements</b><span class="badge ${ok?"badge-good":"badge-bad"}">Σ movements = on hand ${ok?"✓":"✗"}</span></div><div class="tbl-wrap" style="max-height:330px;overflow:auto">${table(["When","Item","Δ","Reason"],st.moves.slice(0,14).map(m=>[m[0],`<span class="xs">${esc(st.inv[m[1]].name)}</span><br><span class="xs muted">${m[4]}</span>`,`<b style="color:${m[2]>0?"var(--success)":"var(--danger)"}">${m[2]>0?"+":""}${m[2]}</b>`,`<span class="mono xs">${m[3]}</span>`]))}</div><span class="xs muted">One code path changes stock: a movement row and the level update in the same transaction.</span></div>
+ <div class="card" style="width:100%;max-width:380px"><b class="sm">Events</b><div class="code" style="max-height:150px;overflow:auto">${st.events.slice(0,10).map(esc).join("\n")||"Outbox events appear here"}</div><button class="btn btn-ghost btn-sm" type="button" data-act="reset">Reset demo</button></div>`}
+function render(){const v={customer:customerView,warehouse:warehouseView,seller:sellerView,inventory:inventoryView,returns:returnsView}[st.frame]();
+ $("#ui-view").innerHTML=`<div class="pill-nav" role="group" aria-label="App" style="margin-bottom:12px;width:fit-content">${[["customer","Customer › Order","user"],["warehouse","Warehouse tablet","warehouse"],["seller","Seller Centre › Orders","store"],["inventory","Staff › Inventory","box"],["returns","Staff › Returns","returns"]].map(x=>`<button type="button" data-act="frame" data-v="${x[0]}" aria-pressed="${st.frame===x[0]}">${ic(x[2],14)}${x[1]}</button>`).join("")}</div><div class="duo">${v}<div class="side-col">${sidePanel()}</div></div>`}
+UI_RENDER=render;
+
+/* ================= Actions ================= */
+const otp=()=>String(Math.floor(100000+Math.random()*900000));
+Object.assign(ACT,{
+ reset:()=>{st=fresh();render();toast("Demo reset")},
+ frame:d=>{st.frame=d.v;render()},
+ cancelLine:d=>{const f=st.order.f.find(x=>x.id===d.f);const l=f.lines[+d.i];l.cancelled=true;if(f.id==="A"){st.inv[l.key+"|ikeja"].res-=l.qty}else f.sellerStock+=l.qty;ev(`line cancelled · reservation released · refund ${naira(l.price*l.qty)} requested`);toast("Item cancelled · refund on its way");render()},
+ releaseWave:()=>{const f=fA();f.status="picking";const items=f.lines.filter(l=>!l.cancelled).map(l=>{const inv=st.inv[l.key+"|ikeja"];return{key:l.key,name:l.name,qty:l.qty,picked:0,bin:inv.bin,sku:inv.sku,serial:inv.serial,unit:null}});st.wave={id:"W-1430-03",status:"picking",items,err:""};ev("wave W-1430-03 released · 1 pick list");render()},
+ scanAs:d=>{$("#scan").value=d.v;FORM.scan({scan:d.v})},
+ manifestScan:()=>{const p=st.manifest.parcels.find(x=>!x.scanned);p.scanned=true;render()},
+ manifestSign:()=>{const f=fA();f.status="handed_over";st.wave.status="done";f.lines.filter(l=>!l.cancelled).forEach(l=>{const inv=st.inv[l.key+"|ikeja"];inv.res-=l.qty;move(l.key+"|ikeja",-l.qty,"sale",st.order.n)});ev("manifest signed · fulfilment handed_over · delivery job created");setTimeout(()=>{f.status="in_transit";f.otp=otp();ev("rider en route · delivery code texted");render()},900);render()},
+ deliver:d=>{const f=st.order.f.find(x=>x.id===d.f);f.status="delivered";ev(`part ${f.id} delivered (OTP verified) · order status → ${orderStatus()}`);render()},
+ sAccept:()=>{fB().status="accepted";ev("seller accepted part B");render()},
+ sPack:()=>{fB().status="packed";render()},
+ sPickup:()=>{const f=fB();f.status="handed_over";ev("seller_pickup job · rider Aisha collected part B");setTimeout(()=>{f.status="in_transit";f.otp=otp();render()},900);render()},
+ sCarrier:()=>{const f=fB();f.status="handed_over";f.carrier="Interstate 3PL";f.tracking="3PL"+Math.floor(1e8+Math.random()*9e8);setTimeout(()=>{f.status="in_transit";f.otp=otp();render()},900);render()},
+ sCancel:()=>{const f=fB();f.status="cancelled";f.cancelReason="Seller cancelled: out of stock";st.sla.unshift([tnow(),"seller_cancel · "+st.order.n]);ev("seller cancelled part B · automatic refund · SLA event");render()},
+ skip24:()=>{st.skew+=24;const f=fB();if(f.status==="pending"){f.status="cancelled";f.cancelReason="Not accepted within 24 h (SLA)";f.sellerStock+=2;st.sla.unshift([tnow(),"late_accept · "+st.order.n]);ev("SLA job: part B auto-cancelled · refund · seller notified")}render()},
+ race:()=>{const l=st.inv["ap5|ikeja"];const log=["14:31:07.120  A: UPDATE … SET reserved = reserved + 1 WHERE on_hand - reserved >= 1","14:31:07.121  B: same statement → waits for A’s row lock"];l.res+=1;log.push("14:31:07.134  A: 1 row → reservation R-77 (expires 15:01) · order TS-10490","14:31:07.135  B: 0 rows → 409 out_of_stock · “Just sold out” + alternatives");st.race={stage:"reserved",log};ev("last-unit race: A reserved, B got 409");render()},
+ racePay:()=>{const l=st.inv["ap5|ikeja"];l.res-=1;move("ap5|ikeja",-1,"sale","TS-10490");st.race.log.push("14:32  A paid → reservation committed: on_hand 1→0, reserved 1→0");st.race.stage="done";render()},
+ raceExpire:()=>{const l=st.inv["ap5|ikeja"];l.res-=1;st.race.log.push("15:02  expiry job: provider says unpaid → reservation released (available 0→1)");st.race.stage="done";ev("reservation R-77 expired and released");render()},
+ raceReset:()=>{st.race=null;render()},
+ approveCount:()=>{const c=st.count;move("pbp|ikeja",c.diff,c.diff<0?"write_off":"adjustment","COUNT-0912");c.done=true;ev(`count variance ${c.diff} posted · ${c.diff<0?"Dr expense:inventory_shrinkage / Cr asset:inventory":"inventory gain"}`);render()},
+ countReset:()=>{st.count=null;render()},
+ startReturn:()=>{const unit=fA().lines[0].serial||st.units.kb14[0];st.ret={rma:"RMA-2041",status:"approved",unit,log:[["Requested","Faulty: screen flickers · photos attached"],["Auto-approved","Faulty within 7 days · customer in good standing"]]};st.frame="returns";ev("return RMA-2041 auto-approved · return pickup job");render()},
+ retPickup:()=>{const r=st.ret;r.status="awaiting_pickup";r.log.push(["Collected","Rider scanned serial "+r.unit+" ✓"]);render()},
+ retReceive:()=>{const r=st.ret;r.status="received";r.log.push(["Received","Ikeja WH · 15:10"]);render()}
+});
+FORM.scan=v=>{const w=st.wave;const code=(v.scan||"").trim().toUpperCase();w.err="";
+ const it=w.items.find(x=>x.picked<x.qty&&(x.serial?st.units[x.key].includes(code):x.sku===code));
+ if(!it){w.err=code?`“${code}” isn’t on this pick list — put it back (wrong item blocked).`:"Scan something first.";render();return}
+ it.picked++;if(it.serial){it.unit=code;const l=fA().lines.find(x=>x.key===it.key);l.serial=code;st.units[it.key]=st.units[it.key].filter(u=>u!==code);ev(`unit ${code} bound to order line (device_units: reserved)`)}
+ if(w.items.every(x=>x.picked>=x.qty)){w.status="pack";fA().status="picking"}render()};
+FORM.pack=v=>{const p=st.pack,f=fA();p.box=v["pk-box"];const wgt=parseFloat(v["pk-w"]);p.weight=v["pk-w"];if(!wgt){p.err="Enter the scale reading.";render();return}const exp=f.lines.filter(l=>!l.cancelled).length===1?2.1:f.weight;if(Math.abs(wgt-exp)/exp>.1){p.err=`${wgt} kg is more than 10% off the expected ${exp} kg — check for a missing or wrong item.`;render();return}
+ p.err="";p.label="TS10482-A-"+Math.random().toString(36).slice(2,7).toUpperCase();f.status="packed";st.wave.status="handover";st.manifest={id:"MF-0331",parcels:[{id:"P-1",order:st.order.n,label:p.label,scanned:false},{id:"P-2",order:"TS-10479",label:"TS10479-A-9QK2M",scanned:false}]};ev("packed · label "+p.label);render()};
+FORM.count=v=>{const n=parseInt(v.cnt,10);if(isNaN(n))return;const l=st.inv["pbp|ikeja"];st.count={expected:l.on,counted:n,diff:n-l.on};render()};
+FORM.inspect=v=>{const r=st.ret;const s=v["in-serial"].trim().toUpperCase();if(s!==r.unit){r.status="rejected";r.log.push(["Inspection","Serial "+s+" ≠ sold unit "+r.unit+" → rejected · risk case opened (swap fraud)"]);ev("return rejected: serial mismatch · risk case");render();return}
+ r.grade=v["in-grade"];const disp=v["in-disp"];r.log.push(["Inspection",`Serial matches ✓ · grade ${r.grade} · ${disp.replace(/_/g," ")}`]);
+ if(disp!=="write_off"&&disp!=="return_to_supplier"){move("kb14|ikeja",+1,"return",r.rma);st.inv["kb14|ikeja"].name="Kestrel Book 14 Business"}
+ r.log.push(["Refund","₦1,390,000 approved by finance (dual control) → refunded to card"]);r.status="refunded";ev("refund posted · see payments-finance");render()};
+render();
+
+/* ================= Simulation ================= */
+window.SIM_INSTANCE=createSim($("#sim-view"),{
+ viewBox:[1100,640],
+ nodes:{
+  buyerA:{x:20,y:40,w:140,h:50,t:"Buyer A",s:"",info:"A customer checking out."},
+  buyerB:{x:20,y:120,w:140,h:50,t:"Buyer B",s:"",info:"Another customer, same item, same moment."},
+  seller:{x:20,y:250,w:140,h:50,t:"Seller",s:"Seller Centre",info:"Accepts, packs and hands over seller-shipped fulfilments within SLAs."},
+  picker:{x:20,y:360,w:140,h:50,t:"Warehouse staff",s:"tablet scanner",info:"Receives, picks, packs and hands over with scans at every step."},
+  rider:{x:20,y:470,w:140,h:50,t:"Rider",s:"logistics app",info:"Collects parcels on a manifest; delivers with the customer’s code; collects returns."},
+  orders:{x:215,y:60,w:115,h:50,t:"orders",s:"derived status",info:"Orders, fulfilments, line snapshots; derives the order status from fulfilments."},
+  inventory:{x:345,y:60,w:115,h:50,t:"inventory",s:"reserve · commit",info:"The single stock code path: conditional reservation, commit on payment, release on expiry, movements."},
+  payments:{x:475,y:60,w:115,h:50,t:"payments",s:"",info:"Payment confirmation triggers commit; cancellations trigger refunds."},
+  wms:{x:215,y:170,w:115,h:50,t:"wms",s:"waves · scans",info:"Receiving, waves, pick lists, scan validation, packing, labels, manifests, cycle counts."},
+  fulfil:{x:345,y:170,w:115,h:50,t:"fulfilment",s:"SLAs · carriers",info:"Fulfilment state machine, seller SLAs, carrier bookings and tracking, delivery job creation."},
+  returns:{x:475,y:170,w:115,h:50,t:"returns",s:"RMA · inspect",info:"Return requests, auto-approval, reverse pickups, inspection, grading and dispositions."},
+  worker:{x:215,y:280,w:115,h:50,t:"River worker",s:"cron · jobs",info:"Reservation expiry, wave release, SLA checks, carrier polling, nightly stock integrity."},
+  logistics:{x:345,y:280,w:115,h:50,t:"logistics",s:"delivery jobs",info:"Delivery and pickup jobs, OTP, riders (see the mobile plan)."},
+  risk:{x:475,y:280,w:115,h:50,t:"risk",s:"cases",info:"Blocked IMEIs at receiving, serial mismatches on returns."},
+  pg:{x:300,y:470,w:320,h:110,t:"PostgreSQL",s:"inventory_levels · movements · device_units",db:true,info:"Row locks and conditional updates make reservations race-free; check (reserved <= on_hand) is the last line of defence."},
+  carrier:{x:780,y:120,w:150,h:50,t:"3PL carrier",s:"interstate",info:"Quote, book, label and tracking webhooks behind carrier.Port."},
+  customer:{x:780,y:300,w:150,h:50,t:"Customer",s:"order page · SMS",info:"Sees each part move; gets delivery codes and status messages."}
+ },
+ groups:[{x:200,y:30,w:405,h:315,t:"Go API + worker"}],
+ opts:{race:true,unpaid:false,wrong:false,weight:false,breach:false,mismatch:false,vendor:false,lost:false,blocked:false},
+ toggles:{race:["Two buyers race for the last unit","Only one reservation succeeds"],unpaid:["Winner never pays","Reservation expires and is released"],wrong:["Picker scans the wrong item","Blocked at the scanner"],weight:["Parcel weighs 30% less","Packing flagged"],breach:["Seller doesn’t accept in 24 h","Auto-cancel + refund + SLA event"],mismatch:["Returned serial isn’t the one sold","Rejected + risk case"],vendor:["Returned item was a vendor’s","Vendor payable debited"],lost:["Carrier loses the parcel","Claim + replacement"],blocked:["Received IMEI is on the blocklist","Never enters stock"]},
+ baseState:()=>({available:1,reserved:0,orderA:"—",orderB:"—",fulfil:"—",order:"—",unit:"—",ret:"—",stock:"—",sla:0}),
+ scenarios:{
+  reserve:{t:"Checkout & last-unit race",toggles:["race","unpaid"],state:[["available","Available"],["reserved","Reserved"],["orderA","Buyer A"],["orderB","Buyer B"]],
+   build:o=>[
+    R("buyerA","orders","POST /orders (last console)",""),
+    ...(o.race?[R("buyerB","orders","POST /orders (same unit)","Arrives within the same millisecond.")]:[]),
+    R("orders","inventory","reserve (in the order transaction)",""),
+    R("inventory","pg","A: conditional UPDATE","",`UPDATE inventory_levels SET reserved = reserved + 1\nWHERE warehouse_id=$1 AND variant_id=$2 AND condition='new'\n  AND on_hand - reserved >= 1\nRETURNING on_hand, reserved;`,s=>{s.available=0;s.reserved=1;s.orderA="reserved (expires 30 min)"}),
+    ...(o.race?[F("inventory","buyerB","B: 0 rows → 409 out_of_stock","B’s identical statement waited for A’s row lock, then saw no stock. No oversell.",null,s=>{s.orderB="409 · just sold out"})]:[]),
+    ...(o.unpaid?[
+     A("worker","payments","30 min: verify with provider","Unpaid confirmed."),
+     R("worker","inventory","release reservation R-77","Exactly what was reserved, from stock_reservations.",null,s=>{s.available=1;s.reserved=0;s.orderA="cancelled (unpaid)"})
+    ]:[
+     A("payments","inventory","order.paid → commit","on_hand −1, reserved −1, a sale stock movement — one transaction.",null,s=>{s.reserved=0;s.orderA="paid"}),
+     R("inventory","pg","movement + level","",null)
+    ])
+   ]},
+  pickpack:{t:"Pick, pack & hand over",toggles:["wrong","weight"],state:[["fulfil","Fulfilment"],["unit","Serial bound"],["order","Order status"]],
+   build:o=>[
+    A("worker","wms","14:30 wave release","Paid fulfilments for Ikeja grouped into pick lists by zone.",null,s=>{s.fulfil="picking";s.order="processing"}),
+    R("picker","wms","scan bin A-03-2",""),
+    ...(o.wrong?[F("picker","wms","scan AP5-1TB → rejected","Not on the pick list. The tablet won’t advance.")]:[]),
+    R("picker","wms","scan serial KB14-7Q2K-0931","The unit is bound to the order line (device_units: reserved).",null,s=>{s.unit="KB14-7Q2K-0931"}),
+    R("wms","pg","pick_list_items.picked, device_unit_id",""),
+    R("picker","wms","weigh + label",o.weight?"1.6 kg vs expected 2.35 kg.":"2.3 kg vs expected 2.35 kg ✓"),
+    ...(o.weight?[F("wms","picker","flagged: check contents","Missing earbuds found; re-scanned; weighed again ✓")]:[]),
+    R("wms","fulfil","packed + parcel label",null,null,s=>{s.fulfil="packed"}),
+    R("rider","wms","manifest scan (2 of 2 parcels)",""),
+    R("wms","fulfil","handed_over",""),
+    R("fulfil","inventory","commit sale movement",""),
+    R("fulfil","logistics","create delivery job + OTP","",null,s=>{s.fulfil="handed_over";s.order="partially_shipped"}),
+    A("logistics","customer","SMS: on its way + delivery code","Part B (vendor) is still pending, so the order is partially shipped.")
+   ]},
+  seller:{t:"Seller-shipped with SLA",toggles:["breach"],state:[["fulfil","Part B"],["order","Order status"],["sla","SLA events"]],
+   build:o=>[
+    A("orders","fulfil","part B pending · accept_by +24 h","",null,s=>{s.fulfil="pending"}),
+    A("fulfil","seller","new order (push + email)",""),
+    ...(o.breach?[
+     A("worker","fulfil","SLA check: accept_by passed","",null,s=>{s.fulfil="cancelled"}),
+     F("fulfil","payments","auto-refund the line","Customer refunded without asking.",null,s=>{s.order="partially cancelled"}),
+     A("fulfil","pg","seller_sla_events: late_accept","Three in 30 days → listings reviewed.",null,s=>{s.sla=1}),
+     A("fulfil","customer","sorry + alternatives","")
+    ]:[
+     R("seller","fulfil","accept",""),R("seller","fulfil","packed + label","",null,s=>{s.fulfil="packed"}),
+     R("seller","fulfil","request TechShop pickup",""),
+     R("fulfil","logistics","seller_pickup job","A rider collects from the seller, then delivers.",null,s=>{s.fulfil="handed_over";s.order="shipped"})
+    ])
+   ]},
+  interstate:{t:"Interstate carrier",toggles:["lost"],state:[["fulfil","Fulfilment"]],
+   build:o=>[
+    R("fulfil","carrier","quote + book (Kano)","carrier.Port: weight, dimensions, from Ikeja to Kano."),
+    S("carrier","fulfil","tracking no. + label PDF",""),
+    R("rider","carrier","handover at the carrier hub","Manifest scan.",null,s=>{s.fulfil="handed_over"}),
+    A("carrier","fulfil","webhook: in_transit (Abuja hub)","Signed; mapped to fulfilment states.",null,s=>{s.fulfil="in_transit"}),
+    ...(o.lost?[F("carrier","fulfil","no scan for 5 days","Marked lost: a claim is filed with the carrier; replacement order created from stock; customer told.",null,s=>{s.fulfil="lost · replaced"})]:[
+     A("carrier","fulfil","webhook: delivered (POD)","",null,s=>{s.fulfil="delivered"}),
+     A("fulfil","customer","delivered","")])
+   ]},
+  returns:{t:"Return & inspection",toggles:["mismatch","vendor"],state:[["ret","Return"],["stock","Restocked"]],
+   build:o=>[
+    R("customer","returns","request return (faulty)","Within 7 days; photos.",null,s=>{s.ret="requested"}),
+    R("returns","returns","auto-approve rule","Faulty ≤ 7 days, good standing.",null,s=>{s.ret="approved"}),
+    R("returns","logistics","return pickup job",""),
+    R("rider","logistics","collect + scan serial",""),
+    R("picker","wms","receive at Ikeja","",null,s=>{s.ret="received"}),
+    ...(o.mismatch?[F("wms","returns","serial ≠ sold unit","A different laptop came back.",null,s=>{s.ret="rejected"}),A("returns","risk","risk case: swap fraud","Customer contacted; refund blocked.")]:[
+     R("picker","returns","inspect: grade + disposition","Serial matches · faulty · repair then refurbished stock."),
+     R("returns","inventory","return movement (+1, refurbished after repair)","",null,s=>{s.stock="after repair"}),
+     R("returns","payments",o.vendor?"refund (Dr seller_payable)":"refund (reverse revenue + VAT)","Dual-control approval in finance.",null,s=>{s.ret="refunded"})
+    ])
+   ]},
+  receive:{t:"Receiving stock",toggles:["blocked"],state:[["stock","Units received"]],
+   build:o=>[
+    R("picker","wms","receive PO-2207 (20 phones)","Scan each IMEI (Luhn-checked)."),
+    R("wms","risk","check device_blocklist",""),
+    ...(o.blocked?[F("risk","wms","1 IMEI reported stolen","That unit is quarantined, never enters stock; supplier contacted; risk case.",null,s=>{s.stock="19 of 20"})]:[S("risk","wms","all clear","",null,s=>{s.stock="20 of 20"})]),
+    R("wms","inventory","goods receipt → movements","purchase_receipt movements + device_units rows."),
+    R("inventory","pg","levels + movements (one tx)","")
+   ]}
+ }
+});
+
+initViews();
+</script>

@@ -1,0 +1,672 @@
+<title>TechShop Search</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Tokens mirror shared/design-tokens. */
+:root{
+  --bg:#ffffff; --surface:#f4f5f7; --raised:#ffffff; --inverse:#111214;
+  --text:#16171a; --muted:#5f6368; --subtle:#6b7078; --text-inverse:#f7f8fa;
+  --border:#d9dbe0; --border-strong:#8e939b;
+  --accent:#1a56f0; --accent-hover:#1546c8; --accent-subtle:#e8efff; --on-accent:#ffffff; --link:#1a56f0;
+  --sale:#d1242f; --promo:#c2410c; --sale-fill:#d1242f; --promo-fill:#c2410c; --on-fill:#ffffff;
+  --rating:#f5a524; --success:#1a7f37; --warning:#9a6700; --danger:#d1242f; --violet:#7c3aed;
+  --success-subtle:#e6f4ea; --danger-subtle:#fdecee; --warning-subtle:#fdf6e3; --promo-subtle:#fdf0e7; --violet-subtle:#f1eafd;
+  --chrome:#e9ebef; --stage:#eceef2; --edge:#c9ccd3;
+  --shadow:0 4px 16px rgb(0 0 0 / .08); --shadow-lg:0 12px 32px rgb(0 0 0 / .14);
+  --font:"Geist",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --r-sm:8px; --r-md:12px; --r-lg:18px; --r-xl:28px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0b0c0e; --surface:#16181c; --raised:#1d2025; --inverse:#f4f5f7;
+  --text:#f2f3f5; --muted:#a3a8b0; --subtle:#8d939b; --text-inverse:#16171a;
+  --border:#2c3036; --border-strong:#5b616a;
+  --accent:#2563eb; --accent-hover:#3b74f5; --accent-subtle:#16244a; --link:#6b9bff;
+  --sale:#ff6b6b; --promo:#fb8c4b; --success:#4ac26b; --warning:#e3b341; --danger:#ff6b6b; --violet:#a78bfa;
+  --success-subtle:#12301c; --danger-subtle:#3a1619; --warning-subtle:#33280c; --promo-subtle:#3a2112; --violet-subtle:#261b42;
+  --chrome:#1a1c20; --stage:#08090a; --edge:#33373e;
+  --shadow:0 4px 16px rgb(0 0 0 / .45); --shadow-lg:0 12px 32px rgb(0 0 0 / .55);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0b0c0e; --surface:#16181c; --raised:#1d2025; --inverse:#f4f5f7;
+  --text:#f2f3f5; --muted:#a3a8b0; --subtle:#8d939b; --text-inverse:#16171a;
+  --border:#2c3036; --border-strong:#5b616a;
+  --accent:#2563eb; --accent-hover:#3b74f5; --accent-subtle:#16244a; --link:#6b9bff;
+  --sale:#ff6b6b; --promo:#fb8c4b; --success:#4ac26b; --warning:#e3b341; --danger:#ff6b6b; --violet:#a78bfa;
+  --success-subtle:#12301c; --danger-subtle:#3a1619; --warning-subtle:#33280c; --promo-subtle:#3a2112; --violet-subtle:#261b42;
+  --chrome:#1a1c20; --stage:#08090a; --edge:#33373e;
+  --shadow:0 4px 16px rgb(0 0 0 / .45); --shadow-lg:0 12px 32px rgb(0 0 0 / .55);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--stage);color:var(--text);font-family:var(--font);font-size:14.5px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3,h4{margin:0;line-height:1.2;letter-spacing:-.015em;text-wrap:balance}
+p{margin:0}
+.tnum{font-variant-numeric:tabular-nums}.mono{font-family:var(--mono)}
+.muted{color:var(--muted)}.subtle{color:var(--subtle)}.xs{font-size:12px}.sm{font-size:13.5px}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+
+/* Page shell */
+.wrap{max-width:1500px;margin:0 auto;padding:14px 16px 40px;display:flex;flex-direction:column;gap:14px}
+.top{display:flex;flex-wrap:wrap;gap:10px 20px;justify-content:space-between;align-items:flex-end}
+.top h1{font-size:22px}
+.top p.lead{color:var(--muted);font-size:13px;max-width:78ch}
+.brand{display:flex;align-items:center;gap:8px}
+.mark{width:26px;height:26px;border-radius:8px;background:var(--inverse);display:grid;place-items:center;flex:none}
+.mark svg{stroke:var(--text-inverse)}
+.viewtabs{display:flex;gap:4px;padding:4px;background:var(--raised);border:1px solid var(--border);border-radius:999px}
+.viewtabs button{border:0;background:transparent;padding:8px 16px;border-radius:999px;font-size:13.5px;font-weight:600;color:var(--muted);white-space:nowrap}
+.viewtabs button[aria-selected="true"]{background:var(--inverse);color:var(--text-inverse)}
+.pill-nav{display:flex;gap:4px;padding:4px;background:var(--raised);border:1px solid var(--border);border-radius:999px;overflow-x:auto;max-width:100%;scrollbar-width:none;min-width:0}
+.pill-nav button{border:0;background:transparent;padding:6px 12px;border-radius:999px;font-size:13px;font-weight:500;color:var(--muted);white-space:nowrap;display:flex;align-items:center;gap:6px}
+.pill-nav button[aria-pressed="true"]{background:var(--inverse);color:var(--text-inverse)}
+
+/* Frames */
+.browser{background:var(--bg);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column;min-width:0}
+.browser-bar{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--chrome);border-bottom:1px solid var(--border)}
+.dots{display:flex;gap:6px}.dots i{width:10px;height:10px;border-radius:50%;background:var(--border-strong);opacity:.6}
+.url{flex:1;min-width:0;display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:999px;padding:4px 12px;font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.page{min-height:600px;min-width:0}
+.phone{width:360px;max-width:100%;height:720px;background:var(--bg);border:10px solid var(--inverse);border-radius:44px;overflow:hidden;position:relative;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;flex:none}
+.phone-notch{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:100px;height:24px;background:var(--inverse);border-radius:20px;z-index:5}
+.phone-screen{flex:1;overflow-y:auto;padding-top:42px;position:relative}
+.duo{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
+@media (min-width:1180px){.duo{grid-template-columns:minmax(0,1fr) 360px}}
+.duo>.side-col{display:flex;flex-direction:column;gap:12px;align-items:center}
+.notice{background:var(--accent-subtle);color:var(--text);font-size:12px;text-align:center;padding:4px 12px}
+
+/* Components */
+.container{width:100%;max-width:1200px;margin:0 auto;padding-inline:clamp(14px,3vw,28px)}
+.section{padding-block:22px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 18px;border-radius:999px;border:1px solid transparent;background:transparent;font-weight:600;font-size:13.5px;color:var(--text);white-space:nowrap;transition:background-color .15s,border-color .15s,transform .15s}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--accent);color:var(--on-accent)}.btn-primary:hover{background:var(--accent-hover)}
+.btn-secondary{border-color:var(--border-strong)}.btn-secondary:hover{border-color:var(--text)}
+.btn-inverse{background:var(--inverse);color:var(--text-inverse)}
+.btn-danger{background:var(--danger);color:var(--on-fill)}
+.btn-ghost:hover{background:var(--surface)}
+.btn-sm{min-height:32px;padding:0 12px;font-size:12.5px}
+.btn-lg{min-height:50px;padding:0 24px;font-size:15px}
+.btn-block{width:100%}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.icon-btn{width:38px;height:38px;border-radius:999px;border:0;background:transparent;display:grid;place-items:center;color:var(--text);position:relative}
+.icon-btn:hover{background:var(--surface)}
+.count{position:absolute;top:1px;right:1px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:var(--accent);color:var(--on-accent);font-size:10.5px;font-weight:600;display:grid;place-items:center}
+.link{color:var(--link);text-decoration:underline;text-underline-offset:.2em;text-decoration-color:transparent;background:none;border:0;padding:0;font-weight:500;cursor:pointer}
+.link:hover{text-decoration-color:currentColor}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border-radius:4px;font-size:11.5px;font-weight:600;background:var(--surface);color:var(--text);width:fit-content;white-space:nowrap}
+.badge-accent{background:var(--accent-subtle);color:var(--link)}
+.badge-good{background:var(--success-subtle);color:var(--success)}
+.badge-warn{background:var(--warning-subtle);color:var(--warning)}
+.badge-bad{background:var(--danger-subtle);color:var(--danger)}
+.badge-violet{background:var(--violet-subtle);color:var(--violet)}
+.badge-outline{background:transparent;border:1px solid var(--border)}
+.card{background:var(--raised);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.stack{display:flex;flex-direction:column;gap:12px;min-width:0}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.nowrap{flex-wrap:nowrap}
+.between{justify-content:space-between}
+.grow{flex:1;min-width:0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-size:13px;font-weight:500}
+.field input,.field select,.field textarea,.input{min-height:40px;padding:7px 11px;border:1px solid var(--border-strong);border-radius:var(--r-sm);background:var(--bg);font-size:14.5px;width:100%;min-width:0}
+.field textarea{min-height:90px;resize:vertical}
+.field [aria-invalid="true"]{border-color:var(--danger)}
+.err{font-size:12px;color:var(--danger)}
+.hint{font-size:12px;color:var(--muted)}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.check{display:flex;align-items:center;gap:10px;min-height:30px;font-size:13.5px;cursor:pointer}
+.check input{width:17px;height:17px;accent-color:var(--accent);flex:none}
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+thead th{font-size:11.5px;font-weight:500;color:var(--muted);background:var(--surface)}
+tbody tr:hover{background:var(--surface)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.status{display:inline-flex;align-items:center;gap:6px}
+.status::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--subtle);flex:none}
+.st-good::before{background:var(--success)}.st-warn::before{background:var(--warning)}.st-info::before{background:var(--accent)}.st-bad::before{background:var(--danger)}.st-violet::before{background:var(--violet)}
+.toast{pointer-events:none;position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--inverse);color:var(--text-inverse);padding:10px 18px;border-radius:999px;font-size:13.5px;box-shadow:var(--shadow-lg);z-index:100;max-width:calc(100vw - 32px)}
+.empty{border:1px dashed var(--border-strong);border-radius:var(--r-lg);padding:28px 18px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px}
+.modal-back{position:fixed;inset:0;background:rgb(10 11 13 / .55);display:grid;place-items:center;z-index:90;padding:16px}
+.modal{background:var(--bg);border-radius:var(--r-lg);max-width:440px;width:100%;padding:22px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow-lg)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi b{font-size:21px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.kpi .delta{font-size:11.5px;color:var(--success)}
+.panel{background:var(--raised);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;min-width:0}
+.panel-h{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:11px 14px;border-bottom:1px solid var(--border)}
+.panel-h h3{font-size:14.5px}
+.panel-b{padding:14px;display:flex;flex-direction:column;gap:12px}
+.seg{display:inline-flex;border:1px solid var(--border-strong);border-radius:999px;overflow:hidden;flex:none}
+.seg button{border:0;background:transparent;padding:0 11px;min-height:32px;font-size:12.5px;color:var(--muted);white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--inverse);color:var(--text-inverse)}
+.switch{width:44px;height:26px;border-radius:999px;border:0;background:var(--border-strong);position:relative;flex:none;padding:0}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--bg);transition:transform .2s}
+.switch[aria-checked="true"]{background:var(--success)}.switch[aria-checked="true"]::after{transform:translateX(18px)}
+.switch[disabled]{opacity:.5;cursor:not-allowed}
+.steps{display:flex;gap:8px;font-size:12.5px;color:var(--muted);flex-wrap:wrap}
+.steps span{display:flex;align-items:center;gap:6px}
+.steps b{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--border-strong);font-size:11.5px}
+.steps .on{color:var(--text);font-weight:500}.steps .on b{background:var(--accent);border-color:transparent;color:var(--on-accent)}
+.bar{height:8px;background:var(--surface);border-radius:8px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:8px;transition:width .4s}
+.code{font-family:var(--mono);font-size:12px;background:var(--surface);border-radius:8px;padding:8px 10px;white-space:pre-wrap;word-break:break-word}
+
+/* App shell (staff-style) */
+.appbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg)}
+.applogo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:16px}
+.applogo small{font-weight:500;font-size:12.5px;color:var(--muted);padding-left:8px;border-left:1px solid var(--border-strong)}
+.shell{display:grid;grid-template-columns:minmax(0,1fr);min-height:620px}
+@media (min-width:960px){.shell{grid-template-columns:210px minmax(0,1fr)}}
+.side{border-right:1px solid var(--border);padding:14px 10px;display:flex;flex-direction:column;gap:2px;background:var(--bg)}
+@media (max-width:959px){.side{border-right:0;border-bottom:1px solid var(--border);flex-direction:row;overflow-x:auto;padding:8px}.side .grp-t{display:none}}
+.grp-t{font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:8px 10px 4px}
+.side button{border:0;background:transparent;display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:var(--r-sm);font-size:13.5px;color:var(--muted);white-space:nowrap;text-align:left}
+.side button:hover{background:var(--surface);color:var(--text)}
+.side button[aria-current="page"]{background:var(--accent-subtle);color:var(--link);font-weight:600}
+.main{padding:18px clamp(14px,2.4vw,26px);display:flex;flex-direction:column;gap:16px;min-width:0}
+.main h1{font-size:24px}
+
+/* Mobile app pieces */
+.app-head{position:sticky;top:0;z-index:3;background:var(--bg);padding:6px 16px 10px;display:flex;flex-direction:column;gap:8px;border-bottom:1px solid var(--border)}
+.app-body{padding:14px 16px 24px;display:flex;flex-direction:column;gap:14px}
+.lock{position:absolute;inset:0;background:linear-gradient(160deg,#1f2a44,#0d0f14);color:#fff;padding:60px 14px 20px;display:flex;flex-direction:column;gap:10px;z-index:4}
+.lock .time{font-size:56px;font-weight:300;text-align:center;letter-spacing:-.02em;line-height:1}
+.lock .date{text-align:center;font-size:14px;opacity:.85;margin-bottom:14px}
+.notif{background:rgb(255 255 255 / .16);backdrop-filter:blur(8px);border-radius:16px;padding:10px 12px;display:flex;gap:10px;align-items:flex-start;font-size:13px;color:#fff;border:0;text-align:left;width:100%}
+.notif .ap{width:30px;height:30px;border-radius:8px;background:#fff;display:grid;place-items:center;flex:none}
+
+.notif b{display:block;font-size:13px}
+.notif small{opacity:.75;font-size:11px}
+.sms-bubble{background:var(--surface);border-radius:16px 16px 16px 4px;padding:9px 12px;font-size:13.5px;max-width:85%;align-self:flex-start}
+.sms-meta{font-size:11px;color:var(--muted);align-self:flex-start}
+.email{border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;background:var(--bg)}
+.email-h{padding:10px 14px;border-bottom:1px solid var(--border);font-size:12.5px;display:flex;flex-direction:column;gap:2px}
+.email-b{padding:18px;display:flex;flex-direction:column;gap:12px;font-size:14px}
+
+/* Simulation */
+.sim{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+@media (min-width:1100px){.sim{grid-template-columns:minmax(0,1fr) 380px}.sim-canvas{position:sticky;top:12px}}
+.sim-canvas{align-self:start;background:var(--bg);border:1px solid var(--border);border-radius:18px;padding:8px;min-width:0}
+@media (max-width:760px){.sim-canvas{overflow-x:auto}svg.map{min-width:720px}}
+svg.map{width:100%;height:auto;display:block}
+.sim-panel{display:flex;flex-direction:column;gap:12px;min-width:0}
+.sim-panel .card h2{font-size:14px}
+.sim-controls{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.sim-controls .btn{min-height:34px;padding:0 13px;font-size:12.5px;border:1px solid var(--border-strong)}
+.sim-controls .btn-primary{border-color:transparent}
+.progress{height:4px;background:var(--surface);border-radius:4px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.toggles{display:flex;flex-direction:column;gap:6px}
+.tg{display:flex;align-items:flex-start;gap:10px;font-size:13px;cursor:pointer}
+.tg input{width:16px;height:16px;margin-top:2px;accent-color:var(--accent);flex:none}
+.tg small{display:block;color:var(--muted);font-size:11.5px}
+.now{border-left:3px solid var(--accent);padding-left:10px;display:flex;flex-direction:column;gap:6px}
+.now b{font-size:14.5px}
+.now p{color:var(--muted);font-size:13px}
+pre.payload{margin:0;font-family:var(--mono);font-size:11.5px;background:var(--surface);border-radius:10px;padding:10px;white-space:pre-wrap;word-break:break-word;max-height:200px;overflow:auto}
+.log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;max-height:300px;overflow:auto;counter-reset:s}
+.log li button{width:100%;text-align:left;border:0;background:transparent;padding:5px 8px;border-radius:8px;font-size:12.5px;color:var(--muted);display:flex;gap:8px;align-items:baseline}
+.log li button::before{counter-increment:s;content:counter(s);font-family:var(--mono);font-size:10.5px;min-width:18px;color:var(--subtle)}
+.log li.done button{color:var(--text)}
+.log li.cur button{background:var(--accent-subtle);color:var(--text);font-weight:600}
+.log .k{width:8px;height:8px;border-radius:50%;flex:none;align-self:center}
+.simstate{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.simstate div{background:var(--surface);border-radius:10px;padding:7px 9px;display:flex;flex-direction:column;gap:1px;min-width:0}
+.simstate span{font-size:11px;color:var(--muted)}
+.simstate b{font-size:12.5px;font-family:var(--mono);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.simstate .changed{animation:flash 1s}
+@keyframes flash{from{background:var(--accent-subtle)}to{background:var(--surface)}}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted);padding:6px 8px 2px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:18px;height:3px;border-radius:2px;display:inline-block}
+.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.chip{border:1px solid var(--border);border-radius:10px;padding:6px 8px;font-size:12px;display:flex;flex-direction:column;gap:1px}
+.chip b{font-size:12px}.chip span{font-size:11px;color:var(--muted)}
+.chip.on{border-color:var(--success);background:var(--success-subtle)}
+.chip.bad{border-color:var(--danger);background:var(--danger-subtle)}
+.node rect{fill:var(--raised);stroke:var(--border-strong);stroke-width:1;transition:fill .2s,stroke .2s}
+.node text{fill:var(--text);font-family:var(--font);font-size:12.5px;font-weight:600;pointer-events:none}
+.node text.sub{fill:var(--muted);font-size:10px;font-weight:400}
+.node{cursor:pointer}
+.node:hover rect{stroke:var(--text)}
+.node.active rect{stroke:var(--accent);stroke-width:2.5;fill:var(--accent-subtle)}
+.node.focus rect{stroke:var(--violet);stroke-width:2.5}
+.node.dim{opacity:.35}
+.node.down rect{stroke:var(--danger);stroke-dasharray:5 4;fill:var(--danger-subtle)}
+.group{fill:none;stroke:var(--border-strong);stroke-dasharray:4 4;stroke-width:1}
+.glabel{fill:var(--muted);font-family:var(--font);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.edge{stroke:var(--edge);stroke-width:1.2;fill:none}
+.edge.dim{opacity:.25}
+.edge.hot{stroke-width:2.5}
+.plabel text{font-family:var(--mono);font-size:11px}
+
+
+</style>
+<div class="wrap">
+  <header class="top">
+    <div class="stack" style="gap:6px">
+      <div class="brand"><span class="mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round"><path d="M6 7h12M12 7v12"/></svg></span><span class="eyebrow">TechShop · Search & catalogue</span></div>
+      <h1>Search and catalogue system</h1>
+      <p class="lead">A working search over the sample catalogue: Nigerian synonyms (“tokunbo”), price intents (“under 700k”), typo correction, facets and an explainable ranking. Open a product to see the buy box choose between sellers, list a product as a seller and watch the checks, then fix zero-result searches as staff. Switch to System simulation for the backend.</p>
+    </div>
+    <div class="viewtabs" role="tablist" aria-label="View">
+      <button type="button" role="tab" data-view="ui" aria-selected="true">UI mockup</button>
+      <button type="button" role="tab" data-view="sim" aria-selected="false">System simulation</button>
+    </div>
+  </header>
+  <section id="ui-view"></section>
+  <section id="sim-view" hidden></section>
+</div>
+<div id="overlay"></div>
+<script>
+"use strict";
+/* ===== Shared kit: icons, helpers, a tiny event framework, view tabs ===== */
+const P={
+ search:'<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/>',
+ cart:'<path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.4a2 2 0 0 0 1.9-1.4L21 8H6.2"/><circle cx="10" cy="20.5" r="1"/><circle cx="17" cy="20.5" r="1"/>',
+ user:'<circle cx="12" cy="8" r="4"/><path d="M4 20.5c1.5-3.6 4.4-5.5 8-5.5s6.5 1.9 8 5.5"/>',
+ users:'<circle cx="9" cy="8.5" r="3.5"/><path d="M2.5 20c1-3.3 3.4-5 6.5-5s5.5 1.7 6.5 5M16 5.2a3.5 3.5 0 0 1 0 6.6"/>',
+ heart:'<path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.2a4.3 4.3 0 0 1 7.5 2.6C19.5 15.4 12 20 12 20Z"/>',
+ home:'<path d="m3.5 11 8.5-7 8.5 7"/><path d="M5.5 9.5V20h13V9.5"/>',
+ grid:'<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/>',
+ phone:'<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/>',
+ laptop:'<rect x="5" y="5" width="14" height="10" rx="1.5"/><path d="M2.5 18.5h19l-1.5-3.5H4z"/>',
+ headphones:'<path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4.5" height="6.5" rx="1.5"/><rect x="16.5" y="14" width="4.5" height="6.5" rx="1.5"/>',
+ gamepad:'<path d="M7 7h10a4 4 0 0 1 4 4.5l-.6 4.6a2.5 2.5 0 0 1-4.3 1.3L14.5 15h-5l-1.6 2.4a2.5 2.5 0 0 1-4.3-1.3L3 11.5A4 4 0 0 1 7 7Z"/><path d="M8 10v3M6.5 11.5h3"/>',
+ monitor:'<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M9 20h6M12 16v4"/>',
+ car:'<path d="M4 16v-3.5L6 7.5A2 2 0 0 1 7.9 6h8.2a2 2 0 0 1 1.9 1.5l2 5V16"/><path d="M3 16h18v2.5H3zM4 12.5h16"/>',
+ check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+ x:'<path d="M6 6l12 12M18 6 6 18"/>',
+ chev:'<path d="m9 5 7 7-7 7"/>',
+ back:'<path d="m15 5-7 7 7 7"/>',
+ bolt:'<path d="M13 3 5 13.5h6L10 21l9-11.5h-6L13 3Z"/>',
+ star:'<path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.8L12 3.5Z"/>',
+ pin:'<path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.3"/>',
+ bell:'<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15l1.5-2Z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>',
+ truck:'<path d="M3 6h11v10H3zM14 9.5h3.8L21 13v3h-7"/><circle cx="7" cy="18" r="1.8"/><circle cx="17.5" cy="18" r="1.8"/>',
+ lock:'<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>',
+ key:'<circle cx="8" cy="15" r="4"/><path d="m11 12 8.5-8.5M16 7l2.5 2.5M14 9l2 2"/>',
+ verified:'<path d="M12 2.8 14.4 5l3.2-.3.6 3.2 2.8 1.6-1.3 3 1.3 3-2.8 1.6-.6 3.2-3.2-.3L12 21.2 9.6 19l-3.2.3-.6-3.2L3 14.5l1.3-3L3 8.5l2.8-1.6.6-3.2 3.2.3L12 2.8Z"/><path d="m8.8 12 2.2 2.2 4.3-4.4"/>',
+ returns:'<path d="M4 10h11a5 5 0 0 1 0 10H9"/><path d="m8 6-4 4 4 4"/>',
+ store:'<path d="M4 9.5 5.5 4h13L20 9.5"/><path d="M5.5 12.5V20h13v-7.5"/>',
+ briefcase:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5h6v2M3 12.5h18"/>',
+ box:'<path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/>',
+ chart:'<path d="M4 20h16M7 16v-5M12 16V6M17 16v-8"/>',
+ wallet:'<path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H18v3"/><rect x="4" y="8" width="16" height="11" rx="2"/>',
+ tag:'<path d="M3.5 12.5 11.5 4.5H19.5V12.5L11.5 20.5 3.5 12.5Z"/><circle cx="15.5" cy="8.5" r="1.3"/>',
+ shield:'<path d="M12 3 5 6v5.5c0 4.4 3 8 7 9.5 4-1.5 7-5.1 7-9.5V6l-7-3Z"/>',
+ settings:'<circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/>',
+ file:'<path d="M6 3h8l4 4v14H6z"/><path d="M9 12h6M9 16h6"/>',
+ mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 6.5 8.5 6.5 8.5-6.5"/>',
+ sms:'<path d="M4 5h16v11H9l-5 4z"/><path d="M8 10h8"/>',
+ send:'<path d="M21 3 10 14M21 3l-7 18-4-7-7-4 18-7Z"/>',
+ flow:'<rect x="3" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="16" width="7" height="5" rx="1.5"/><path d="M6.5 8v4.5h11V16"/>',
+ filter:'<path d="M4 5h16l-6 7.5V19l-4 1.5v-8z"/>',
+ clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+ card:'<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3 10h18"/>',
+ bank:'<path d="M3 9.5 12 4l9 5.5M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18"/>',
+ receipt:'<path d="M6 3h12v18l-2.5-1.5L13 21l-2.5-1.5L8 21l-2-1.2z"/><path d="M9 8h6M9 12h6"/>',
+ scale:'<path d="M12 4v16M6 20h12M4 8h16M4 8l-2 6a3 3 0 0 0 4 0zM20 8l-2 6a3 3 0 0 0 4 0z"/>',
+ scan:'<path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10"/>',
+ plus:'<path d="M12 5v14M5 12h14"/>',
+ globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+ eye:'<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/>',
+ flag:'<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
+ alert:'<path d="M12 3.5 2.5 20h19L12 3.5Z"/><path d="M12 10v4.5M12 17.5v.5"/>',
+ warehouse:'<path d="M3 9.5 12 4l9 5.5V20H3z"/><path d="M7 20v-6h10v6M7 17h10"/>',
+ swap:'<path d="M7 4 3.5 7.5 7 11M3.5 7.5H17M17 13l3.5 3.5L17 20M20.5 16.5H7"/>',
+ logout:'<path d="M14 4h5v16h-5M10 8l-4 4 4 4M6 12h10"/>',
+ fingerprint:'<path d="M12 11v3a8 8 0 0 0 1.5 4.7M8.5 9.5A4 4 0 0 1 16 11v1.5M5.5 7.5A8 8 0 0 1 20 12v1M5 14a14 14 0 0 0 1 4M9 13a10 10 0 0 0 1.5 6"/>',
+ history:'<path d="M3.5 12a8.5 8.5 0 1 0 2.5-6L3.5 8.5"/><path d="M3.5 4v4.5H8M12 7.5V12l3 2"/>'
+};
+const ic=(n,s=18,extra="")=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}>${P[n]||""}</svg>`;
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const naira=n=>(n<0?"−":"")+"₦"+Math.abs(Math.round(n)).toLocaleString("en-NG");
+const fmt=n=>Math.round(n).toLocaleString("en-NG");
+const pct=(a,b)=>b?(a/b*100).toFixed(1)+"%":"—";
+const logoMark=`<span class="mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round"><path d="M6 7h12M12 7v12"/></svg></span>`;
+const applogo=sfx=>`<span class="applogo">${logoMark}<span>TechShop</span>${sfx?`<small>${sfx}</small>`:""}</span>`;
+const browser=(host,path,body)=>`<div class="browser"><div class="browser-bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">${ic("lock",12)}<span>${esc(host)}${esc(path)}</span></div></div><div class="page">${body}</div></div>`;
+const phone=(screen,label="Phone")=>`<div class="phone" aria-label="${esc(label)}"><span class="phone-notch"></span><div class="phone-screen">${screen}</div></div>`;
+const notice=(t="Preview: names, figures and messages are sample data. Nothing is sent.")=>`<div class="notice">${t}</div>`;
+const status=(t,tone="")=>`<span class="status ${tone}">${esc(t)}</span>`;
+const sideNav=(groups,cur)=>`<nav class="side" aria-label="Sections">${groups.map(g=>`${g[0]?`<span class="grp-t">${g[0]}</span>`:""}${g[1].map(x=>`<button type="button" data-go="${x[0]}" ${x[0]===cur?'aria-current="page"':""}>${ic(x[2],16)}${x[1]}</button>`).join("")}`).join("")}</nav>`;
+function field(id,label,val="",o={}){const e=o.err;const attrs=`id="${id}" name="${id}" ${e?`aria-invalid="true" aria-describedby="${id}-e"`:""} ${o.attrs||""}`;
+ const ctl=o.select?`<select ${attrs}>${o.select.map(x=>{const [v,l]=Array.isArray(x)?x:[x,x];return `<option value="${esc(v)}" ${String(v)===String(val)?"selected":""}>${esc(l)}</option>`}).join("")}</select>`:o.area?`<textarea ${attrs}>${esc(val)}</textarea>`:`<input ${attrs} value="${esc(val)}" ${o.type?`type="${o.type}"`:""} ${o.ph?`placeholder="${esc(o.ph)}"`:""} ${o.inputmode?`inputmode="${o.inputmode}"`:""} ${o.ac?`autocomplete="${o.ac}"`:""}>`;
+ return `<div class="field" style="${o.span?"grid-column:1/-1":""}"><label for="${id}">${label}${o.optional?' <span class="muted" style="font-weight:400">(optional)</span>':""}</label>${ctl}${e?`<span class="err" id="${id}-e">${esc(e)}</span>`:o.hint?`<span class="hint">${esc(o.hint)}</span>`:""}</div>`}
+function table(cols,rows,opts={}){const numCol=cols.map((c,i)=>rows.some(r=>/^[−-]?₦|^\d[\d,.]*%?$/.test(String(r[i]??"").replace(/<[^>]+>/g,""))));
+ return `<div class="tbl-wrap"><table><thead><tr>${cols.map((c,i)=>`<th class="${numCol[i]?"num":""}">${c}</th>`).join("")}</tr></thead><tbody>${rows.length?rows.map(r=>`<tr>${r.map((c,i)=>`<td class="${numCol[i]?"num":""}">${c}</td>`).join("")}</tr>`).join(""):`<tr><td colspan="${cols.length}" class="muted" style="text-align:center;padding:20px">${opts.empty||"Nothing here yet"}</td></tr>`}</tbody></table></div>`}
+const switchBtn=(act,on,label,extra="")=>`<button type="button" class="switch" role="switch" aria-checked="${!!on}" aria-label="${esc(label)}" data-act="${act}" ${extra}></button>`;
+
+/* Event framework: data-act (click), data-go (nav), data-chg (change), data-inp (input), form[data-form] (submit) */
+const ACT={},FORM={},CHG={},INP={};
+let UI_RENDER=()=>{},GO=()=>{};
+function rerender(keepFocus){const a=document.activeElement;const id=a&&a.id;const pos=a&&a.selectionStart;UI_RENDER();if(keepFocus&&id){const n=document.getElementById(id);if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch{}}}renderOverlay()}
+let TOAST="";function toast(m){TOAST=m;renderOverlay();clearTimeout(toast.t);toast.t=setTimeout(()=>{TOAST="";renderOverlay()},2800)}
+let MODAL=null;function modal(html){MODAL=html;renderOverlay()}function closeModal(){MODAL=null;renderOverlay()}
+function renderOverlay(){const o=$("#overlay");if(!o)return;o.innerHTML=(MODAL?`<div class="modal-back" data-act="__backdrop"><div class="modal" role="dialog" aria-modal="true">${typeof MODAL==="function"?MODAL():MODAL}</div></div>`:"")+(TOAST?`<div class="toast" role="status">${esc(TOAST)}</div>`:"")}
+ACT.__backdrop=(d,el,e)=>{if(e.target===el)closeModal()};
+ACT.closeModal=()=>closeModal();
+document.addEventListener("click",e=>{if(e.target.closest("#sim-view"))return;
+ const g=e.target.closest("[data-go]");if(g){e.preventDefault();GO(g.dataset.go,g.dataset.arg,g);return}
+ const a=e.target.closest("[data-act]");if(!a||a.matches("input,select,textarea"))return;if(a.dataset.act==="__backdrop"&&e.target!==a)return;const h=ACT[a.dataset.act];if(h){e.preventDefault();h(a.dataset,a,e)}});
+document.addEventListener("change",e=>{const el=e.target;if(el.closest("#sim-view"))return;const h=CHG[el.dataset.chg];if(h)h(el.dataset,el)});
+document.addEventListener("input",e=>{const el=e.target;if(el.closest("#sim-view"))return;const h=INP[el.dataset.inp];if(h)h(el.dataset,el)});
+document.addEventListener("submit",e=>{const f=e.target.closest("form[data-form]");if(!f)return;e.preventDefault();const h=FORM[f.dataset.form];if(h)h(Object.fromEntries(new FormData(f)),f)});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&MODAL)closeModal()});
+
+/* View tabs (UI mockup | System simulation) */
+function initViews(){const tabs=$$(".viewtabs [role=tab]");tabs.forEach(t=>t.addEventListener("click",()=>{tabs.forEach(x=>x.setAttribute("aria-selected",x===t));$("#ui-view").hidden=t.dataset.view!=="ui";$("#sim-view").hidden=t.dataset.view!=="sim";if(t.dataset.view==="sim"&&window.SIM_INSTANCE)window.SIM_INSTANCE.refresh()}))}
+
+/* ===== Generic system simulator =====
+   cfg = { viewBox:[w,h], nodes:{key:{x,y,w,h,t,s,info}}, groups:[{x,y,w,h,t}],
+           toggles:{key:[label, sub]}, opts:{...defaults},
+           scenarios:{key:{t, intro?, toggles:[keys], build(opts)->steps, state:[[key,label]]}},
+           baseState()->{}, isDown?(node,opts,scen), onToggle?(key,opts), extra?(scen,opts)->{title,html}|null }
+   step = {f,t,l,d,p,k,fx}   k: req | res | async | ext | fail                                       */
+const R=(f,t,l,d,p,fx)=>({f,t,l,d,p,k:"req",fx}), S=(f,t,l,d,p,fx)=>({f,t,l,d,p,k:"res",fx}),
+      A=(f,t,l,d,p,fx)=>({f,t,l,d,p,k:"async",fx}), X=(f,t,l,d,p,fx)=>({f,t,l,d,p,k:"ext",fx}),
+      F=(f,t,l,d,p,fx)=>({f,t,l,d,p,k:"fail",fx});
+function createSim(root,cfg){
+ const N=cfg.nodes,[VW,VH]=cfg.viewBox;const opts={...cfg.opts};
+ let scen=Object.keys(cfg.scenarios)[0],steps=[],cur=-1,playing=false,speed=1,focus=null,anim=null,timer=null,prev={},EDGES=[];
+ const KIND={req:["var(--accent)","Request"],res:["var(--success)","Response"],async:["var(--promo)","Async (outbox, jobs, webhooks)"],ext:["var(--violet)",cfg.extLabel||"External or special"],fail:["var(--danger)","Failure, block or fallback"]};
+ const color=k=>KIND[k][0];
+ root.innerHTML=`<div class="pill-nav" role="group" aria-label="Scenario" data-s="scen"></div>
+ <div class="sim" style="margin-top:12px"><div class="sim-canvas"><svg class="map" viewBox="0 0 ${VW} ${VH}" role="img" aria-label="System diagram"></svg>
+ <div class="legend">${Object.values(KIND).map(([c,l])=>`<span><i style="background:${c}"></i>${l}</span>`).join("")}</div></div>
+ <div class="sim-panel"><div class="card"><div class="sim-controls"><button class="btn btn-primary" data-s="play" type="button">Play</button><button class="btn" data-s="prev" type="button" aria-label="Previous step">◀</button><button class="btn" data-s="next" type="button" aria-label="Next step">▶</button><button class="btn" data-s="restart" type="button">Restart</button><div class="seg" role="group" aria-label="Speed">${[0.5,1,2].map(v=>`<button type="button" data-speed="${v}" aria-pressed="${v===1}">${v}×</button>`).join("")}</div></div>
+ <div class="progress"><i data-s="bar"></i></div><div class="now" data-s="now" aria-live="polite"></div><pre class="payload" data-s="payload" hidden></pre></div>
+ <div class="card" data-s="tgcard"><h2>What can go wrong</h2><div class="toggles" data-s="toggles"></div></div>
+ <div class="card" data-s="extra" hidden></div>
+ <div class="card"><h2>System state</h2><div class="simstate" data-s="state"></div></div>
+ <div class="card"><h2>Steps</h2><ol class="log" data-s="log"></ol></div></div></div>`;
+ const q=s=>root.querySelector(`[data-s="${s}"]`);const svg=root.querySelector("svg.map");
+ const ctr=n=>({x:N[n].x+N[n].w/2,y:N[n].y+N[n].h/2});
+ function clip(a,b){const n=N[a],c=ctr(a);const dx=b.x-c.x,dy=b.y-c.y;if(!dx&&!dy)return c;const s=Math.min((n.w/2)/Math.abs(dx||1e-9),(n.h/2)/Math.abs(dy||1e-9));return{x:c.x+dx*s,y:c.y+dy*s}}
+ function allEdges(){const set=new Map();const all={...opts};Object.keys(cfg.toggles).forEach(k=>all[k]=true);Object.values(cfg.scenarios).forEach(sc=>[sc.build({...opts}),sc.build(all)].forEach(ss=>ss.forEach(s=>{if(s.f!==s.t)set.set([s.f,s.t].sort().join("|"),[s.f,s.t])})));return[...set.values()]}
+ function drawStatic(){let h=`<defs><marker id="sim-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="context-stroke"/></marker></defs>`;
+  h+=(cfg.groups||[]).map(g=>`<rect class="group" x="${g.x}" y="${g.y}" width="${g.w}" height="${g.h}" rx="14"/>${g.t?`<text class="glabel" x="${g.x+12}" y="${g.y+18}">${esc(g.t)}</text>`:""}`).join("");
+  EDGES=allEdges();h+=`<g>${EDGES.map(([a,b])=>{const p=clip(a,ctr(b)),r=clip(b,ctr(a));return `<line class="edge" data-e="${a}|${b}" x1="${p.x}" y1="${p.y}" x2="${r.x}" y2="${r.y}"/>`}).join("")}</g><g data-s="hot"></g>`;
+  h+=Object.entries(N).map(([k,n])=>{const tall=n.h>60;return `<g class="node" data-node="${k}" tabindex="0" role="button" aria-label="${esc(n.t)}: ${esc(n.s||"")}"><rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="${n.db?18:10}"/>${n.db?`<ellipse cx="${n.x+n.w/2}" cy="${n.y+16}" rx="${n.w/2-14}" ry="7" fill="none" stroke="var(--border-strong)"/>`:""}<text x="${n.x+n.w/2}" y="${n.y+n.h/2-(tall?8:2)}" text-anchor="middle">${esc(n.t)}</text>${n.s?`<text class="sub" x="${n.x+n.w/2}" y="${n.y+n.h/2+(tall?8:12)}" text-anchor="middle">${esc(n.s)}</text>`:""}</g>`}).join("");
+  h+=`<g data-s="packet"></g>`;svg.innerHTML=h}
+ function build(){steps=cfg.scenarios[scen].build({...opts});cur=-1;stop()}
+ function computeState(){const st=cfg.baseState(scen,opts);for(let i=0;i<=cur;i++)steps[i].fx&&steps[i].fx(st);return st}
+ function renderControls(){q("scen").innerHTML=Object.entries(cfg.scenarios).map(([k,s])=>`<button type="button" data-scen="${k}" aria-pressed="${k===scen}">${esc(s.t)}</button>`).join("");
+  const tg=cfg.scenarios[scen].toggles||[];q("tgcard").hidden=!tg.length;q("toggles").innerHTML=tg.map(k=>`<label class="tg"><input type="checkbox" data-tg="${k}" ${opts[k]?"checked":""}><span>${esc(cfg.toggles[k][0])}<small>${esc(cfg.toggles[k][1])}</small></span></label>`).join("");
+  const ex=cfg.extra?cfg.extra(scen,opts):null;q("extra").hidden=!ex;if(ex)q("extra").innerHTML=`<h2>${esc(ex.title)}</h2>${ex.html}`}
+ function renderLog(){q("log").innerHTML=steps.map((s,i)=>`<li class="${i<cur?"done":i===cur?"cur":""}"><button type="button" data-step="${i}"><span class="k" style="background:${color(s.k)}"></span><span>${esc(N[s.f].t)} → ${esc(N[s.t].t)}: ${esc(s.l)}</span></button></li>`).join("");const c=q("log").querySelector(".cur");if(c&&!root.hidden&&root.offsetParent)c.scrollIntoView({block:"nearest"})}
+ function renderNow(){const now=q("now"),pl=q("payload");q("bar").style.width=steps.length?`${(cur+1)/steps.length*100}%`:"0";
+  if(focus&&cur<0){const n=N[focus];const links=EDGES.filter(e=>e.includes(focus)).map(e=>N[e[0]===focus?e[1]:e[0]].t);now.style.borderColor="var(--violet)";now.innerHTML=`<span class="eyebrow">Component</span><b>${esc(n.t)}</b><p>${esc(n.info||"")}</p>${links.length?`<p><b style="font-size:12px">Talks to:</b> ${esc(links.join(", "))}</p>`:""}`;pl.hidden=true;return}
+  if(cur<0){const sc=cfg.scenarios[scen];now.style.borderColor="var(--accent)";now.innerHTML=`<span class="eyebrow">${esc(sc.t)}</span><b>${steps.length} steps · press Play</b><p>${esc(sc.intro||"Turn on a failure in “What can go wrong” to see how the system copes. Click any box for what it does.")}</p>`;pl.hidden=true;return}
+  const s=steps[cur];now.style.borderColor=color(s.k);now.innerHTML=`<span class="eyebrow">Step ${cur+1} of ${steps.length} · ${esc(N[s.f].t)} → ${esc(N[s.t].t)}</span><b>${esc(s.l)}</b><p>${esc(s.d||"")}</p>`;
+  if(s.p){pl.hidden=false;pl.textContent=s.p}else pl.hidden=true}
+ function renderState(){const st=computeState();q("state").innerHTML=cfg.scenarios[scen].state.map(([k,l])=>`<div class="${prev[k]!==undefined&&prev[k]!==st[k]?"changed":""}"><span>${esc(l)}</span><b title="${esc(st[k])}">${esc(st[k])}</b></div>`).join("");prev=st}
+ function label(x,y,t,k){const txt=t.length>46?t.slice(0,44)+"…":t;const w=Math.min(320,txt.length*6.8+18);const X=Math.max(4,Math.min(VW-4-w,x-w/2));q("packet").insertAdjacentHTML("beforeend",`<g class="plabel"><rect x="${X}" y="${y-11}" width="${w}" height="20" rx="10" style="fill:${color(k)}"/><text x="${X+w/2}" y="${y+3}" text-anchor="middle" style="fill:var(--bg)">${esc(txt)}</text></g>`)}
+ function renderMap(){const s=steps[cur];const inv=new Set(steps.flatMap(x=>[x.f,x.t]));
+  root.querySelectorAll(".node").forEach(g=>{const k=g.dataset.node;g.classList.toggle("active",!!s&&(s.f===k||s.t===k));
+   g.classList.toggle("dim",cur>=0||!focus?!inv.has(k):!(k===focus||EDGES.some(e=>e.includes(focus)&&e.includes(k))));g.classList.toggle("focus",focus===k);g.classList.toggle("down",!!(cfg.isDown&&cfg.isDown(k,opts,scen)))});
+  root.querySelectorAll(".edge").forEach(l=>{const [a,b]=l.dataset.e.split("|");const inS=steps.some(x=>(x.f===a&&x.t===b)||(x.f===b&&x.t===a));const foc=focus&&cur<0&&(a===focus||b===focus);l.classList.toggle("dim",foc?false:(focus&&cur<0)?true:!inS);l.style.stroke=foc?"var(--violet)":"";l.classList.toggle("hot",!!foc)});
+  q("hot").innerHTML="";q("packet").innerHTML="";cancelAnimationFrame(anim);if(!s)return;
+  if(s.f===s.t){const n=N[s.f];q("hot").innerHTML=`<rect x="${n.x-5}" y="${n.y-5}" width="${n.w+10}" height="${n.h+10}" rx="14" fill="none" stroke="${color(s.k)}" stroke-width="2.5"><animate attributeName="opacity" values="1;.25;1" dur="1s" repeatCount="indefinite"/></rect>`;label(ctr(s.f).x,n.y-16,s.l,s.k);return}
+  const p=clip(s.f,ctr(s.t)),r=clip(s.t,ctr(s.f));q("hot").innerHTML=`<line x1="${p.x}" y1="${p.y}" x2="${r.x}" y2="${r.y}" stroke="${color(s.k)}" stroke-width="2.5" ${s.k==="async"?'stroke-dasharray="6 4"':""} marker-end="url(#sim-arrow)"/>`;
+  const dur=900/speed,reduce=matchMedia("(prefers-reduced-motion: reduce)").matches,t0=performance.now();
+  const frame=t=>{const k=reduce?1:Math.min(1,(t-t0)/dur);const e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;q("packet").innerHTML=`<circle cx="${p.x+(r.x-p.x)*e}" cy="${p.y+(r.y-p.y)*e}" r="7" fill="${color(s.k)}" stroke="var(--bg)" stroke-width="2"/>`;label((p.x+r.x)/2,(p.y+r.y)/2-14,s.l,s.k);if(k<1)anim=requestAnimationFrame(frame)};anim=requestAnimationFrame(frame)}
+ function goTo(i){cur=Math.max(-1,Math.min(steps.length-1,i));if(cur>=0)focus=null;renderLog();renderNow();renderState();renderMap();q("prev").disabled=cur<0;q("next").disabled=cur>=steps.length-1}
+ function tick(){if(cur>=steps.length-1){stop();return}goTo(cur+1);timer=setTimeout(tick,2600/speed)}
+ function play(){if(cur>=steps.length-1)goTo(-1);playing=true;q("play").textContent="Pause";tick()}
+ function stop(){playing=false;clearTimeout(timer);q("play").textContent=cur>=steps.length-1&&steps.length?"Replay":"Play"}
+ function full(){build();renderControls();prev={};goTo(-1)}
+ root.addEventListener("click",e=>{const t=e.target.closest("[data-s],[data-scen],[data-speed],[data-step],[data-opt],.node");if(!t)return;
+  if(t.dataset.scen){scen=t.dataset.scen;focus=null;full()}
+  else if(t.dataset.speed){speed=+t.dataset.speed;root.querySelectorAll("[data-speed]").forEach(b=>b.setAttribute("aria-pressed",b===t))}
+  else if(t.dataset.step){stop();goTo(+t.dataset.step)}
+  else if(t.dataset.opt){opts[t.dataset.opt]=t.dataset.val;full()}
+  else if(t.classList.contains("node")){stop();const k=t.dataset.node;focus=focus===k?null:k;cur=-1;renderLog();renderNow();renderState();renderMap()}
+  else if(t.dataset.s==="play")playing?stop():play();
+  else if(t.dataset.s==="next"){stop();goTo(cur+1)}
+  else if(t.dataset.s==="prev"){stop();goTo(cur-1)}
+  else if(t.dataset.s==="restart"){stop();goTo(-1)}});
+ root.addEventListener("keydown",e=>{const n=e.target.closest?.(".node");if(n&&(e.key==="Enter"||e.key===" ")){e.preventDefault();n.dispatchEvent(new MouseEvent("click",{bubbles:true}))}});
+ root.addEventListener("change",e=>{const k=e.target.dataset.tg;if(!k)return;opts[k]=e.target.checked;cfg.onToggle&&cfg.onToggle(k,opts);full()});
+ drawStatic();full();
+ return{refresh(){renderMap()}}
+}
+
+/*META {"file":"search-catalogue","title":"TechShop Search","eyebrow":"Search & catalogue","heading":"Search and catalogue system","lead":"A working search over the sample catalogue: Nigerian synonyms (“tokunbo”), price intents (“under 700k”), typo correction, facets and an explainable ranking. Open a product to see the buy box choose between sellers, list a product as a seller and watch the checks, then fix zero-result searches as staff. Switch to System simulation for the backend."}*/
+/* ================= Catalogue ================= */
+const CATS={phones:"Phones",laptops:"Laptops",accessories:"Accessories",gaming:"Gaming","smart-home":"Smart home",office:"Office",workstations:"Workstations"};
+const P0=[
+ ["p1","Nova X5 Pro 5G","Nova","phones","12GB RAM · 256GB · 5G","new",899000,1050000,4.7,312,"ts",410,"in",{ram:12,storage:256,net:"5G"}],
+ ["p2","Orbit One 15 Max","Orbit","phones","256GB · Titanium · 5G","new",2150000,0,4.8,540,"ts",380,"in",{ram:8,storage:256,net:"5G"}],
+ ["p3","Nova A3 Lite","Nova","phones","6GB RAM · 128GB · 4G","new",189000,215000,4.4,1204,"ikeja",620,"in",{ram:6,storage:128,net:"4G"}],
+ ["p4","Orbit One 13","Orbit","phones","128GB · Battery 89% · 5G","uk_used",640000,0,4.3,87,"kano",95,"low",{ram:4,storage:128,net:"5G"}],
+ ["p5","Vela Fold Z","Vela","phones","12GB RAM · 512GB · 5G","new",2480000,0,4.6,64,"ts",22,"in",{ram:12,storage:512,net:"5G"}],
+ ["p6","Nova C1","Nova","phones","4GB RAM · 64GB · 4G","refurbished",99500,124000,4.1,233,"wuse",140,"in",{ram:4,storage:64,net:"4G"}],
+ ["p7","Orbit One 12","Orbit","phones","64GB · Battery 84% · 5G","uk_used",455000,0,4.2,61,"ikeja",70,"in",{ram:4,storage:64,net:"5G"}],
+ ["p8","Kestrel Book 14 Business","Kestrel","laptops","Core i7 · 16GB · 512GB SSD","new",1390000,1520000,4.6,148,"ts",88,"in",{ram:16,storage:512}],
+ ["p9","Arcadia Strix 16 Gaming","Arcadia","laptops","RTX-class GPU · 32GB · 1TB","new",3250000,0,4.8,92,"ts",31,"in",{ram:32,storage:1024}],
+ ["p10","Kestrel Air 13","Kestrel","laptops","Ryzen 5 · 8GB · 256GB SSD","new",689000,0,4.3,410,"wuse",150,"in",{ram:8,storage:256}],
+ ["p11","Arcadia Nitro 15 Gaming","Arcadia","laptops","RTX-class GPU · 16GB · 512GB","new",1850000,2100000,4.5,176,"ikeja",64,"in",{ram:16,storage:512}],
+ ["p12","Kestrel Book 13","Kestrel","laptops","Core i5 · 8GB · 256GB","uk_used",520000,0,4.1,40,"kano",19,"in",{ram:8,storage:256}],
+ ["p13","Pulse Buds Pro","Pulse","accessories","Wireless earbuds · ANC · 30h","new",79000,99000,4.5,865,"ts",900,"in",{}],
+ ["p14","Volt 20,000mAh Power Bank","Volt","accessories","65W fast charge","new",38500,0,4.6,2104,"kano",1500,"in",{}],
+ ["p15","Pulse Studio Headphones","Pulse","accessories","Over-ear · Wireless","new",145000,0,4.4,312,"ts",120,"in",{}],
+ ["p16","Arcadia Play 5 Console","Arcadia","gaming","1TB · 4K","new",985000,0,4.9,433,"ts",210,"in",{storage:1024}],
+ ["p17","Arcadia Pro Controller","Arcadia","gaming","Wireless · Haptic","new",89000,105000,4.6,290,"wuse",260,"in",{}],
+ ["p18","Lumen Guard Camera 2K","Lumen","smart-home","Night vision · App alerts","new",54000,65000,4.5,377,"ikeja",300,"in",{}],
+ ["p19","Fieldwork 2kVA Inverter + UPS","Fieldwork","office","Pure sine wave · power backup","new",410000,465000,4.6,211,"wuse",90,"in",{}],
+ ["p20","Vantage 27 QHD Monitor","Vantage","office","IPS · 75Hz · USB-C","new",285000,0,4.5,167,"ts",80,"out",{}],
+ ["p21","Forge Tower W9 Workstation","Forge","workstations","24-core · 128GB · Pro GPU","new",7950000,0,4.9,12,"ts",3,"low",{ram:128,storage:2048}]
+];
+const SELLERS={ts:{name:"TechShop",type:"techshop",state:"Lagos",rating:4.8,ontime:.97,cancel:.01},ikeja:{name:"Ikeja Gadget Hub",type:"vendor",state:"Lagos",rating:4.6,ontime:.93,cancel:.03},wuse:{name:"Wuse Tech Store",type:"vendor",state:"FCT",rating:4.4,ontime:.88,cancel:.04},kano:{name:"Sabon Gari Mobile",type:"vendor",state:"Kano",rating:4.5,ontime:.9,cancel:.02},adeola:{name:"Adeola Phones (new)",type:"vendor",state:"Lagos",rating:0,ontime:0,cancel:0}};
+const COND={new:"New",uk_used:"UK-used",refurbished:"Refurbished"};
+const OFFERS0={p1:[["ts",899000,12],["ikeja",885000,12],["wuse",872000,6],["kano",905000,12]],p13:[["ts",79000,12],["kano",76500,6]],p16:[["ts",985000,12],["ikeja",969000,12]]};
+const SYN0=[["tokunbo","uk used","one_way"],["uk-used","uk used","one_way"],["used","uk used","one_way"],["pc","laptop","one_way"],["notebook","laptop","two_way"],["ps5","play 5","one_way"],["playstation","play 5","one_way"],["iphone","orbit one","one_way"],["earpiece","earbuds","one_way"],["airpods","earbuds","one_way"],["powerbank","power bank","one_way"],["ups","inverter","two_way"],["cctv","camera","one_way"]];
+const fresh=()=>({frame:"search",q:"",ran:"",filters:{brand:[],cond:[],seller:[],price:null},sort:"relevance",explain:false,ac:false,
+ products:P0.map(a=>({id:a[0],name:a[1],brand:a[2],cat:a[3],spec:a[4],cond:a[5],price:a[6],was:a[7],rating:a[8],reviews:a[9],seller:a[10],sales:a[11],stock:a[12],attrs:a[13],live:true})),
+ offers:JSON.parse(JSON.stringify(OFFERS0)),shipTo:"Lagos",pid:"p1",
+ synonyms:SYN0.map(s=>({from:s[0],to:s[1],kind:s[2],by:"seed"})),redirects:{cars:"Cars category (/c/cars)"},gaps:[],
+ log:[["iphone 15","412",0],["tokunbo iphone","188",0],["ps5","301",0],["laptop under 700k","96",0],["starlink","74",1],["infinix hot 40","58",1]],
+ queue:[{id:"L-9001",seller:"adeola",name:"Orbit One 15 Max",cond:"new",price:980000,was:0,reasons:["Price 54% below the median for this product (₦2,150,000) — scam signal","New seller: first 10 listings are reviewed"],risk:86,status:"in_review"},
+  {id:"L-9002",seller:"wuse",name:"Arcadia Strix 16 Gaming",cond:"refurbished",price:2450000,was:0,reasons:["New condition for this product (refurbished): needs refurbisher warranty proof"],risk:35,status:"in_review"},
+  {id:"L-8999",seller:"kano",name:"Nova X5 Pro first copy",cond:"new",price:150000,was:0,reasons:["Banned phrase “first copy” (counterfeit)"],risk:99,status:"rejected"}],
+ sl:{pid:"p1",cond:"new",price:"",was:"",submitted:null},
+ staffTab:"moderation",synForm:{from:"",to:""}});
+let st=fresh();
+const prod=id=>st.products.find(p=>p.id===id);
+const off=p=>p.was?Math.round((p.was-p.price)/p.was*100):0;
+const artBox=(cat,size=52)=>`<div style="aspect-ratio:1;border-radius:12px;background:var(--surface);display:grid;place-items:center"><span style="width:${size}%;aspect-ratio:1;border-radius:50%;background:var(--accent-subtle);color:var(--link);display:grid;place-items:center">${ic({phones:"phone",laptops:"laptop",accessories:"headphones",gaming:"gamepad","smart-home":"home",office:"monitor",workstations:"monitor"}[cat]||"box",34)}</span></div>`;
+
+/* ================= Search engine ================= */
+function lev(a,b){const m=a.length,n=b.length;if(Math.abs(m-n)>2)return 9;const d=Array.from({length:m+1},(_,i)=>[i]);for(let j=1;j<=n;j++)d[0][j]=j;for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return d[m][n]}
+const money=(n,u)=>Math.round(parseFloat(n)*(u==="m"?1e6:u==="k"?1e3:1));
+function understand(raw){let q=" "+raw.toLowerCase().replace(/[₦,]/g,"").replace(/\s+/g," ")+" ";const notes=[];const f={};
+ let m;if((m=q.match(/ (?:under|below|less than|max) (\d+(?:\.\d+)?)\s?(k|m)? /))){f.max=money(m[1],m[2]);q=q.replace(m[0]," ");notes.push(`price ≤ ${naira(f.max)}`)}
+ if((m=q.match(/ (?:between )?(\d+(?:\.\d+)?)\s?(k|m)?\s?(?:-|to|and) (\d+(?:\.\d+)?)\s?(k|m)? /))){f.min=money(m[1],m[2]);f.max=money(m[3],m[4]);q=q.replace(m[0]," ");notes.push(`price ${naira(f.min)}–${naira(f.max)}`)}
+ q=q.replace(/(\d+)\s?gb/g,"$1gb");
+ q=" "+q.trim().split(" ").map(t=>{const s=st.synonyms.find(x=>x.from===t);if(s){notes.push(`“${s.from}” → “${s.to}”`);return s.to}return t}).join(" ")+" ";
+ if(/ uk used /.test(q)){f.cond="uk_used";q=q.replace(/ uk used /," ");}
+ if(/ refurbished /.test(q)){f.cond="refurbished";q=q.replace(/ refurbished /," ")}
+ if(/ brand new | new /.test(q)){f.cond="new";q=q.replace(/ brand new | new /," ")}
+ if(/ 5g /.test(q)){f.net="5G";q=q.replace(/ 5g /," ");notes.push("network 5G")}
+ const terms=q.trim().split(" ").filter(t=>t&&!["for","the","a","with","and","of"].includes(t));
+ return{terms,f,notes}}
+const fieldText=p=>({title:(p.name+" "+p.brand).toLowerCase(),attrs:(p.spec+" "+(p.attrs.storage?p.attrs.storage+"gb":"")+" "+(p.attrs.ram?p.attrs.ram+"gb":"")).toLowerCase(),cat:(CATS[p.cat]+" "+p.cat+" "+(p.cat==="phones"?"phone smartphone":p.cat==="laptops"?"laptop":"")).toLowerCase()});
+function textScore(p,terms){if(!terms.length)return 1;const t=fieldText(p);let s=0;for(const w of terms){const ws=w.replace(/s$/,"");let hit=0;if(t.title.includes(ws))hit=3;else if(t.cat.includes(ws))hit=1.5;else if(t.attrs.includes(ws))hit=1;if(!hit)return 0;s+=hit}return s/terms.length}
+function vocab(){const v=new Set();st.products.forEach(p=>(p.name+" "+p.brand+" "+CATS[p.cat]+" laptop phone console earbuds camera inverter monitor").toLowerCase().split(/\s+/).forEach(w=>w.length>2&&v.add(w)));st.synonyms.forEach(s=>v.add(s.from));return[...v]}
+function signals(p){const s=SELLERS[p.seller];const sales=.25*Math.log1p(p.sales)/Math.log1p(1500);const rating=.15*((p.rating*p.reviews+4.2*20)/(p.reviews+20)-3)/2;const sq=.10*(s.rating?s.rating/5:.5);const avail={in:1,low:.9,out:.2}[p.stock];return{sales,rating,sq,avail,mult:(1+sales+rating+sq)*avail}}
+function search(raw){const u=understand(raw);let base=st.products.filter(p=>p.live);let corrected=null;
+ const score=list=>list.map(p=>({p,txt:textScore(p,u.terms)})).filter(x=>x.txt>0);
+ let hits=score(base);
+ if(!hits.length&&u.terms.length){const V=vocab();const fixed=u.terms.map(w=>{if(V.includes(w))return w;let best=w,bd=3;V.forEach(v=>{const d=lev(w,v);if(d<bd){bd=d;best=v}});return best});if(fixed.join(" ")!==u.terms.join(" ")){corrected=fixed.join(" ");u.terms=fixed;hits=score(base)}}
+ hits=hits.filter(x=>(!u.f.max||x.p.price<=u.f.max)&&(!u.f.min||x.p.price>=u.f.min)&&(!u.f.cond||x.p.cond===u.f.cond)&&(!u.f.net||x.p.attrs.net===u.f.net));
+ hits.forEach(x=>{x.sig=signals(x.p);x.score=x.txt*x.sig.mult});
+ return{u,corrected,hits}}
+function applyFacets(hits){const f=st.filters;return hits.filter(x=>(!f.brand.length||f.brand.includes(x.p.brand))&&(!f.cond.length||f.cond.includes(x.p.cond))&&(!f.seller.length||f.seller.includes(SELLERS[x.p.seller].type))&&(!f.price||(x.p.price>=f.price[0]&&x.p.price<f.price[1])))}
+const BUCKETS=[["Under ₦100k",0,100000],["₦100k–₦500k",100000,500000],["₦500k–₦1.5m",500000,1500000],["Over ₦1.5m",1500000,1e12]];
+
+/* ================= Views ================= */
+function card(x,explain){const p=x.p;const s=SELLERS[p.seller];return `<button type="button" class="card" style="text-align:left;cursor:pointer" data-act="openP" data-id="${p.id}">${artBox(p.cat)}<div class="row" style="gap:4px;min-height:20px">${p.cond!=="new"?`<span class="badge">${COND[p.cond]}</span>`:""}${p.stock==="out"?`<span class="badge badge-bad">Out of stock</span>`:p.stock==="low"?`<span class="badge badge-warn">Few left</span>`:""}${(st.offers[p.id]||[]).length>1?`<span class="badge badge-outline">${st.offers[p.id].length} sellers</span>`:""}</div><b class="sm" style="line-height:1.3">${esc(p.name)}</b><span class="xs muted">${esc(p.spec)}</span><span class="xs">${ic("star",12,'style="color:var(--rating);fill:var(--rating)"')} ${p.rating} <span class="muted">(${fmt(p.reviews)})</span></span><div class="row" style="gap:6px"><b class="tnum">${naira(p.price)}</b>${p.was?`<span class="xs muted" style="text-decoration:line-through">${naira(p.was)}</span><span class="badge" style="background:var(--sale-fill);color:var(--on-fill)">−${off(p)}%</span>`:""}</div><span class="xs muted">${s.type==="techshop"?"Sold by TechShop":"Sold by "+esc(s.name)}</span>${explain?`<div class="code" style="font-size:11px">text ${x.txt.toFixed(2)} × (1 + sales ${x.sig.sales.toFixed(2)} + rating ${x.sig.rating.toFixed(2)} + seller ${x.sig.sq.toFixed(2)}) × stock ${x.sig.avail}\n= ${x.score.toFixed(3)}</div>`:""}</button>`}
+function searchView(){const r=st.ran?search(st.ran):null;let body;
+ if(!r)body=`<div class="stack" style="gap:16px"><h2 style="font-size:22px">Try a search</h2><div class="row">${["tokunbo iphone under 700k","gaming laptop","ps5","airpods","nova 256gb 5g","lapptop","cctv camera","starlink"].map(q=>`<button class="btn btn-secondary btn-sm" type="button" data-act="try" data-q="${q}">${q}</button>`).join("")}</div><p class="sm muted">Each shows a different part of the pipeline: synonyms, price intents, attribute matching, typo correction and zero results (which appear in Staff › Search insights).</p></div>`;
+ else if(st.redirect)body=`<div class="card"><b>Redirect</b><span class="sm">“${esc(st.ran)}” is a curated redirect → ${esc(st.redirect)}.</span></div>`;
+ else{let hits=applyFacets(r.hits);const srt={relevance:(a,b)=>b.score-a.score,"price-asc":(a,b)=>a.p.price-b.p.price,"price-desc":(a,b)=>b.p.price-a.p.price,rating:(a,b)=>b.p.rating-a.p.rating}[st.sort];hits.sort(srt);
+  const facet=(key,label,vals)=>`<fieldset style="border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:2px"><legend class="sm" style="font-weight:600;margin-bottom:4px">${label}</legend>${vals.map(([v,l,n])=>`<label class="check sm"><input type="checkbox" data-chg="facet" data-k="${key}" value="${esc(v)}" ${st.filters[key].includes(v)?"checked":""}>${esc(l)} <span class="muted xs">(${n})</span></label>`).join("")}</fieldset>`;
+  const cnt=fn=>{const m={};r.hits.forEach(x=>{const k=fn(x.p);m[k]=(m[k]||0)+1});return m};
+  const bc=cnt(p=>p.brand),cc=cnt(p=>p.cond),sc=cnt(p=>SELLERS[p.seller].type);
+  body=`${r.corrected?`<div class="card" style="background:var(--warning-subtle);border:0"><span class="sm">No results for “${esc(st.ran)}”. Showing results for <b>“${esc(r.corrected)}”</b> (trigram fallback).</span></div>`:""}
+  ${r.u.notes.length||r.u.f.cond?`<div class="row xs"><span class="muted">Understood:</span>${r.u.notes.map(n=>`<span class="badge badge-accent">${esc(n)}</span>`).join("")}${r.u.f.cond?`<span class="badge badge-accent">condition: ${COND[r.u.f.cond]}</span>`:""}</div>`:""}
+  <div class="duo" style="grid-template-columns:200px minmax(0,1fr)"><aside class="stack" style="gap:14px">${facet("brand","Brand",Object.entries(bc).map(([k,n])=>[k,k,n]))}${facet("cond","Condition",Object.entries(cc).map(([k,n])=>[k,COND[k],n]))}${facet("seller","Seller",Object.entries(sc).map(([k,n])=>[k,k==="techshop"?"Sold by TechShop":"Marketplace sellers",n]))}
+  <fieldset style="border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:2px"><legend class="sm" style="font-weight:600;margin-bottom:4px">Price</legend>${BUCKETS.map((b,i)=>{const n=r.hits.filter(x=>x.p.price>=b[1]&&x.p.price<b[2]).length;return n?`<label class="check sm"><input type="radio" name="pb" data-chg="price" value="${i}" ${st.filters.price&&st.filters.price[0]===b[1]?"checked":""}>${b[0]} <span class="muted xs">(${n})</span></label>`:""}).join("")}</fieldset>
+  ${st.filters.brand.length||st.filters.cond.length||st.filters.seller.length||st.filters.price?`<button class="btn btn-ghost btn-sm" type="button" data-act="clearF">Clear filters</button>`:""}</aside>
+  <div class="stack"><div class="row between"><span class="sm muted" role="status">${hits.length} result${hits.length===1?"":"s"} · ${Math.round(9+Math.random()*30)} ms</span><div class="row"><label class="check xs"><input type="checkbox" data-chg="explain" ${st.explain?"checked":""}>Why this order?</label><select class="input" style="width:auto;min-height:34px;font-size:13px" data-chg="sort" aria-label="Sort">${[["relevance","Most relevant"],["price-asc","Price: low to high"],["price-desc","Price: high to low"],["rating","Top rated"]].map(([v,l])=>`<option value="${v}" ${st.sort===v?"selected":""}>${l}</option>`).join("")}</select></div></div>
+  ${hits.length?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px">${hits.map(x=>card(x,st.explain)).join("")}</div>`:`<div class="empty"><b>No results for “${esc(st.ran)}”</b><span class="sm muted">This search was logged as zero-result. Staff see it in Search insights and can add a synonym or mark a catalogue gap.</span></div>`}</div></div>`}
+ const sugg=st.ac&&st.q.length>=2?autocomplete(st.q):"";
+ return browser("market.techshop.ng","/search"+(st.ran?"?q="+encodeURIComponent(st.ran):""),notice()+`<div class="appbar">${applogo("Market")}<form data-form="search" role="search" style="flex:1;max-width:560px;position:relative;min-width:200px"><div class="row nowrap" style="border:1px solid var(--border-strong);border-radius:999px;height:42px;overflow:hidden;gap:0"><input id="q" name="q" value="${esc(st.q)}" data-inp="q" autocomplete="off" placeholder="Search phones, laptops, consoles…" aria-label="Search" style="flex:1;border:0;background:transparent;padding:0 16px;outline:none;min-width:0;height:100%"><button type="submit" aria-label="Search" style="width:52px;height:100%;border:0;background:var(--accent);color:var(--on-accent);display:grid;place-items:center">${ic("search",18)}</button></div><div id="ac">${sugg}</div></form></div><div class="container section">${body}</div>`)}
+function autocomplete(q){const ql=q.toLowerCase();const qs=st.log.map(l=>l[0]).concat(st.synonyms.map(s=>s.from)).filter(x=>x.startsWith(ql)).slice(0,4);const cats=Object.entries(CATS).filter(([k,v])=>v.toLowerCase().startsWith(ql)).slice(0,2);const ps=st.products.filter(p=>p.live&&(" "+p.name+" "+p.brand).toLowerCase().includes(" "+ql)).slice(0,4);
+ if(!qs.length&&!cats.length&&!ps.length)return"";return `<div class="card" style="position:absolute;top:46px;left:0;right:0;z-index:6;box-shadow:var(--shadow-lg);gap:2px;padding:8px">${qs.map(x=>`<button type="button" class="link" style="color:var(--text);text-align:left;padding:4px 6px" data-act="try" data-q="${esc(x)}">${ic("search",13)} ${esc(x)}</button>`).join("")}${cats.map(([k,v])=>`<button type="button" class="link" style="text-align:left;padding:4px 6px" data-act="try" data-q="${esc(v)}">in ${esc(v)}</button>`).join("")}${ps.map(p=>`<button type="button" class="link" style="color:var(--text);text-align:left;padding:4px 6px;display:flex;justify-content:space-between;gap:8px" data-act="openP" data-id="${p.id}"><span>${esc(p.name)}</span><span class="muted tnum">${naira(p.price)}</span></button>`).join("")}<span class="xs muted" style="padding:4px 6px">Suggestions in &lt; 50 ms from popular queries, categories and products</span></div>`}
+function offerScore(o,shipTo){const s=SELLERS[o[0]];const fee=s.state===shipTo?(s.type==="techshop"?2500:3500):6500;const landed=o[1]+fee;return{s,fee,landed,warranty:o[2]}}
+function productView(){const p=prod(st.pid);const offers=(st.offers[p.id]||[[p.seller,p.price,12]]).map(o=>offerScore(o,st.shipTo));const minL=Math.min(...offers.map(o=>o.landed));
+ offers.forEach(o=>{o.priceS=minL/o.landed;o.score=o.priceS+.2*(o.s.rating/5)+.15*o.s.ontime+.1*(1-o.s.cancel)+.05*(o.warranty/12)+(o.s.type==="techshop"?.05:0)});offers.sort((a,b)=>b.score-a.score);const w=offers[0];
+ return browser("market.techshop.ng","/p/"+p.name.toLowerCase().replace(/[^a-z0-9]+/g,"-"),notice()+`<div class="appbar">${applogo("Market")}<button class="btn btn-ghost btn-sm" type="button" data-act="frame" data-v="search">‹ Back to search</button></div><div class="container section"><div class="duo" style="grid-template-columns:minmax(0,1fr) minmax(0,1.1fr)"><div>${artBox(p.cat,46)}<div class="row" style="margin-top:10px">${["p1","p13","p16"].map(id=>`<button class="btn btn-secondary btn-sm" type="button" data-act="openP" data-id="${id}" ${id===p.id?"disabled":""}>${esc(prod(id).name)}</button>`).join("")}</div><span class="xs muted">These three have several sellers.</span></div>
+ <div class="stack"><span class="eyebrow">${esc(p.brand)}</span><h1 style="font-size:28px">${esc(p.name)}</h1><span class="muted">${esc(p.spec)} · ${COND[p.cond]}</span>
+ <div class="row"><label class="sm row">Deliver to <select class="input" style="width:auto;min-height:34px" data-chg="ship">${["Lagos","FCT","Kano"].map(s=>`<option ${st.shipTo===s?"selected":""}>${s}</option>`).join("")}</select></label></div>
+ <div class="card" style="border-color:var(--accent);gap:10px"><span class="eyebrow">Buy box</span><div class="row between"><b style="font-size:24px" class="tnum">${naira(w.landed-w.fee)}</b><span class="sm">+ ${naira(w.fee)} delivery to ${st.shipTo}</span></div><span class="sm">Sold by <b>${esc(w.s.name)}</b> · ${w.s.rating}★ · ${Math.round(w.s.ontime*100)}% on time · ${w.warranty}-month warranty</span><button class="btn btn-primary btn-lg" type="button" data-act="toast" data-m="Added the buy-box offer from ${esc(w.s.name)}">Add to cart</button></div>
+ ${offers.length>1?`<div class="panel"><div class="panel-h"><h3>All sellers (${offers.length})</h3><span class="xs muted">Same formula for TechShop and vendors</span></div>${table(["Seller","Price + delivery","Score"],offers.map((o,i)=>[`${i===0?"<b>":""}${esc(o.s.name)}${i===0?"</b> 🏆":""}<br><span class="xs muted">${o.s.rating}★ · ${Math.round(o.s.ontime*100)}% on time · ${o.warranty} mo warranty</span>`,`${naira(o.landed-o.fee)} + ${naira(o.fee)}`,`<span class="mono xs" style="white-space:normal;display:block;min-width:230px">${o.priceS.toFixed(3)} price + ${(.2*o.s.rating/5).toFixed(3)} rating + ${(.15*o.s.ontime).toFixed(3)} on-time + ${(.1*(1-o.s.cancel)).toFixed(3)} cancel + ${(.05*o.warranty/12).toFixed(3)} warranty${o.s.type==="techshop"?" + 0.050 TS-fulfilled":""} = <b>${o.score.toFixed(3)}</b></span>`]))}</div>`:""}</div></div></div>`)}
+function sellerView(){const l=st.sl;const p=prod(l.pid);const offers=(st.offers[p.id]||[[p.seller,p.price]]).map(o=>o[1]).concat([p.price]).sort((a,b)=>a-b);const median=offers[Math.floor(offers.length/2)];const price=+String(l.price).replace(/\D/g,"");const was=+String(l.was).replace(/\D/g,"");
+ const checks=[];if(price){const d=(median-price)/median;if(d>.4)checks.push(["bad",`Price ${Math.round(d*100)}% below the median (${naira(median)}): goes to review (scam signal)`]);else if(price>median*1.6)checks.push(["warn",`Price is ${Math.round((price/median-1)*100)}% above the median — buyers may skip it`]);else checks.push(["good","Price is within the normal range"])}
+ if(was)checks.push(["bad",`“Was” price rejected: this listing has no 30-day price history at ${naira(was)} (FCCPA guard)`]);
+ checks.push(["warn","New seller: your first 10 listings are reviewed (usually within 24 h)"]);
+ return browser("seller.techshop.ng","/listings/new",notice()+`<div class="appbar">${applogo("Seller Centre")}<span class="sm muted">Adeola Phones (new seller)</span></div><div class="container section" style="max-width:820px"><h1 style="font-size:26px;margin-bottom:12px">List a product</h1>${l.submitted?`<div class="card"><b>${l.submitted.status==="live"?"Live on the Market":"Submitted for review"}</b><span class="sm muted">${esc(l.submitted.msg)}</span><button class="btn btn-secondary btn-sm" type="button" data-act="slNew" style="align-self:flex-start">List another</button></div>`:`<form class="card stack" data-form="listing" novalidate style="padding:20px"><span class="sm muted">1. Find the product in the catalogue — TechShop owns titles, photos and specs, so you only set price, stock and condition.</span>${field("sl-p","Product",l.pid,{select:st.products.filter(x=>["phones","accessories","gaming"].includes(x.cat)).map(x=>[x.id,x.name]),attrs:'data-chg="slp"'})}<div class="form-grid">${field("sl-c","Condition",l.cond,{select:[["new","New"],["uk_used","UK-used"],["refurbished","Refurbished"]]})}${field("sl-price","Your price (₦)",l.price,{inputmode:"numeric",attrs:'data-inp="slprice"',ph:String(median)})}${field("sl-was","“Was” price (optional)",l.was,{inputmode:"numeric",attrs:'data-inp="slwas"'})}</div>
+ <div class="stack" style="gap:6px" id="checks">${checks.map(c=>`<span class="sm" style="color:var(--${c[0]==="bad"?"danger":c[0]==="warn"?"warning":"success"})">${c[0]==="good"?"✓":"!"} ${esc(c[1])}</span>`).join("")}</div><button class="btn btn-primary" type="submit" style="align-self:flex-start">Submit listing</button></form>`}</div>`)}
+function staffView(){const t=st.staffTab;let body="";
+ if(t==="moderation")body=`<div class="panel"><div class="panel-h"><h3>Moderation queue</h3><span class="xs muted">Highest risk first · target under 24 h</span></div>${table(["Listing","Seller","Price","Why it’s here","Risk","Status",""],[...st.queue].sort((a,b)=>b.risk-a.risk).map(x=>[`<b>${esc(x.name)}</b><br><span class="xs muted">${x.id} · ${COND[x.cond]}</span>`,esc(SELLERS[x.seller].name),naira(x.price),`<span class="xs" style="white-space:normal;display:block;max-width:300px">${x.reasons.map(esc).join("<br>")}</span>`,`<b style="color:${x.risk>70?"var(--danger)":x.risk>40?"var(--warning)":"var(--success)"}">${x.risk}</b>`,status({in_review:"In review",live:"Approved · live",rejected:"Rejected",changes_requested:"Changes requested"}[x.status],{in_review:"st-warn",live:"st-good",rejected:"st-bad",changes_requested:"st-info"}[x.status]),x.status==="in_review"?`<div class="row nowrap"><button class="btn btn-primary btn-sm" type="button" data-act="mod" data-v="live" data-id="${x.id}">Approve</button><button class="btn btn-secondary btn-sm" type="button" data-act="mod" data-v="changes_requested" data-id="${x.id}">Request changes</button><button class="btn btn-ghost btn-sm" type="button" data-act="mod" data-v="rejected" data-id="${x.id}">Reject</button></div>`:""]))}</div>`;
+ if(t==="synonyms")body=`<div class="grid2"><div class="panel"><div class="panel-h"><h3>Synonyms</h3><span class="xs muted">Applied instantly (cache refreshed via NOTIFY)</span></div>${table(["When people type","Search for","Kind",""],st.synonyms.map((s,i)=>[`<b>${esc(s.from)}</b>`,esc(s.to),`<span class="badge">${s.kind.replace("_","-")}</span>`,s.by==="seed"?`<span class="xs muted">seed</span>`:`<button class="btn btn-ghost btn-sm" type="button" data-act="delSyn" data-i="${i}">Remove</button>`]))}</div>
+  <form class="panel" data-form="syn" novalidate><div class="panel-h"><h3>Add a synonym</h3></div><div class="panel-b">${field("syn-from","When people type",st.synForm.from,{ph:"e.g. infinix"})}${field("syn-to","Search for",st.synForm.to,{ph:"e.g. nova"})}${field("syn-kind","Kind","one_way",{select:[["one_way","One-way (from → to)"],["two_way","Two-way (both mean the same)"]]})}<button class="btn btn-primary btn-sm" type="submit" style="align-self:flex-start">Add synonym</button></div></form></div>`;
+ if(t==="insights"){const zero=st.log.filter(l=>l[2]);body=`<div class="kpis">${[["Searches (7 d)","48,210"],["Zero-result rate",(zero.length/st.log.length*100).toFixed(1)+"%"],["Search → cart","7.4%"],["p95 latency","118 ms"]].map(k=>`<div class="card kpi"><span class="sm muted">${k[0]}</span><b>${k[1]}</b></div>`).join("")}</div>
+  <div class="panel"><div class="panel-h"><h3>Zero-result searches</h3><span class="xs muted">Includes the ones you just made on the Market</span></div>${table(["Query","Searches","Fix"],zero.map(l=>[`<b>${esc(l[0])}</b>`,l[1],st.gaps.includes(l[0])?status("Catalogue gap · sent to purchasing","st-info"):`<div class="row nowrap"><button class="btn btn-secondary btn-sm" type="button" data-act="fixSyn" data-q="${esc(l[0])}">Add synonym…</button><button class="btn btn-ghost btn-sm" type="button" data-act="gap" data-q="${esc(l[0])}">Mark catalogue gap</button></div>`]),{empty:"No zero-result searches 🎉"})}</div>
+  <div class="panel"><div class="panel-h"><h3>Top searches</h3></div>${table(["Query","Searches","Results"],st.log.filter(l=>!l[2]).map(l=>[esc(l[0]),l[1],"✓"]))}</div>`}
+ return browser("staff.techshop.ng","/catalogue/"+t,notice()+`<div class="appbar">${applogo("Staff · Catalogue")}</div><div class="main"><div class="row between"><h1>Catalogue</h1><div class="pill-nav" role="group" aria-label="Section">${[["moderation","Moderation"],["synonyms","Synonyms"],["insights","Search insights"]].map(([k,l])=>`<button type="button" data-act="stab" data-v="${k}" aria-pressed="${t===k}">${l}</button>`).join("")}</div></div>${body}</div>`)}
+function render(){const v={search:searchView,product:productView,seller:sellerView,staff:staffView}[st.frame]();
+ $("#ui-view").innerHTML=`<div class="pill-nav" role="group" aria-label="App" style="margin-bottom:12px;width:fit-content">${[["search","Market search","search"],["product","Product & buy box","tag"],["seller","Seller Centre › List a product","store"],["staff","Staff › Catalogue","grid"]].map(x=>`<button type="button" data-act="frame" data-v="${x[0]}" aria-pressed="${st.frame===x[0]}">${ic(x[2],14)}${x[1]}</button>`).join("")}</div>${v}<div class="row" style="margin-top:10px"><button class="btn btn-ghost btn-sm" type="button" data-act="reset">Reset demo</button></div>`}
+UI_RENDER=render;
+function runSearch(q){st.q=q;st.ran=q.trim();st.ac=false;st.filters={brand:[],cond:[],seller:[],price:null};st.redirect=st.redirects[q.trim().toLowerCase()]||null;
+ if(st.ran&&!st.redirect){const r=search(st.ran);const zero=!r.hits.length;const ex=st.log.find(l=>l[0]===st.ran.toLowerCase());if(ex){ex[1]=String(+ex[1]+1);ex[2]=zero?1:0}else st.log.unshift([st.ran.toLowerCase(),"1",zero?1:0])}
+ st.frame="search";render()}
+Object.assign(ACT,{
+ reset:()=>{st=fresh();render();toast("Demo reset")},
+ frame:d=>{st.frame=d.v;render()},try:d=>runSearch(d.q),
+ openP:d=>{st.pid=d.id;st.frame="product";st.ac=false;render()},
+ clearF:()=>{st.filters={brand:[],cond:[],seller:[],price:null};render()},
+ toast:d=>toast(d.m),
+ stab:d=>{st.staffTab=d.v;render()},
+ mod:d=>{const x=st.queue.find(q=>q.id===d.id);x.status=d.v;if(d.v==="live"){const base=st.products.find(p=>p.name===x.name);const id="n"+x.id;st.products.push({...(base||st.products[0]),id,name:x.name,cond:x.cond,price:x.price,was:0,seller:x.seller,sales:0,reviews:0,rating:0,stock:"in",live:true});toast("Approved · outbox → read model refreshed · searchable now")}else toast(d.v==="rejected"?"Rejected · seller told why":"Sent back with templated reasons");render()},
+ delSyn:d=>{st.synonyms.splice(+d.i,1);render()},
+ fixSyn:d=>{st.staffTab="synonyms";st.synForm={from:d.q,to:""};render();setTimeout(()=>$("#syn-to")?.focus(),0)},
+ gap:d=>{st.gaps.push(d.q);toast("Marked as a catalogue gap — purchasing gets the demand data");render()},
+ slNew:()=>{st.sl={pid:"p1",cond:"new",price:"",was:"",submitted:null};render()}
+});
+Object.assign(INP,{q:(d,el)=>{st.q=el.value;st.ac=true;const a=$("#ac");if(a)a.innerHTML=el.value.length>=2?autocomplete(el.value):""},slprice:(d,el)=>{st.sl.price=el.value;rerender(true)},slwas:(d,el)=>{st.sl.was=el.value;rerender(true)}});
+Object.assign(CHG,{facet:(d,el)=>{const a=st.filters[d.k];el.checked?a.push(el.value):a.splice(a.indexOf(el.value),1);render()},price:(d,el)=>{const b=BUCKETS[+el.value];st.filters.price=[b[1],b[2]];render()},sort:(d,el)=>{st.sort=el.value;render()},explain:(d,el)=>{st.explain=el.checked;render()},ship:(d,el)=>{st.shipTo=el.value;render()},slp:(d,el)=>{st.sl.pid=el.value;render()}});
+FORM.search=v=>runSearch(v.q||"");
+FORM.syn=v=>{const from=v["syn-from"].trim().toLowerCase(),to=v["syn-to"].trim().toLowerCase();if(!from||!to){toast("Fill in both words");return}st.synonyms.unshift({from,to,kind:v["syn-kind"],by:"you"});st.synForm={from:"",to:""};toast(`“${from}” → “${to}” is live. Try it on the Market.`);render()};
+FORM.listing=v=>{const l=st.sl;const p=prod(v["sl-p"]);const price=+String(v["sl-price"]).replace(/\D/g,"");const was=+String(v["sl-was"]).replace(/\D/g,"");if(!price){toast("Enter a price");return}
+ if(was){l.submitted={status:"rejected",msg:"Rejected automatically: the “was” price has no 30-day history (FCCPA). Remove it and resubmit."};render();return}
+ const offers=(st.offers[p.id]||[[p.seller,p.price]]).map(o=>o[1]).concat([p.price]).sort((a,b)=>a-b);const median=offers[Math.floor(offers.length/2)];const reasons=["New seller: first 10 listings are reviewed"];let risk=40;if((median-price)/median>.4){reasons.unshift(`Price ${Math.round((median-price)/median*100)}% below the median (${naira(median)}) — scam signal`);risk=88}
+ const id="L-"+(9003+st.queue.length);st.queue.push({id,seller:"adeola",name:p.name,cond:v["sl-c"],price,was:0,reasons,risk,status:"in_review"});l.submitted={status:"review",msg:`${id} is in the moderation queue (risk ${risk}). Approve it in Staff › Catalogue and it becomes searchable.`};render()};
+render();
+
+/* ================= Simulation ================= */
+window.SIM_INSTANCE=createSim($("#sim-view"),{
+ viewBox:[1100,640],
+ nodes:{
+  shopper:{x:20,y:60,w:140,h:50,t:"Shopper",s:"web · app",info:"Types queries, applies filters, clicks results."},
+  seller:{x:20,y:260,w:140,h:50,t:"Seller",s:"Seller Centre",info:"Attaches listings to catalogue products or proposes new products."},
+  staff:{x:20,y:440,w:140,h:50,t:"Staff",s:"catalogue · search",info:"Moderators and merchandisers: moderation queue, synonyms, redirects, pins, insights."},
+  next:{x:200,y:60,w:130,h:50,t:"Next.js + CDN",s:"SSR · cache",info:"Server-renders category and product pages; caches public responses with short TTLs and revalidates on catalogue events."},
+  search:{x:375,y:60,w:115,h:50,t:"search API",s:"/search · /suggest",info:"Entry point; returns results, facets, suggestion and an explain trace for staff."},
+  qu:{x:505,y:60,w:115,h:50,t:"query understanding",s:"synonyms · intents",info:"Normalises, applies synonyms and redirects, extracts price, condition, storage and network intents."},
+  recs:{x:635,y:60,w:115,h:50,t:"recs re-rank",s:"consented only",info:"Personal re-rank of the top 100 (bounded ±5 positions), then fairness rules."},
+  catalogue:{x:375,y:180,w:115,h:50,t:"catalogue",s:"products · listings",info:"Products, variants, listings, prices (with history), stock; FCCPA guard on compare-at prices."},
+  moderation:{x:505,y:180,w:115,h:50,t:"moderation",s:"auto-check · queue",info:"Automated checks (duplicates, outliers, banned words, images, seller standing) and the review queue."},
+  indexer:{x:635,y:180,w:115,h:50,t:"read-model indexer",s:"outbox subscriber",info:"Rebuilds product_offer_summary rows (search vector, facets, buy box) within seconds of any change."},
+  logs:{x:375,y:300,w:115,h:50,t:"search logs",s:"insights",info:"search_queries + click events → zero-result and low-CTR queues for staff."},
+  worker:{x:505,y:300,w:115,h:50,t:"River worker",s:"jobs · nightly",info:"Image processing, nightly full rebuild, suggestion index, sitemaps."},
+  pg:{x:330,y:460,w:340,h:120,t:"PostgreSQL",s:"product_offer_summary · tsvector · pg_trgm",db:true,info:"Catalogue tables plus the read model with GIN (tsvector, jsonb facets) and trigram indexes. Only Go connects."},
+  s3:{x:800,y:300,w:150,h:50,t:"Object storage",s:"images",info:"Product images (resized variants, EXIF stripped, perceptual hash)."},
+  engine:{x:800,y:120,w:150,h:60,t:"Search engine (later)",s:"Meilisearch / OpenSearch",info:"Only when thresholds are hit (p95 > 300 ms, > 200k offers, vector search). Same search.Port interface."}
+ },
+ groups:[{x:360,y:30,w:405,h:340,t:"Go API"}],
+ opts:{typo:false,personal:true,redirect:false,outlier:false,fakeWas:false,banned:false,oos:false,engine:false},
+ toggles:{typo:["Query has a typo (“lapptop”)","Zero hits → trigram fallback"],personal:["Shopper consented to personalisation","Recs re-rank the top 100"],redirect:["Query is a curated redirect (“cars”)","Skip search entirely"],outlier:["Price 54% below the median","Sent to review"],fakeWas:["“Was” price above the 30-day max","Rejected (FCCPA)"],banned:["Title contains “first copy”","Auto-rejected"],oos:["Buy-box winner runs out of stock","Next offer wins"],engine:["Thresholds reached: dedicated engine","Same port, different adapter"]},
+ isDown:(k,o)=>k==="engine"&&!o.engine,
+ baseState:()=>({query:"—",understood:"—",hits:0,latency:"—",listing:"—",readModel:"stale",buybox:"—",logged:"no"}),
+ scenarios:{
+  query:{t:"Search query",toggles:["typo","personal","redirect","engine"],state:[["query","Query"],["understood","Understood as"],["hits","Results"],["latency","Latency"],["logged","Logged"]],
+   build:o=>[
+    R("shopper","next","GET /search?q=…","",null,s=>{s.query=o.redirect?"cars":o.typo?"lapptop under 700k":"tokunbo iphone under 700k"}),
+    R("next","search","GET /api/v1/search",""),
+    R("search","qu","understand",o.redirect?"“cars” matches a curated redirect.":"Normalise, synonyms, intents.",o.redirect?null:o.typo?`"lapptop under 700k" → terms [lapptop] · price ≤ ₦700,000`:`"tokunbo iphone under 700k"\n→ tokunbo ⇒ condition uk_used\n→ iphone ⇒ "orbit one" (one-way synonym)\n→ under 700k ⇒ price ≤ ₦700,000`,s=>{s.understood=o.redirect?"redirect /c/cars":o.typo?"lapptop · ≤ ₦700k":"orbit one · uk_used · ≤ ₦700k"}),
+    ...(o.redirect?[S("search","next","302 → /c/cars","Cars live in their own catalogue.",null,s=>{s.hits="—";s.latency="4 ms"})]:[
+     ...(o.engine?[R("search","engine","query via search.Port","Same request shape; the engine adapter maps it to the engine’s DSL.")]:[R("search","pg","FTS + filters + facets (one query)","",`SELECT … , ts_rank_cd(search_vector, q) AS rel\nFROM product_offer_summary, websearch_to_tsquery('simple', $1) q\nWHERE channel='retail' AND search_vector @@ q\n  AND min_price_kobo <= 70000000 AND 'uk_used' = ANY(conditions)`)]),
+     ...(o.typo?[F("pg","search","0 hits",""),R("search","pg","trigram fallback","similarity(title, 'lapptop') > 0.45 → “laptop”.",null,s=>{s.understood="laptop · ≤ ₦700k (did you mean)"})]:[]),
+     S("pg","search",o.typo?"2 laptops":"2 Orbit One (UK-used)","",null,s=>{s.hits=2}),
+     R("search","search","score: relevance × signals","sales, Bayesian rating, seller quality, availability."),
+     ...(o.personal?[R("search","recs","re-rank top 100 (±5)","Consented: personal affinity nudges order within bounds.")]:[]),
+     R("recs","search","rules: in stock first, vendor floor, pins",""),
+     S("search","next","results + facets + suggestion","",null,s=>{s.latency=o.engine?"38 ms":"84 ms"}),
+     A("search","logs","log query (+ zero-result flag)","",null,s=>{s.logged="search_queries"}),
+     S("next","shopper","HTML (category pages cached at the CDN)","")
+    ])
+   ]},
+  listing:{t:"Seller listing → live",toggles:["outlier","fakeWas","banned"],state:[["listing","Listing"],["readModel","Read model"],["hits","Searchable"]],
+   build:o=>[
+    R("seller","catalogue","match product (GTIN or title)","Attach to the existing product instead of creating a duplicate."),
+    R("seller","catalogue","POST listing (price, stock, condition)","",null,s=>{s.listing="draft"}),
+    ...(o.fakeWas?[F("catalogue","seller","422 compare-at above 30-day max","FCCPA guard in the catalogue module, before moderation.",null,s=>{s.listing="rejected (was-price)"})]:[
+    R("catalogue","moderation","auto-check","Required attributes, duplicates, price vs median, banned words, images, seller standing.",null,s=>{s.listing="auto_check"}),
+    ...(o.banned?[F("moderation","seller","rejected: banned phrase","“first copy” = counterfeit. Seller told why; repeated attempts raise a risk case.",null,s=>{s.listing="rejected"})]:[
+     ...(o.outlier?[A("moderation","pg","in_review (risk 86)","Queue sorted by risk.",null,s=>{s.listing="in_review"}),R("staff","moderation","moderator approves","Checked the seller’s stock photos and IMEI evidence; audited.")]:[]),
+     R("moderation","pg","status live + outbox listing.live","",null,s=>{s.listing="live"}),
+     A("pg","indexer","outbox → rebuild row","Recomputes offers, min price, buy box, facets and search vector.",null,s=>{s.readModel="refreshed"}),
+     R("indexer","pg","upsert product_offer_summary",""),
+     A("indexer","next","revalidate product + category pages","",null,s=>{s.hits="yes, within seconds"}),
+     A("worker","s3","process images","Resize, strip EXIF, perceptual hash (stolen-photo check).")
+    ])])
+   ]},
+  price:{t:"Price or stock change",toggles:["oos"],state:[["buybox","Buy-box winner"],["readModel","Read model"]],
+   build:o=>[
+    R("seller","catalogue",o.oos?"stock → 0":"price ₦899,000 → ₦879,000","",null,s=>{s.buybox="Ikeja Gadget Hub"}),
+    R("catalogue","pg","listing + listing_price_history + outbox","Every price change is kept (30-day max for the FCCPA guard)."),
+    A("pg","indexer","listing.changed",""),
+    R("indexer","pg",o.oos?"recompute buy box: winner out of stock":"recompute min price + buy box","",null,s=>{s.readModel="refreshed";s.buybox=o.oos?"TechShop (next best)":"Ikeja Gadget Hub (₦879,000)"}),
+    A("indexer","next","revalidate pages",""),
+    A("indexer","logs","price-drop event","Feeds the “price drop on a saved item” journey (messaging).")
+   ]},
+  insights:{t:"Fixing zero results",toggles:[],state:[["query","Query"],["hits","Results"]],
+   build:o=>[
+    R("shopper","search","“infinix hot 40”","We sell the equivalent under another name.",null,s=>{s.query="infinix hot 40";s.hits=0}),
+    A("search","logs","zero-result logged (58 this week)",""),
+    R("staff","logs","Search insights › zero results",""),
+    R("staff","qu","add synonym infinix → nova","Audited; stored in search_synonyms."),
+    A("qu","pg","NOTIFY synonyms","Every API instance reloads its synonym cache."),
+    R("shopper","search","same query again",""),
+    S("search","shopper","6 Nova phones","",null,s=>{s.hits=6})
+   ]}
+ }
+});
+
+initViews();
+</script>

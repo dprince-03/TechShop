@@ -1,0 +1,430 @@
+<title>TechShop System Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#ffffff; --surface:#f4f5f7; --raised:#ffffff; --inverse:#111214;
+  --text:#16171a; --muted:#5f6368; --subtle:#6b7078; --text-inverse:#f7f8fa;
+  --border:#d9dbe0; --border-strong:#8e939b;
+  --accent:#1a56f0; --accent-subtle:#e8efff; --on-accent:#ffffff; --link:#1a56f0;
+  --success:#1a7f37; --warning:#9a6700; --danger:#d1242f; --promo:#c2410c; --violet:#7c3aed;
+  --success-subtle:#e6f4ea; --danger-subtle:#fdecee; --promo-subtle:#fdf0e7; --violet-subtle:#f1eafd;
+  --edge:#c9ccd3;
+  --font:"Geist",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0b0c0e; --surface:#16181c; --raised:#1d2025; --inverse:#f4f5f7;
+  --text:#f2f3f5; --muted:#a3a8b0; --subtle:#8d939b; --text-inverse:#16171a;
+  --border:#2c3036; --border-strong:#5b616a;
+  --accent:#3b74f5; --accent-subtle:#16244a; --link:#6b9bff;
+  --success:#4ac26b; --warning:#e3b341; --danger:#ff6b6b; --promo:#fb8c4b; --violet:#a78bfa;
+  --success-subtle:#12301c; --danger-subtle:#3a1619; --promo-subtle:#3a2112; --violet-subtle:#261b42;
+  --edge:#33373e; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0b0c0e; --surface:#16181c; --raised:#1d2025; --inverse:#f4f5f7;
+  --text:#f2f3f5; --muted:#a3a8b0; --subtle:#8d939b; --text-inverse:#16171a;
+  --border:#2c3036; --border-strong:#5b616a;
+  --accent:#3b74f5; --accent-subtle:#16244a; --link:#6b9bff;
+  --success:#4ac26b; --warning:#e3b341; --danger:#ff6b6b; --promo:#fb8c4b; --violet:#a78bfa;
+  --success-subtle:#12301c; --danger-subtle:#3a1619; --promo-subtle:#3a2112; --violet-subtle:#261b42;
+  --edge:#33373e; color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3{margin:0;line-height:1.2;letter-spacing:-.015em}
+p{margin:0}
+.wrap{max-width:1500px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:14px}
+.top{display:flex;flex-wrap:wrap;gap:10px 20px;justify-content:space-between;align-items:flex-end}
+.top h1{font-size:22px}
+.top p{color:var(--muted);font-size:13px;max-width:70ch}
+.scen{display:flex;gap:4px;padding:4px;background:var(--surface);border-radius:999px;overflow-x:auto;max-width:100%;scrollbar-width:none}
+.scen button{border:0;background:transparent;padding:7px 13px;border-radius:999px;font-size:13px;font-weight:500;color:var(--muted);white-space:nowrap}
+.scen button[aria-pressed="true"]{background:var(--inverse);color:var(--text-inverse)}
+.layout{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+@media (min-width:1100px){.layout{grid-template-columns:minmax(0,1fr) 380px}.canvas{position:sticky;top:12px}}
+.canvas{align-self:start;background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:8px;min-width:0;position:relative}
+svg.map{width:100%;height:auto;display:block}
+@media (max-width:760px){.canvas{overflow-x:auto}svg.map{min-width:720px}.legend{min-width:0}}
+.panel{display:flex;flex-direction:column;gap:12px;min-width:0}
+.card{background:var(--raised);border:1px solid var(--border);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.card h2{font-size:14px}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.controls{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--border-strong);background:transparent;font-weight:600;font-size:13px}
+.btn:hover{border-color:var(--text)}
+.btn-primary{background:var(--accent);border-color:transparent;color:var(--on-accent)}
+.btn-primary:hover{border-color:transparent;filter:brightness(1.08)}
+.btn[disabled]{opacity:.4;pointer-events:none}
+.seg{display:inline-flex;border:1px solid var(--border-strong);border-radius:999px;overflow:hidden}
+.seg button{border:0;background:transparent;padding:0 10px;min-height:34px;font-size:12.5px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--inverse);color:var(--text-inverse)}
+.progress{height:4px;background:var(--surface);border-radius:4px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.toggles{display:flex;flex-direction:column;gap:6px}
+.tg{display:flex;align-items:flex-start;gap:10px;font-size:13px;cursor:pointer}
+.tg input{width:16px;height:16px;margin-top:2px;accent-color:var(--accent);flex:none}
+.tg small{display:block;color:var(--muted);font-size:11.5px}
+.now{border-left:3px solid var(--accent);padding-left:10px;display:flex;flex-direction:column;gap:6px}
+.now b{font-size:14.5px}
+.now p{color:var(--muted);font-size:13px}
+pre{margin:0;font-family:var(--mono);font-size:11.5px;background:var(--surface);border-radius:10px;padding:10px;white-space:pre-wrap;word-break:break-word;max-height:190px;overflow:auto}
+.log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;max-height:300px;overflow:auto;counter-reset:s}
+.log li button{width:100%;text-align:left;border:0;background:transparent;padding:5px 8px;border-radius:8px;font-size:12.5px;color:var(--muted);display:flex;gap:8px;align-items:baseline}
+.log li button::before{counter-increment:s;content:counter(s);font-family:var(--mono);font-size:10.5px;min-width:18px;color:var(--subtle)}
+.log li.done button{color:var(--text)}
+.log li.cur button{background:var(--accent-subtle);color:var(--text);font-weight:600}
+.log .k{width:8px;height:8px;border-radius:50%;flex:none;align-self:center}
+.state{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.state div{background:var(--surface);border-radius:10px;padding:7px 9px;display:flex;flex-direction:column;gap:1px;min-width:0}
+.state span{font-size:11px;color:var(--muted)}
+.state b{font-size:12.5px;font-family:var(--mono);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.state .changed{animation:flash 1s}
+@keyframes flash{from{background:var(--accent-subtle)}to{background:var(--surface)}}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted);padding:6px 8px 2px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:18px;height:3px;border-radius:2px;display:inline-block}
+.gens{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.gen{border:1px solid var(--border);border-radius:10px;padding:6px 8px;font-size:12px;display:flex;flex-direction:column;gap:1px}
+.gen b{font-size:12px}
+.gen span{font-size:11px;color:var(--muted)}
+.gen.on{border-color:var(--success);background:var(--success-subtle)}
+.gen.off{opacity:.65}
+.hint{font-size:12px;color:var(--muted)}
+/* SVG */
+.node rect{fill:var(--raised);stroke:var(--border-strong);stroke-width:1;transition:fill .2s,stroke .2s}
+.node text{fill:var(--text);font-family:var(--font);font-size:12.5px;font-weight:600;pointer-events:none}
+.node text.sub{fill:var(--muted);font-size:10px;font-weight:400}
+.node{cursor:pointer}
+.node:hover rect{stroke:var(--text)}
+.node.active rect{stroke:var(--accent);stroke-width:2.5;fill:var(--accent-subtle)}
+.node.focus rect{stroke:var(--violet);stroke-width:2.5}
+.node.dim{opacity:.35}
+.node.down rect{stroke:var(--danger);stroke-dasharray:5 4;fill:var(--danger-subtle)}
+.group{fill:none;stroke:var(--border-strong);stroke-dasharray:4 4;stroke-width:1}
+.glabel{fill:var(--muted);font-family:var(--font);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.edge{stroke:var(--edge);stroke-width:1.2;fill:none}
+.edge.dim{opacity:.25}
+.edge.hot{stroke-width:2.5}
+.plabel rect{fill:var(--inverse)}
+.plabel text{fill:var(--text-inverse);font-family:var(--mono);font-size:11px}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>TechShop system simulator</h1>
+      <p>How the clients, the Go API modules, Postgres, the outbox worker, payment and messaging providers, and the Python recommender talk to each other. Pick a scenario and press Play, or click any box to see what it does and what it talks to.</p>
+    </div>
+  </div>
+  <div class="scen" role="group" aria-label="Scenario" id="scen"></div>
+  <div class="layout">
+    <div class="canvas">
+      <svg class="map" id="map" viewBox="0 0 1100 690" role="img" aria-label="System architecture diagram"></svg>
+      <div class="legend">
+        <span><i style="background:var(--accent)"></i>Request</span>
+        <span><i style="background:var(--success)"></i>Response</span>
+        <span><i style="background:var(--promo)"></i>Async (outbox, jobs, webhooks)</span>
+        <span><i style="background:var(--violet)"></i>Recommender</span>
+        <span><i style="background:var(--danger)"></i>Failure or fallback</span>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="card">
+        <div class="controls">
+          <button class="btn btn-primary" id="play" type="button">Play</button>
+          <button class="btn" id="prev" type="button" aria-label="Previous step">◀</button>
+          <button class="btn" id="next" type="button" aria-label="Next step">▶</button>
+          <button class="btn" id="restart" type="button">Restart</button>
+          <div class="seg" role="group" aria-label="Speed" id="speed"></div>
+        </div>
+        <div class="progress"><i id="bar"></i></div>
+        <div class="now" id="now" aria-live="polite"></div>
+        <pre id="payload" hidden></pre>
+      </div>
+      <div class="card"><h2>What can go wrong</h2><div class="toggles" id="toggles"></div></div>
+      <div class="card" id="gencard" hidden><h2>Recommender generators</h2><div class="seg" role="group" aria-label="Data maturity" id="maturity"></div><div class="gens" id="gens"></div><p class="hint">Every generator is built, but only contributes once its data gate passes and it beats the baseline offline. Otherwise its weight is 0.</p></div>
+      <div class="card"><h2>System state</h2><div class="state" id="state"></div></div>
+      <div class="card"><h2>Steps</h2><ol class="log" id="log"></ol></div>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ===== Nodes ===== */
+const N={
+ web:{x:20,y:50,w:150,h:50,t:"Market web",s:"Next.js + BFF cookies",info:"Next.js storefront. Server components call the API through @techshop/api-client; the browser keeps tokens in httpOnly cookies held by the Next.js BFF route. Never touches the database."},
+ app:{x:20,y:135,w:150,h:50,t:"Customer app",s:"Expo",info:"Expo app. Calls the same public API with a bearer token kept in SecureStore. Receives push via Expo and live order updates over SSE."},
+ logi:{x:20,y:220,w:150,h:50,t:"Logistics app",s:"riders + dispatch",info:"Expo app for riders and dispatchers. Queues actions in SQLite when offline, each with a client_event_id, so re-sending never duplicates. Shares location only while on shift."},
+ staff:{x:20,y:305,w:150,h:50,t:"Staff portal",s:"20 modules, RBAC",info:"Next.js portal for staff. Every action is permission-checked in Go (RBAC) and written to audit_log. Staff sign-in needs TOTP."},
+ seller:{x:20,y:390,w:150,h:50,t:"Seller Centre",s:"Next.js",info:"Vendor portal: KYC, listings, orders, payouts. Same API, seller-scoped tokens."},
+ nginx:{x:205,y:50,w:90,h:390,t:"nginx",s:"TLS · routing",info:"Terminates TLS, routes each hostname, applies coarse rate limits and passes X-Request-ID. Webhooks from providers also arrive here."},
+ auth:{x:345,y:70,w:105,h:50,t:"identity",s:"auth · RBAC",info:"Phone OTP sign-in, JWT (Ed25519) access tokens, rotating refresh tokens with reuse detection, staff TOTP, permissions."},
+ cat:{x:463,y:70,w:105,h:50,t:"catalogue",s:"search · offers",info:"Products, listings, offers and the product_offer_summary read model used for search and filters."},
+ orders:{x:581,y:70,w:105,h:50,t:"orders",s:"cart · checkout",info:"Cart, checkout and the order state machine. Reserves stock in the same transaction that creates the order (unit of work)."},
+ pay:{x:345,y:150,w:105,h:50,t:"payments",s:"PSP adapters",info:"Adapters for Paystack, OPay and Monnify (Moniepoint). Verifies every webhook signature and re-verifies the transaction with the provider before trusting it. Dedupes on (provider, event_id)."},
+ ledger:{x:463,y:150,w:105,h:50,t:"ledger",s:"double entry",info:"Posts balanced journals (debits = credits, enforced by a deferred trigger). Each money event has a unique posting_key so it can never be posted twice."},
+ logx:{x:581,y:150,w:105,h:50,t:"logistics",s:"jobs · OTP · GPS",info:"Delivery jobs, rider assignment, delivery-code (OTP) hashing and checking, rider locations, offline event sync."},
+ recs:{x:345,y:230,w:105,h:50,t:"recs",s:"rules · re-rank",info:"Serves every shelf. Reads imported candidates, applies Go session re-ranking and business rules (in stock, vendor floor, overrides, repurchase days). Calls the Python live service only behind a flag with an 80 ms timeout."},
+ events:{x:463,y:230,w:105,h:50,t:"events",s:"tracking",info:"Accepts batched behaviour events (views, clicks, add-to-cart) only when the visitor has consented. Writes user_events."},
+ payout:{x:581,y:230,w:105,h:50,t:"payouts",s:"sellers",info:"Works out what each seller is owed after delivery and the return window, creates payouts that need a second person to approve (dual control), then sends transfers."},
+ outbox:{x:345,y:310,w:105,h:50,t:"outbox relay",s:"LISTEN/NOTIFY",info:"Every module writes outbox_events in the same transaction as its change. The relay wakes on NOTIFY and turns them into River jobs, so side effects are never lost or sent before commit."},
+ sse:{x:463,y:310,w:105,h:50,t:"SSE hub",s:"live updates",info:"Server-Sent Events to web and apps: order status, rider location, staff dashboards. Fed by Postgres NOTIFY, so no Redis is needed."},
+ internal:{x:581,y:310,w:105,h:50,t:"internal API",s:"service tokens",info:"/internal endpoints, not exposed through nginx. Python uses them to export pseudonymised training data and import results. Python never connects to Postgres."},
+ worker:{x:345,y:470,w:341,h:50,t:"River worker (cmd/worker)",s:"jobs · retries · cron",info:"Same Go binary, worker mode. Runs jobs from the outbox (SMS, push, email, ledger follow-ups) with retries and backoff, plus scheduled jobs (payouts, recs export, expiring unpaid orders)."},
+ pg:{x:740,y:150,w:140,h:210,t:"PostgreSQL 17",s:"only Go connects",info:"The single source of truth: 96 tables, double-entry ledger, append-only audit and events, outbox. Only the Go API and worker hold credentials."},
+ s3:{x:740,y:395,w:140,h:50,t:"Object storage",s:"S3 / MinIO",info:"Product images, KYC documents, proof-of-delivery photos. Clients upload with presigned URLs; the API records the file row."},
+ psp:{x:930,y:50,w:150,h:60,t:"Payment providers",s:"Paystack · OPay · Monnify",info:"Hosted checkout, webhooks, transaction verification, transfers (payouts) and refunds."},
+ sms:{x:930,y:140,w:150,h:50,t:"Termii SMS",s:"OTP · delivery code",info:"Sign-in codes, delivery codes and receipts by SMS."},
+ push:{x:930,y:220,w:150,h:50,t:"Expo push",s:"FCM / APNs",info:"Push notifications to the customer and logistics apps."},
+ mail:{x:930,y:300,w:150,h:50,t:"Email",s:"receipts · quotes",info:"Transactional email: receipts, B2B quotes, payout notices."},
+ pyb:{x:740,y:560,w:160,h:60,t:"Python batch",s:"nightly train + gate",info:"Nightly job: pulls pseudonymised data from the internal API, trains every generator whose data gate passes, blends/ranks, evaluates against the baseline and only then imports results."},
+ pyl:{x:930,y:560,w:150,h:60,t:"Python live",s:"FastAPI · flagged",info:"Optional real-time scoring (sequence model, two-tower). Off by default; Go calls it with an 80 ms budget and a circuit breaker, and falls back to its own re-ranking."}
+};
+const GROUPS=[{x:330,y:40,w:370,h:340,t:"Go API · modular monolith"},{x:330,y:455,w:370,h:80,t:""},{x:725,y:535,w:370,h:100,t:"Python recommender · no DB access"}];
+
+/* ===== Scenarios ===== */
+// step: {f,t,l,d,p,k,fx}  k: req|res|async|rec|fail|self
+const R=(f,t,l,d,p,fx)=>({f,t,l,d,p,k:"req",fx});
+const S=(f,t,l,d,p,fx)=>({f,t,l,d,p,k:"res",fx});
+const A=(f,t,l,d,p,fx)=>({f,t,l,d,p,k:"async",fx});
+const C=(f,t,l,d,p,fx)=>({f,t,l,d,p,k:"rec",fx});
+const F=(f,t,l,d,p,fx)=>({f,t,l,d,p,k:"fail",fx});
+const SCEN={
+ checkout:{t:"Checkout & payment",toggles:["dupWebhook","declined","smsDown"],build:o=>[
+  R("web","nginx","POST /v1/checkout","The customer taps Pay. The BFF sends the cart with an Idempotency-Key, so a double tap or retry returns the same order.",`POST /v1/checkout\nIdempotency-Key: 9b1f…\n{ "addressId": "…", "provider": "paystack" }`),
+  R("nginx","orders","proxy + X-Request-ID","nginx routes api.techshop.ng to Go and stamps a request ID that follows the call through logs and traces."),
+  R("orders","pg","BEGIN … COMMIT","One unit of work: reserve stock, create the order (pending_payment) and payment (initiated), and write an outbox event. All or nothing.",`INSERT orders (status='pending_payment')\nINSERT stock_reservations (status='reserved')\nINSERT payments (status='initiated')\nINSERT outbox_events ('order.created')`,s=>{s.order="pending_payment";s.payment="initiated";s.outbox++;s.stock="reserved"}),
+  R("orders","pay","initialise payment","The orders module asks payments to start a transaction with the chosen provider."),
+  R("pay","psp","initialize transaction","Server-to-server call with a unique reference. Amounts are in kobo.",`POST /transaction/initialize\n{ "reference":"TS-10482-1", "amount": 309350000 }`),
+  S("psp","pay","checkout_url","The provider returns a hosted checkout page. Card details never touch TechShop."),
+  S("pay","web","201 { order, checkoutUrl }","The browser is sent to the provider's page (in the app: a secure auth session)."),
+  R("web","psp","customer pays","The customer pays with card, transfer or USSD on the provider's page."),
+  ...(o.declined?[
+   F("psp","web","payment declined","The provider declines. Nothing changes on our side except the payment attempt; the cart is kept and the customer can try another provider.",null,s=>{s.payment="failed"}),
+   A("worker","pg","expire unpaid order","If nobody pays before payment_due_at, a scheduled job cancels the order and releases exactly the stock that was reserved.",null,s=>{s.order="cancelled";s.stock="released"})
+  ]:[
+   A("psp","nginx","webhook charge.success","The provider calls our webhook. The body is signed with HMAC.",`POST /webhooks/paystack\nx-paystack-signature: 3f9a…\n{ "event":"charge.success", "data":{ "reference":"TS-10482-1" } }`),
+   A("nginx","pay","verify signature","Payments checks the signature, then stores the raw event in payment_events, unique on (provider, event_id)."),
+   ...(o.dupWebhook?[
+    F("psp","pay","same webhook again","Providers retry webhooks. The duplicate hits the unique key on payment_events, so it is acknowledged with 200 and ignored. No second order update, no second ledger journal.",null,s=>{s.dupes++})
+   ]:[]),
+   R("pay","psp","GET /transaction/verify","Never trust a webhook body alone: payments re-checks the amount and status with the provider."),
+   S("psp","pay","success · amount matches","Verified."),
+   R("pay","pg","mark paid (one transaction)","Payment succeeded, order paid, reservations committed, outbox event order.paid, all in one unit of work.",null,s=>{s.order="paid";s.payment="succeeded";s.stock="committed";s.outbox++}),
+   R("pay","ledger","post sale journal","Ledger posts a balanced journal with posting_key = payment:<id>:captured. A second attempt would fail on the unique key.",`Dr clearing:paystack        3,093,500\n   Cr revenue:first_party      3,049,000\n   Cr seller_payable:kano         38,500\n   Cr revenue:delivery             6,000\nΣ Dr = Σ Cr ✓`,s=>{s.journals++}),
+   R("ledger","pg","journal + entries","The deferred trigger checks debits equal credits at commit."),
+   A("pg","outbox","NOTIFY outbox","The commit fires pg_notify; the relay wakes immediately instead of polling."),
+   A("outbox","worker","enqueue River jobs","order.paid becomes jobs: SMS receipt, push, email, SSE broadcast.",null,s=>{s.outbox=Math.max(0,s.outbox-2);s.jobs+=3}),
+   ...(o.smsDown?[
+    F("worker","sms","SMS receipt → 503","Termii is down. River retries with exponential backoff; the order is already paid, so nothing else waits on it.",null,s=>{s.retries++}),
+    A("worker","sms","retry #3 succeeds","The job succeeds on a later attempt. Side effects are at-least-once, made safe by idempotent handlers.")
+   ]:[A("worker","sms","SMS receipt","Receipt by SMS.")]),
+   A("worker","push","push: order confirmed","Push to the customer's devices from push_tokens.",null,s=>{s.jobs=0}),
+   A("worker","sse","publish order.updated","The worker NOTIFYs the SSE hub."),
+   S("sse","web","event: order.updated","The order page updates live without refreshing.")
+  ])
+ ]},
+ delivery:{t:"Delivery & OTP",toggles:["offline","wrongOtp"],build:o=>[
+  R("staff","nginx","POST /v1/dispatch/assign","A dispatcher assigns rider Emeka to order TS-10482. Requires the dispatch.assign permission.",`{ "orderId":"…", "riderId":"…" }`),
+  R("nginx","logx","assign rider","Routed to the logistics module; RBAC checked; the action is written to audit_log."),
+  R("logx","pg","create delivery job","Creates the job with a hashed 6-digit code, expiry and attempt counter, plus an outbox event.",`INSERT delivery_jobs (otp_hash, otp_expires_at, otp_attempts=0)\nINSERT outbox_events ('delivery.assigned')`,s=>{s.job="assigned";s.outbox++}),
+  A("pg","outbox","NOTIFY","Relay wakes."),
+  A("outbox","worker","enqueue jobs","Send code to customer, notify rider.",null,s=>{s.outbox--;s.jobs+=2}),
+  A("worker","sms","SMS delivery code","The customer gets the code. Only the hash is stored."),
+  A("worker","push","push: new job","The rider's phone buzzes.",null,s=>{s.jobs=0}),
+  R("logi","nginx","POST /v1/rider/locations","On shift, the app sends batched GPS points every ~15 s (and only on shift, with consent).",`[{ "lat":6.4474, "lng":3.4723, "acc":12, "at":"…" }]`),
+  R("nginx","logx","upsert rider_locations","Latest position per rider; NOTIFY for live tracking.",null,s=>{s.job="out_for_delivery"}),
+  A("logx","sse","NOTIFY rider.location","Fan-out to subscribers of this order."),
+  S("sse","app","rider on the map","The customer sees the rider approaching."),
+  R("logi","logi","scan parcel","The rider scans the parcel label at pickup. The event gets a client_event_id."),
+  ...(o.offline?[
+   F("logi","logi","no network · queued","No signal. The scan and delivery are saved in the app's SQLite queue with their client_event_ids. The rider can still use photo proof.",null,s=>{s.queued=2}),
+   R("logi","nginx","sync queue when online","Back online, the app sends the queued events in order.",`POST /v1/rider/events:sync\n[{ "clientEventId":"7c1…", "kind":"picked_up" },\n { "clientEventId":"a42…", "kind":"delivered", "proof":"photo_offline" }]`),
+   R("nginx","logx","dedupe on client_event_id","delivery_events.client_event_id is unique, so a retried sync never records anything twice.",null,s=>{s.queued=0})
+  ]:[]),
+  ...(o.wrongOtp?[
+   F("logi","logx","code 111111 → wrong","Wrong code. otp_attempts goes up; after 5 the job is locked and dispatch is alerted.",null,s=>{s.attempts++}),
+  ]:[]),
+  R("logi","logx","POST deliver { otp }","The rider enters the code the customer reads out.",`{ "otp":"428915", "clientEventId":"a42…" }`),
+  R("logx","pg","verify + mark delivered","Compares hashes in constant time, sets otp_verified_at and delivered (the schema requires a verified code or a photo), writes outbox.",null,s=>{s.job="delivered";s.outbox++}),
+  A("outbox","worker","order.delivered","Starts the return window and the seller's payout clock.",null,s=>{s.outbox--}),
+  A("worker","ledger","escrow → payable","After the return window, the seller's share moves from escrow to payable."),
+  S("sse","app","Delivered","Customer and staff screens update live.")
+ ]},
+ recsBatch:{t:"Nightly recs training",toggles:["pyDown","worse"],maturity:true,build:o=>[
+  A("worker","internal","02:00 cron: open export","River's scheduled job opens an export window and issues a short-lived service token for the Python job."),
+  ...(o.pyDown?[
+   F("worker","pyb","trigger → no response","The Python batch is down. Nothing breaks: shelves keep serving the last active model, and if there is none, Go's rule-based fallback (popularity, same category, compatibility) serves them.",null,s=>{s.model="v12 (kept)"}),
+   S("recs","web","shelves unchanged","Customers see no difference. An alert fires for the ML owner.")
+  ]:[
+   R("pyb","internal","GET /internal/recs/export","Python pulls data over HTTPS. It has no database credentials.",`GET /internal/recs/export?since=2026-10-02\nAuthorization: Bearer svc_…`),
+   R("internal","pg","read consented data","Only events from people who consented to personalisation; IDs are pseudonymised with a rotating key; no names, phones or addresses.",`SELECT … FROM user_events e\n JOIN consents c ON … purpose='personalisation'`),
+   S("internal","pyb","NDJSON stream","Events, orders, catalogue attributes, stock.",`{"u":"h_8f3e…","p":"p8","ev":"view","t":…}\n{"u":"h_8f3e…","p":"p16","ev":"add_to_cart","t":…}`),
+   C("pyb","pyb","train gated generators",`Data maturity: ${o.mat.label}. Generators whose data gate passes are trained; the rest stay at weight 0 (see the generator panel).`,null,s=>{s.gens=o.mat.on.length}),
+   C("pyb","pyb",o.mat.ranker?"LambdaMART ranker":"weighted blender",o.mat.ranker?"Enough click logs exist: a LightGBM LambdaMART ranker combines the generators' candidates using their scores as features.":"Not enough click logs for learning-to-rank yet: a feature-weighted blender combines the candidates."),
+   C("pyb","pyb","offline evaluation","Compare against the current model and the popularity baseline on held-out data (recall@k, NDCG, coverage, vendor exposure)."),
+   ...(o.worse?[
+    F("pyb","pyb","gate failed · abort","The new model is worse than the active one. Nothing is imported; the active model stays live and the run is recorded as failed.",null,s=>{s.model="v12 (kept)"})
+   ]:[
+    C("pyb","internal","POST /internal/recs/import","Results go to staging tables first, with a manifest of row counts and metrics.",`{ "version":"v13", "neighbours": 412000, "candidates": 88000,\n  "vectors": 27000, "metrics": { "ndcg@10": 0.214 } }`),
+    C("internal","pg","write rec_staging_*","Validated: every product exists and is sellable, scores are finite, coverage is above the floor."),
+    C("internal","pg","activate v13","One transaction flips rec_model_versions: v13 active, v12 retired (kept for one-click rollback).",null,s=>{s.model="v13 (active)"}),
+    S("internal","pyb","202 activated","Done. Shelves use v13 from the next request.")
+   ])
+  ])
+ ]},
+ recsLive:{t:"Live recommendations",toggles:["liveOn","liveTimeout","noConsent"],build:o=>[
+  R("app","nginx","GET /v1/recs?surface=home","The app asks for the home shelves. It sends its session's recent product views.",`GET /v1/recs?surface=home&session=s_41…`),
+  R("nginx","recs","route","To the recs module."),
+  R("recs","pg","consent + candidates",o.noConsent?"No personalisation consent: personal candidates are skipped. Non-personal shelves (trending in your state, best sellers, similar items) still work.":"Consent found. Reads this user's candidates from the active model plus trending items for their state.",o.noConsent?`consents: personalisation = false\n→ candidates from rec_popularity (state=LA)`:`rec_subject_candidates (v13) + rec_popularity (state=LA)`),
+  ...(o.liveOn&&!o.noConsent?(o.liveTimeout?[
+   C("recs","pyl","POST /score (80 ms budget)","Live service is switched on. Go sends candidates + session to the sequence/two-tower models."),
+   F("pyl","recs","no reply in 80 ms","Timeout. The circuit breaker counts the failure (after 5 in a row it opens and stops calling for 30 s). Go carries on without waiting.",null,s=>{s.breaker="half-open (4/5)"}),
+   C("recs","recs","Go session re-rank (fallback)","Go re-ranks the candidates with batch item vectors against this session's recent views.")
+  ]:[
+   C("recs","pyl","POST /score (80 ms budget)","Live service is on. Go sends candidates + recent session views.",`{ "candidates":["p8","p11","p16",…], "session":["p8","p17"] }`),
+   S("pyl","recs","scores in 31 ms","Sequence model (SASRec) scores what this person is likely to want next.",null,s=>{s.breaker="closed"})
+  ]):[
+   C("recs","recs","Go session re-rank",o.liveOn?"No consent, so no personal model is called.":"Live service is off (default). Go re-ranks candidates with batch item vectors against this session's views — fast and good enough at launch.")
+  ]),
+  C("recs","recs","business rules","In stock and sellable only; vendor exposure floor; staff pins/blocks (rec_overrides); don't re-recommend a phone just bought (repurchase_days); optional first-party boost, capped and 0 by default."),
+  S("recs","app","shelves + rec_request_id","Each shelf says which strategy produced it, so clicks can be attributed.",`{ "shelves":[{ "id":"for_you", "strategy":"${o.liveOn&&!o.liveTimeout&&!o.noConsent?"live_seq":"batch+session"}",\n  "recRequestId":"rr_9c…", "items":["p8","p11",…] }] }`,s=>{s.served++}),
+  ...(o.noConsent?[
+   F("app","app","no tracking events","Without analytics consent, the app sends no behaviour events.")
+  ]:[
+   A("app","nginx","POST /v1/events (batched)","Impressions and clicks, tagged with rec_request_id and position.",`[{ "type":"rec_click", "productId":"p11", "recRequestId":"rr_9c…", "position":2 }]`),
+   A("nginx","events","validate + consent check","Rejects events from visitors without consent."),
+   A("events","pg","INSERT user_events","Partitioned monthly. These events feed tonight's training run.",null,s=>{s.events+=2})
+  ])
+ ]},
+ payout:{t:"Seller payout",toggles:["transferFail"],build:o=>[
+  A("worker","payout","Tue 09:00 cron","Scheduled job: find seller earnings past the return window, on business days only (public_holidays)."),
+  R("payout","pg","compute payable","Sums seller_payable ledger balances minus commission and any open refunds.",null,s=>{s.payout="pending_approval"}),
+  R("staff","nginx","approve payout","A finance user approves. It must be a different person from whoever created it (dual control), and needs TOTP.",`POST /v1/finance/payouts/PO-311/approve`),
+  R("nginx","payout","RBAC + audit","finance.payouts.approve permission, audit_log row.",null,s=>{s.payout="approved"}),
+  R("payout","psp","transfer to seller bank","Transfer to the verified recipient code for the seller's bank account."),
+  ...(o.transferFail?[
+   F("psp","nginx","webhook transfer.failed","The bank rejected it (e.g. account closed). The payout is marked failed and the money stays in seller_payable — no journal is posted.",null,s=>{s.payout="failed"}),
+   A("worker","mail","ask seller to update bank","Email + Seller Centre notice.")
+  ]:[
+   A("psp","nginx","webhook transfer.success","Signed webhook."),
+   A("nginx","pay","verify + dedupe","Same webhook rules as payments."),
+   R("pay","ledger","post payout journal","posting_key = payout:PO-311:paid.",`Dr seller_payable:kano   412,000\n   Cr clearing:paystack     412,000`,s=>{s.payout="paid";s.journals++}),
+   A("worker","mail","payout notice","Email and Seller Centre notification.")
+  ])
+ ]},
+ refund:{t:"Return & refund",toggles:["sameApprover"],build:o=>[
+  R("web","nginx","POST /v1/returns","The customer requests a return within the window, with photos (uploaded straight to storage with a presigned URL).",`{ "orderLineId":"…", "reason":"faulty", "fileIds":["f_1…"] }`),
+  R("nginx","orders","create return request","Checks the window and line state.",null,s=>{s.ret="requested"}),
+  R("orders","s3","attach photos","Files were uploaded directly; the API marks them ready."),
+  R("staff","orders","approve return","Support approves; logistics schedules a return pickup job.",null,s=>{s.ret="pickup_scheduled"}),
+  R("logi","logx","pickup scanned","The rider collects the item; the warehouse inspects it.",null,s=>{s.ret="received"}),
+  ...(o.sameApprover?[
+   F("staff","pay","approve own refund → 403","The same person who requested the refund tries to approve it. The database check approved_by <> requested_by blocks it.")
+  ]:[]),
+  R("staff","pay","approve refund","A second person approves (separation of duties).",null,s=>{s.refund="approved"}),
+  R("pay","psp","POST refund","Refund to the original payment method."),
+  A("psp","pay","webhook refund.processed","Verified and deduped."),
+  R("pay","ledger","reversal journal","posting_key = refund:<id>:processed.",`Dr revenue:first_party   79,000\n   Cr clearing:paystack     79,000`,s=>{s.refund="processed";s.journals++}),
+  A("worker","sms","refund SMS","The customer is told.")
+ ]}
+};
+const TOGGLES={
+ dupWebhook:["Provider sends the webhook twice","Idempotency on payment_events"],
+ declined:["Payment is declined","Order expires and stock is released"],
+ smsDown:["SMS provider is down","River retries with backoff"],
+ offline:["Rider has no network","Offline queue + idempotent sync"],
+ wrongOtp:["Rider enters a wrong code first","Attempts counted, locked after 5"],
+ pyDown:["Python batch is down","Last model or Go rules keep serving"],
+ worse:["New model is worse than the live one","Evaluation gate blocks the import"],
+ liveOn:["Python live service flag on","Off by default"],
+ liveTimeout:["Live service is slow (> 80 ms)","Timeout, circuit breaker, Go fallback"],
+ noConsent:["Visitor declined personalisation","Non-personal shelves, no tracking"],
+ transferFail:["Bank rejects the transfer","Payout fails, no journal posted"],
+ sameApprover:["Requester tries to approve own refund","Blocked by a database check"]
+};
+const GENS=[["G1","Popularity","trending by state, category",0],["G2","Content kNN","spec similarity",0],["G3","Compatibility","accessories that fit",0],["G4","Co-occurrence","bought together",1],["G5","ALS","implicit matrix factorisation",1],["G6","BPR","pairwise ranking",1],["G7","item2vec","session embeddings",2],["G8","Two-tower","neural retrieval",3],["G9","SASRec","sequence model",3]];
+const MATS=[{k:"launch",label:"Launch",lvl:0},{k:"m6",label:"6 mo",lvl:1},{k:"m12",label:"12 mo",lvl:2},{k:"m18",label:"18+ mo",lvl:3}];
+
+/* ===== State ===== */
+const opts={dupWebhook:false,declined:false,smsDown:false,offline:false,wrongOtp:false,pyDown:false,worse:false,liveOn:false,liveTimeout:false,noConsent:false,transferFail:false,sameApprover:false,mat:"m6"};
+let scen="checkout",steps=[],cur=-1,playing=false,speed=1,focusNode=null,anim=null,timer=null,prevState={};
+const baseState=()=>({order:"—",payment:"—",stock:"—",outbox:0,jobs:0,journals:0,dupes:0,retries:0,job:"—",queued:0,attempts:0,model:"v12 (active)",gens:0,breaker:"closed",served:0,events:0,payout:"—",ret:"—",refund:"—"});
+const STATE_KEYS={checkout:[["order","Order"],["payment","Payment"],["stock","Stock reservation"],["outbox","Outbox pending"],["jobs","River jobs"],["journals","Ledger journals"],["dupes","Duplicates ignored"],["retries","Job retries"]],delivery:[["job","Delivery job"],["outbox","Outbox pending"],["jobs","River jobs"],["queued","Offline queue"],["attempts","Wrong code attempts"]],recsBatch:[["model","Recs model"],["gens","Generators active"]],recsLive:[["breaker","Circuit breaker"],["served","Shelves served"],["events","Events stored"],["model","Recs model"]],payout:[["payout","Payout"],["journals","Ledger journals"]],refund:[["ret","Return"],["refund","Refund"],["journals","Ledger journals"]]};
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const color=k=>({req:"var(--accent)",res:"var(--success)",async:"var(--promo)",rec:"var(--violet)",fail:"var(--danger)"}[k]);
+const ctr=n=>({x:N[n].x+N[n].w/2,y:N[n].y+N[n].h/2});
+function clip(a,b){// point on the border of box a toward point b
+ const n=N[a],c=ctr(a);const dx=b.x-c.x,dy=b.y-c.y;if(!dx&&!dy)return c;const sx=(n.w/2)/Math.abs(dx||1e-9),sy=(n.h/2)/Math.abs(dy||1e-9);const s=Math.min(sx,sy);return{x:c.x+dx*s,y:c.y+dy*s}}
+function matInfo(){const m=MATS.find(x=>x.k===opts.mat);const on=GENS.filter(g=>g[3]<=m.lvl).map(g=>g[0]);return{...m,on,ranker:m.lvl>=2}}
+
+/* ===== Build & draw ===== */
+function build(){steps=SCEN[scen].build({...opts,mat:matInfo()});cur=-1;stop();drawEdges();renderAll()}
+function allEdges(){const set=new Map();Object.values(SCEN).forEach(sc=>{const all={...opts};Object.keys(TOGGLES).forEach(k=>all[k]=true);[sc.build({...opts,mat:matInfo()}),sc.build({...all,mat:matInfo()})].forEach(ss=>ss.forEach(s=>{if(s.f!==s.t){const k=[s.f,s.t].sort().join("|");set.set(k,[s.f,s.t])}}))});return [...set.values()]}
+let EDGES=[];
+function drawStatic(){const svg=$("#map");
+ let h=`<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="context-stroke"/></marker></defs>`;
+ h+=GROUPS.map(g=>`<rect class="group" x="${g.x}" y="${g.y}" width="${g.w}" height="${g.h}" rx="14"/>${g.t?`<text class="glabel" x="${g.x+12}" y="${g.y+18}">${g.t}</text>`:""}`).join("");
+ h+=`<g id="edges"></g><g id="hot"></g>`;
+ h+=Object.entries(N).map(([k,n])=>`<g class="node" data-node="${k}" tabindex="0" role="button" aria-label="${esc(n.t)}: ${esc(n.s)}"><rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="${k==="pg"?18:10}"/>${k==="pg"?`<ellipse cx="${n.x+n.w/2}" cy="${n.y+16}" rx="${n.w/2-14}" ry="7" fill="none" stroke="var(--border-strong)"/>`:""}<text x="${n.x+n.w/2}" y="${n.y+n.h/2-(n.h>60?8:2)}" text-anchor="middle">${esc(n.t)}</text><text class="sub" x="${n.x+n.w/2}" y="${n.y+n.h/2+(n.h>60?8:12)}" text-anchor="middle">${esc(n.s)}</text></g>`).join("");
+ h+=`<g id="packet"></g>`;svg.innerHTML=h}
+function drawEdges(){EDGES=allEdges();const g=$("#edges");g.innerHTML=EDGES.map(([a,b])=>{const p=clip(a,ctr(b)),q=clip(b,ctr(a));return `<line class="edge" data-e="${a}|${b}" x1="${p.x}" y1="${p.y}" x2="${q.x}" y2="${q.y}"/>`}).join("")}
+
+function renderAll(){renderScen();renderToggles();renderGens();renderLog();renderNow();renderState();renderMap()}
+function renderScen(){$("#scen").innerHTML=Object.entries(SCEN).map(([k,s])=>`<button type="button" data-scen="${k}" aria-pressed="${k===scen}">${s.t}</button>`).join("")}
+function renderToggles(){$("#toggles").innerHTML=SCEN[scen].toggles.map(k=>`<label class="tg"><input type="checkbox" data-tg="${k}" ${opts[k]?"checked":""}><span>${TOGGLES[k][0]}<small>${TOGGLES[k][1]}</small></span></label>`).join("")}
+function renderGens(){const show=!!SCEN[scen].maturity||scen==="recsLive";$("#gencard").hidden=!show;if(!show)return;const m=matInfo();
+ $("#maturity").innerHTML=MATS.map(x=>`<button type="button" data-mat="${x.k}" aria-pressed="${x.k===opts.mat}">${x.label}</button>`).join("");
+ $("#gens").innerHTML=GENS.map(g=>`<div class="gen ${m.on.includes(g[0])?"on":"off"}"><b>${g[0]} · ${g[1]}</b><span>${g[2]}</span><span>${m.on.includes(g[0])?"gate passed · contributing":"gate not met · weight 0"}</span></div>`).join("")+`<div class="gen ${m.ranker?"on":""}"><b>R2 · LambdaMART</b><span>learning-to-rank</span><span>${m.ranker?"enough click logs":"R1 blender used instead"}</span></div>`}
+function renderLog(){$("#log").innerHTML=steps.map((s,i)=>`<li class="${i<cur?"done":i===cur?"cur":""}"><button type="button" data-step="${i}"><span class="k" style="background:${color(s.k)}"></span><span>${esc(N[s.f].t)} → ${esc(N[s.t].t)}: ${esc(s.l)}</span></button></li>`).join("");const c=$("#log .cur");if(c)c.scrollIntoView({block:"nearest"})}
+function renderNow(){const now=$("#now"),pl=$("#payload");$("#bar").style.width=steps.length?`${(cur+1)/steps.length*100}%`:"0";
+ if(focusNode&&cur<0){const n=N[focusNode];const links=EDGES.filter(e=>e.includes(focusNode)).map(e=>N[e[0]===focusNode?e[1]:e[0]].t);now.innerHTML=`<span class="eyebrow">Component</span><b>${esc(n.t)}</b><p>${esc(n.info)}</p><p><b style="font-size:12px">Talks to:</b> ${esc(links.join(", "))}</p>`;now.style.borderColor="var(--violet)";pl.hidden=true;return}
+ if(cur<0){now.innerHTML=`<span class="eyebrow">${esc(SCEN[scen].t)}</span><b>${steps.length} steps · press Play</b><p>Turn on a failure in “What can go wrong” to see how the system handles it. Click any box for details.</p>`;now.style.borderColor="var(--accent)";pl.hidden=true;return}
+ const s=steps[cur];now.style.borderColor=color(s.k);now.innerHTML=`<span class="eyebrow">Step ${cur+1} of ${steps.length} · ${esc(N[s.f].t)} → ${esc(N[s.t].t)}</span><b>${esc(s.l)}</b><p>${esc(s.d)}</p>`;
+ if(s.p){pl.hidden=false;pl.textContent=s.p}else pl.hidden=true}
+function computeState(){const st=baseState();if(scen==="recsBatch")st.gens=0;for(let i=0;i<=cur;i++)steps[i].fx&&steps[i].fx(st);return st}
+function renderState(){const st=computeState();$("#state").innerHTML=STATE_KEYS[scen].map(([k,l])=>`<div class="${prevState[k]!==undefined&&prevState[k]!==st[k]?"changed":""}"><span>${l}</span><b>${esc(st[k])}</b></div>`).join("");prevState=st}
+function renderMap(){const s=steps[cur];const involved=new Set(steps.flatMap(x=>[x.f,x.t]));
+ document.querySelectorAll(".node").forEach(g=>{const k=g.dataset.node;g.classList.toggle("active",!!s&&(s.f===k||s.t===k));g.classList.toggle("dim",cur>=0?!involved.has(k):(focusNode?!(k===focusNode||EDGES.some(e=>e.includes(focusNode)&&e.includes(k))):!involved.has(k)));g.classList.toggle("focus",focusNode===k);
+  g.classList.toggle("down",(k==="pyb"&&opts.pyDown&&scen==="recsBatch")||(k==="pyl"&&scen==="recsLive"&&(!opts.liveOn||opts.liveTimeout))||(k==="sms"&&opts.smsDown&&scen==="checkout"))});
+ document.querySelectorAll(".edge").forEach(l=>{const [a,b]=l.dataset.e.split("|");const inScen=steps.some(x=>(x.f===a&&x.t===b)||(x.f===b&&x.t===a));const foc=focusNode&&(a===focusNode||b===focusNode);l.classList.toggle("dim",cur>=0||!focusNode?!inScen:!foc);l.style.stroke=foc&&cur<0?"var(--violet)":"";l.classList.toggle("hot",!!(foc&&cur<0))});
+ const hot=$("#hot");hot.innerHTML="";$("#packet").innerHTML="";if(!s)return;
+ if(s.f===s.t){const n=N[s.f];hot.innerHTML=`<rect x="${n.x-5}" y="${n.y-5}" width="${n.w+10}" height="${n.h+10}" rx="14" fill="none" stroke="${color(s.k)}" stroke-width="2.5"><animate attributeName="opacity" values="1;.25;1" dur="1s" repeatCount="indefinite"/></rect>`;label(ctr(s.f).x,n.y-14,s.l,s.k);return}
+ const p=clip(s.f,ctr(s.t)),q=clip(s.t,ctr(s.f));hot.innerHTML=`<line x1="${p.x}" y1="${p.y}" x2="${q.x}" y2="${q.y}" stroke="${color(s.k)}" stroke-width="2.5" ${s.k==="async"?'stroke-dasharray="6 4"':""} marker-end="url(#arrow)"/>`;
+ animate(p,q,s)}
+function label(x,y,t,k){const w=Math.min(300,t.length*6.7+16);const X=Math.max(4,Math.min(1096-w,x-w/2));$("#packet").insertAdjacentHTML("beforeend",`<g class="plabel"><rect x="${X}" y="${y-11}" width="${w}" height="20" rx="10" style="fill:${color(k)}"/><text x="${X+w/2}" y="${y+3}" text-anchor="middle" style="fill:var(--bg)">${esc(t.length>44?t.slice(0,42)+"…":t)}</text></g>`)}
+function animate(p,q,s){cancelAnimationFrame(anim);const g=$("#packet");const dur=900/speed;const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;const t0=performance.now();
+ const frame=t=>{const k=reduce?1:Math.min(1,(t-t0)/dur);const e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;const x=p.x+(q.x-p.x)*e,y=p.y+(q.y-p.y)*e;
+  g.innerHTML=`<circle cx="${x}" cy="${y}" r="7" fill="${color(s.k)}" stroke="var(--bg)" stroke-width="2"/>`;label((p.x+q.x)/2,(p.y+q.y)/2-14,s.l,s.k);if(k<1)anim=requestAnimationFrame(frame)};anim=requestAnimationFrame(frame)}
+
+/* ===== Playback ===== */
+function goTo(i){cur=Math.max(-1,Math.min(steps.length-1,i));focusNode=null;renderLog();renderNow();renderState();renderMap();$("#prev").disabled=cur<0;$("#next").disabled=cur>=steps.length-1}
+function tick(){if(cur>=steps.length-1){stop();return}goTo(cur+1);timer=setTimeout(tick,2600/speed)}
+function play(){if(cur>=steps.length-1)goTo(-1);playing=true;$("#play").textContent="Pause";tick()}
+function stop(){playing=false;clearTimeout(timer);$("#play").textContent=cur>=steps.length-1&&steps.length?"Replay":"Play"}
+$("#play").onclick=()=>playing?stop():play();
+$("#next").onclick=()=>{stop();goTo(cur+1)};
+$("#prev").onclick=()=>{stop();goTo(cur-1)};
+$("#restart").onclick=()=>{stop();goTo(-1)};
+$("#speed").innerHTML=[0.5,1,2].map(v=>`<button type="button" data-speed="${v}" aria-pressed="${v===speed}">${v}×</button>`).join("");
+document.addEventListener("click",e=>{const t=e.target.closest("[data-scen],[data-speed],[data-step],[data-mat],.node");if(!t)return;
+ if(t.dataset.scen){scen=t.dataset.scen;focusNode=null;prevState={};build();goTo(-1)}
+ else if(t.dataset.speed){speed=+t.dataset.speed;document.querySelectorAll("[data-speed]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.speed==t.dataset.speed))}
+ else if(t.dataset.step){stop();goTo(+t.dataset.step)}
+ else if(t.dataset.mat){opts.mat=t.dataset.mat;const c=cur;build();renderGens();goTo(Math.min(c,steps.length-1))}
+ else if(t.dataset.node){stop();const k=t.dataset.node;focusNode=focusNode===k?null:k;cur=-1;renderLog();renderNow();renderState();renderMap()}});
+document.addEventListener("keydown",e=>{const n=e.target.closest?.(".node");if(n&&(e.key==="Enter"||e.key===" ")){e.preventDefault();n.dispatchEvent(new MouseEvent("click",{bubbles:true}))}});
+document.addEventListener("change",e=>{const k=e.target.dataset.tg;if(!k)return;opts[k]=e.target.checked;if(k==="liveTimeout"&&opts[k])opts.liveOn=true;if(k==="liveOn"&&!opts[k])opts.liveTimeout=false;build();goTo(-1)});
+drawStatic();build();goTo(-1);
+</script>

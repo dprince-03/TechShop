@@ -1,0 +1,734 @@
+<title>TechShop Identity</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Tokens mirror shared/design-tokens. */
+:root{
+  --bg:#ffffff; --surface:#f4f5f7; --raised:#ffffff; --inverse:#111214;
+  --text:#16171a; --muted:#5f6368; --subtle:#6b7078; --text-inverse:#f7f8fa;
+  --border:#d9dbe0; --border-strong:#8e939b;
+  --accent:#1a56f0; --accent-hover:#1546c8; --accent-subtle:#e8efff; --on-accent:#ffffff; --link:#1a56f0;
+  --sale:#d1242f; --promo:#c2410c; --sale-fill:#d1242f; --promo-fill:#c2410c; --on-fill:#ffffff;
+  --rating:#f5a524; --success:#1a7f37; --warning:#9a6700; --danger:#d1242f; --violet:#7c3aed;
+  --success-subtle:#e6f4ea; --danger-subtle:#fdecee; --warning-subtle:#fdf6e3; --promo-subtle:#fdf0e7; --violet-subtle:#f1eafd;
+  --chrome:#e9ebef; --stage:#eceef2; --edge:#c9ccd3;
+  --shadow:0 4px 16px rgb(0 0 0 / .08); --shadow-lg:0 12px 32px rgb(0 0 0 / .14);
+  --font:"Geist",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --r-sm:8px; --r-md:12px; --r-lg:18px; --r-xl:28px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0b0c0e; --surface:#16181c; --raised:#1d2025; --inverse:#f4f5f7;
+  --text:#f2f3f5; --muted:#a3a8b0; --subtle:#8d939b; --text-inverse:#16171a;
+  --border:#2c3036; --border-strong:#5b616a;
+  --accent:#2563eb; --accent-hover:#3b74f5; --accent-subtle:#16244a; --link:#6b9bff;
+  --sale:#ff6b6b; --promo:#fb8c4b; --success:#4ac26b; --warning:#e3b341; --danger:#ff6b6b; --violet:#a78bfa;
+  --success-subtle:#12301c; --danger-subtle:#3a1619; --warning-subtle:#33280c; --promo-subtle:#3a2112; --violet-subtle:#261b42;
+  --chrome:#1a1c20; --stage:#08090a; --edge:#33373e;
+  --shadow:0 4px 16px rgb(0 0 0 / .45); --shadow-lg:0 12px 32px rgb(0 0 0 / .55);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0b0c0e; --surface:#16181c; --raised:#1d2025; --inverse:#f4f5f7;
+  --text:#f2f3f5; --muted:#a3a8b0; --subtle:#8d939b; --text-inverse:#16171a;
+  --border:#2c3036; --border-strong:#5b616a;
+  --accent:#2563eb; --accent-hover:#3b74f5; --accent-subtle:#16244a; --link:#6b9bff;
+  --sale:#ff6b6b; --promo:#fb8c4b; --success:#4ac26b; --warning:#e3b341; --danger:#ff6b6b; --violet:#a78bfa;
+  --success-subtle:#12301c; --danger-subtle:#3a1619; --warning-subtle:#33280c; --promo-subtle:#3a2112; --violet-subtle:#261b42;
+  --chrome:#1a1c20; --stage:#08090a; --edge:#33373e;
+  --shadow:0 4px 16px rgb(0 0 0 / .45); --shadow-lg:0 12px 32px rgb(0 0 0 / .55);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--stage);color:var(--text);font-family:var(--font);font-size:14.5px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3,h4{margin:0;line-height:1.2;letter-spacing:-.015em;text-wrap:balance}
+p{margin:0}
+.tnum{font-variant-numeric:tabular-nums}.mono{font-family:var(--mono)}
+.muted{color:var(--muted)}.subtle{color:var(--subtle)}.xs{font-size:12px}.sm{font-size:13.5px}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+
+/* Page shell */
+.wrap{max-width:1500px;margin:0 auto;padding:14px 16px 40px;display:flex;flex-direction:column;gap:14px}
+.top{display:flex;flex-wrap:wrap;gap:10px 20px;justify-content:space-between;align-items:flex-end}
+.top h1{font-size:22px}
+.top p.lead{color:var(--muted);font-size:13px;max-width:78ch}
+.brand{display:flex;align-items:center;gap:8px}
+.mark{width:26px;height:26px;border-radius:8px;background:var(--inverse);display:grid;place-items:center;flex:none}
+.mark svg{stroke:var(--text-inverse)}
+.viewtabs{display:flex;gap:4px;padding:4px;background:var(--raised);border:1px solid var(--border);border-radius:999px}
+.viewtabs button{border:0;background:transparent;padding:8px 16px;border-radius:999px;font-size:13.5px;font-weight:600;color:var(--muted);white-space:nowrap}
+.viewtabs button[aria-selected="true"]{background:var(--inverse);color:var(--text-inverse)}
+.pill-nav{display:flex;gap:4px;padding:4px;background:var(--raised);border:1px solid var(--border);border-radius:999px;overflow-x:auto;max-width:100%;scrollbar-width:none;min-width:0}
+.pill-nav button{border:0;background:transparent;padding:6px 12px;border-radius:999px;font-size:13px;font-weight:500;color:var(--muted);white-space:nowrap;display:flex;align-items:center;gap:6px}
+.pill-nav button[aria-pressed="true"]{background:var(--inverse);color:var(--text-inverse)}
+
+/* Frames */
+.browser{background:var(--bg);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column;min-width:0}
+.browser-bar{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--chrome);border-bottom:1px solid var(--border)}
+.dots{display:flex;gap:6px}.dots i{width:10px;height:10px;border-radius:50%;background:var(--border-strong);opacity:.6}
+.url{flex:1;min-width:0;display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:999px;padding:4px 12px;font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.page{min-height:600px;min-width:0}
+.phone{width:360px;max-width:100%;height:720px;background:var(--bg);border:10px solid var(--inverse);border-radius:44px;overflow:hidden;position:relative;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;flex:none}
+.phone-notch{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:100px;height:24px;background:var(--inverse);border-radius:20px;z-index:5}
+.phone-screen{flex:1;overflow-y:auto;padding-top:42px;position:relative}
+.duo{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
+@media (min-width:1180px){.duo{grid-template-columns:minmax(0,1fr) 360px}}
+.duo>.side-col{display:flex;flex-direction:column;gap:12px;align-items:center}
+.notice{background:var(--accent-subtle);color:var(--text);font-size:12px;text-align:center;padding:4px 12px}
+
+/* Components */
+.container{width:100%;max-width:1200px;margin:0 auto;padding-inline:clamp(14px,3vw,28px)}
+.section{padding-block:22px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 18px;border-radius:999px;border:1px solid transparent;background:transparent;font-weight:600;font-size:13.5px;color:var(--text);white-space:nowrap;transition:background-color .15s,border-color .15s,transform .15s}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--accent);color:var(--on-accent)}.btn-primary:hover{background:var(--accent-hover)}
+.btn-secondary{border-color:var(--border-strong)}.btn-secondary:hover{border-color:var(--text)}
+.btn-inverse{background:var(--inverse);color:var(--text-inverse)}
+.btn-danger{background:var(--danger);color:var(--on-fill)}
+.btn-ghost:hover{background:var(--surface)}
+.btn-sm{min-height:32px;padding:0 12px;font-size:12.5px}
+.btn-lg{min-height:50px;padding:0 24px;font-size:15px}
+.btn-block{width:100%}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.icon-btn{width:38px;height:38px;border-radius:999px;border:0;background:transparent;display:grid;place-items:center;color:var(--text);position:relative}
+.icon-btn:hover{background:var(--surface)}
+.count{position:absolute;top:1px;right:1px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:var(--accent);color:var(--on-accent);font-size:10.5px;font-weight:600;display:grid;place-items:center}
+.link{color:var(--link);text-decoration:underline;text-underline-offset:.2em;text-decoration-color:transparent;background:none;border:0;padding:0;font-weight:500;cursor:pointer}
+.link:hover{text-decoration-color:currentColor}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border-radius:4px;font-size:11.5px;font-weight:600;background:var(--surface);color:var(--text);width:fit-content;white-space:nowrap}
+.badge-accent{background:var(--accent-subtle);color:var(--link)}
+.badge-good{background:var(--success-subtle);color:var(--success)}
+.badge-warn{background:var(--warning-subtle);color:var(--warning)}
+.badge-bad{background:var(--danger-subtle);color:var(--danger)}
+.badge-violet{background:var(--violet-subtle);color:var(--violet)}
+.badge-outline{background:transparent;border:1px solid var(--border)}
+.card{background:var(--raised);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.stack{display:flex;flex-direction:column;gap:12px;min-width:0}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.nowrap{flex-wrap:nowrap}
+.between{justify-content:space-between}
+.grow{flex:1;min-width:0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-size:13px;font-weight:500}
+.field input,.field select,.field textarea,.input{min-height:40px;padding:7px 11px;border:1px solid var(--border-strong);border-radius:var(--r-sm);background:var(--bg);font-size:14.5px;width:100%;min-width:0}
+.field textarea{min-height:90px;resize:vertical}
+.field [aria-invalid="true"]{border-color:var(--danger)}
+.err{font-size:12px;color:var(--danger)}
+.hint{font-size:12px;color:var(--muted)}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.check{display:flex;align-items:center;gap:10px;min-height:30px;font-size:13.5px;cursor:pointer}
+.check input{width:17px;height:17px;accent-color:var(--accent);flex:none}
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+thead th{font-size:11.5px;font-weight:500;color:var(--muted);background:var(--surface)}
+tbody tr:hover{background:var(--surface)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.status{display:inline-flex;align-items:center;gap:6px}
+.status::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--subtle);flex:none}
+.st-good::before{background:var(--success)}.st-warn::before{background:var(--warning)}.st-info::before{background:var(--accent)}.st-bad::before{background:var(--danger)}.st-violet::before{background:var(--violet)}
+.toast{pointer-events:none;position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--inverse);color:var(--text-inverse);padding:10px 18px;border-radius:999px;font-size:13.5px;box-shadow:var(--shadow-lg);z-index:100;max-width:calc(100vw - 32px)}
+.empty{border:1px dashed var(--border-strong);border-radius:var(--r-lg);padding:28px 18px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px}
+.modal-back{position:fixed;inset:0;background:rgb(10 11 13 / .55);display:grid;place-items:center;z-index:90;padding:16px}
+.modal{background:var(--bg);border-radius:var(--r-lg);max-width:440px;width:100%;padding:22px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow-lg)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi b{font-size:21px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.kpi .delta{font-size:11.5px;color:var(--success)}
+.panel{background:var(--raised);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;min-width:0}
+.panel-h{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:11px 14px;border-bottom:1px solid var(--border)}
+.panel-h h3{font-size:14.5px}
+.panel-b{padding:14px;display:flex;flex-direction:column;gap:12px}
+.seg{display:inline-flex;border:1px solid var(--border-strong);border-radius:999px;overflow:hidden;flex:none}
+.seg button{border:0;background:transparent;padding:0 11px;min-height:32px;font-size:12.5px;color:var(--muted);white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--inverse);color:var(--text-inverse)}
+.switch{width:44px;height:26px;border-radius:999px;border:0;background:var(--border-strong);position:relative;flex:none;padding:0}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--bg);transition:transform .2s}
+.switch[aria-checked="true"]{background:var(--success)}.switch[aria-checked="true"]::after{transform:translateX(18px)}
+.switch[disabled]{opacity:.5;cursor:not-allowed}
+.steps{display:flex;gap:8px;font-size:12.5px;color:var(--muted);flex-wrap:wrap}
+.steps span{display:flex;align-items:center;gap:6px}
+.steps b{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--border-strong);font-size:11.5px}
+.steps .on{color:var(--text);font-weight:500}.steps .on b{background:var(--accent);border-color:transparent;color:var(--on-accent)}
+.bar{height:8px;background:var(--surface);border-radius:8px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:8px;transition:width .4s}
+.code{font-family:var(--mono);font-size:12px;background:var(--surface);border-radius:8px;padding:8px 10px;white-space:pre-wrap;word-break:break-word}
+
+/* App shell (staff-style) */
+.appbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg)}
+.applogo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:16px}
+.applogo small{font-weight:500;font-size:12.5px;color:var(--muted);padding-left:8px;border-left:1px solid var(--border-strong)}
+.shell{display:grid;grid-template-columns:minmax(0,1fr);min-height:620px}
+@media (min-width:960px){.shell{grid-template-columns:210px minmax(0,1fr)}}
+.side{border-right:1px solid var(--border);padding:14px 10px;display:flex;flex-direction:column;gap:2px;background:var(--bg)}
+@media (max-width:959px){.side{border-right:0;border-bottom:1px solid var(--border);flex-direction:row;overflow-x:auto;padding:8px}.side .grp-t{display:none}}
+.grp-t{font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:8px 10px 4px}
+.side button{border:0;background:transparent;display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:var(--r-sm);font-size:13.5px;color:var(--muted);white-space:nowrap;text-align:left}
+.side button:hover{background:var(--surface);color:var(--text)}
+.side button[aria-current="page"]{background:var(--accent-subtle);color:var(--link);font-weight:600}
+.main{padding:18px clamp(14px,2.4vw,26px);display:flex;flex-direction:column;gap:16px;min-width:0}
+.main h1{font-size:24px}
+
+/* Mobile app pieces */
+.app-head{position:sticky;top:0;z-index:3;background:var(--bg);padding:6px 16px 10px;display:flex;flex-direction:column;gap:8px;border-bottom:1px solid var(--border)}
+.app-body{padding:14px 16px 24px;display:flex;flex-direction:column;gap:14px}
+.lock{position:absolute;inset:0;background:linear-gradient(160deg,#1f2a44,#0d0f14);color:#fff;padding:60px 14px 20px;display:flex;flex-direction:column;gap:10px;z-index:4}
+.lock .time{font-size:56px;font-weight:300;text-align:center;letter-spacing:-.02em;line-height:1}
+.lock .date{text-align:center;font-size:14px;opacity:.85;margin-bottom:14px}
+.notif{background:rgb(255 255 255 / .16);backdrop-filter:blur(8px);border-radius:16px;padding:10px 12px;display:flex;gap:10px;align-items:flex-start;font-size:13px;color:#fff;border:0;text-align:left;width:100%}
+.notif .ap{width:30px;height:30px;border-radius:8px;background:#fff;display:grid;place-items:center;flex:none}
+
+.notif b{display:block;font-size:13px}
+.notif small{opacity:.75;font-size:11px}
+.sms-bubble{background:var(--surface);border-radius:16px 16px 16px 4px;padding:9px 12px;font-size:13.5px;max-width:85%;align-self:flex-start}
+.sms-meta{font-size:11px;color:var(--muted);align-self:flex-start}
+.email{border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;background:var(--bg)}
+.email-h{padding:10px 14px;border-bottom:1px solid var(--border);font-size:12.5px;display:flex;flex-direction:column;gap:2px}
+.email-b{padding:18px;display:flex;flex-direction:column;gap:12px;font-size:14px}
+
+/* Simulation */
+.sim{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+@media (min-width:1100px){.sim{grid-template-columns:minmax(0,1fr) 380px}.sim-canvas{position:sticky;top:12px}}
+.sim-canvas{align-self:start;background:var(--bg);border:1px solid var(--border);border-radius:18px;padding:8px;min-width:0}
+@media (max-width:760px){.sim-canvas{overflow-x:auto}svg.map{min-width:720px}}
+svg.map{width:100%;height:auto;display:block}
+.sim-panel{display:flex;flex-direction:column;gap:12px;min-width:0}
+.sim-panel .card h2{font-size:14px}
+.sim-controls{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.sim-controls .btn{min-height:34px;padding:0 13px;font-size:12.5px;border:1px solid var(--border-strong)}
+.sim-controls .btn-primary{border-color:transparent}
+.progress{height:4px;background:var(--surface);border-radius:4px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.toggles{display:flex;flex-direction:column;gap:6px}
+.tg{display:flex;align-items:flex-start;gap:10px;font-size:13px;cursor:pointer}
+.tg input{width:16px;height:16px;margin-top:2px;accent-color:var(--accent);flex:none}
+.tg small{display:block;color:var(--muted);font-size:11.5px}
+.now{border-left:3px solid var(--accent);padding-left:10px;display:flex;flex-direction:column;gap:6px}
+.now b{font-size:14.5px}
+.now p{color:var(--muted);font-size:13px}
+pre.payload{margin:0;font-family:var(--mono);font-size:11.5px;background:var(--surface);border-radius:10px;padding:10px;white-space:pre-wrap;word-break:break-word;max-height:200px;overflow:auto}
+.log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;max-height:300px;overflow:auto;counter-reset:s}
+.log li button{width:100%;text-align:left;border:0;background:transparent;padding:5px 8px;border-radius:8px;font-size:12.5px;color:var(--muted);display:flex;gap:8px;align-items:baseline}
+.log li button::before{counter-increment:s;content:counter(s);font-family:var(--mono);font-size:10.5px;min-width:18px;color:var(--subtle)}
+.log li.done button{color:var(--text)}
+.log li.cur button{background:var(--accent-subtle);color:var(--text);font-weight:600}
+.log .k{width:8px;height:8px;border-radius:50%;flex:none;align-self:center}
+.simstate{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.simstate div{background:var(--surface);border-radius:10px;padding:7px 9px;display:flex;flex-direction:column;gap:1px;min-width:0}
+.simstate span{font-size:11px;color:var(--muted)}
+.simstate b{font-size:12.5px;font-family:var(--mono);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.simstate .changed{animation:flash 1s}
+@keyframes flash{from{background:var(--accent-subtle)}to{background:var(--surface)}}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted);padding:6px 8px 2px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:18px;height:3px;border-radius:2px;display:inline-block}
+.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.chip{border:1px solid var(--border);border-radius:10px;padding:6px 8px;font-size:12px;display:flex;flex-direction:column;gap:1px}
+.chip b{font-size:12px}.chip span{font-size:11px;color:var(--muted)}
+.chip.on{border-color:var(--success);background:var(--success-subtle)}
+.chip.bad{border-color:var(--danger);background:var(--danger-subtle)}
+.node rect{fill:var(--raised);stroke:var(--border-strong);stroke-width:1;transition:fill .2s,stroke .2s}
+.node text{fill:var(--text);font-family:var(--font);font-size:12.5px;font-weight:600;pointer-events:none}
+.node text.sub{fill:var(--muted);font-size:10px;font-weight:400}
+.node{cursor:pointer}
+.node:hover rect{stroke:var(--text)}
+.node.active rect{stroke:var(--accent);stroke-width:2.5;fill:var(--accent-subtle)}
+.node.focus rect{stroke:var(--violet);stroke-width:2.5}
+.node.dim{opacity:.35}
+.node.down rect{stroke:var(--danger);stroke-dasharray:5 4;fill:var(--danger-subtle)}
+.group{fill:none;stroke:var(--border-strong);stroke-dasharray:4 4;stroke-width:1}
+.glabel{fill:var(--muted);font-family:var(--font);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.edge{stroke:var(--edge);stroke-width:1.2;fill:none}
+.edge.dim{opacity:.25}
+.edge.hot{stroke-width:2.5}
+.plabel text{font-family:var(--mono);font-size:11px}
+
+
+</style>
+<div class="wrap">
+  <header class="top">
+    <div class="stack" style="gap:6px">
+      <div class="brand"><span class="mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round"><path d="M6 7h12M12 7v12"/></svg></span><span class="eyebrow">TechShop · Identity & access</span></div>
+      <h1>Identity and access (auth) system</h1>
+      <p class="lead">Sign in to the Market with a phone code, secure the account with an authenticator, sign in to the Staff portal with TOTP, hit a step-up check on a refund approval, and change roles in the Admin console. The phone on the right shows the SMS, the authenticator app and alerts. Switch to System simulation for what happens behind each step.</p>
+    </div>
+    <div class="viewtabs" role="tablist" aria-label="View">
+      <button type="button" role="tab" data-view="ui" aria-selected="true">UI mockup</button>
+      <button type="button" role="tab" data-view="sim" aria-selected="false">System simulation</button>
+    </div>
+  </header>
+  <section id="ui-view"></section>
+  <section id="sim-view" hidden></section>
+</div>
+<div id="overlay"></div>
+<script>
+"use strict";
+/* ===== Shared kit: icons, helpers, a tiny event framework, view tabs ===== */
+const P={
+ search:'<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/>',
+ cart:'<path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.4a2 2 0 0 0 1.9-1.4L21 8H6.2"/><circle cx="10" cy="20.5" r="1"/><circle cx="17" cy="20.5" r="1"/>',
+ user:'<circle cx="12" cy="8" r="4"/><path d="M4 20.5c1.5-3.6 4.4-5.5 8-5.5s6.5 1.9 8 5.5"/>',
+ users:'<circle cx="9" cy="8.5" r="3.5"/><path d="M2.5 20c1-3.3 3.4-5 6.5-5s5.5 1.7 6.5 5M16 5.2a3.5 3.5 0 0 1 0 6.6"/>',
+ heart:'<path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.2a4.3 4.3 0 0 1 7.5 2.6C19.5 15.4 12 20 12 20Z"/>',
+ home:'<path d="m3.5 11 8.5-7 8.5 7"/><path d="M5.5 9.5V20h13V9.5"/>',
+ grid:'<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/>',
+ phone:'<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/>',
+ laptop:'<rect x="5" y="5" width="14" height="10" rx="1.5"/><path d="M2.5 18.5h19l-1.5-3.5H4z"/>',
+ headphones:'<path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4.5" height="6.5" rx="1.5"/><rect x="16.5" y="14" width="4.5" height="6.5" rx="1.5"/>',
+ gamepad:'<path d="M7 7h10a4 4 0 0 1 4 4.5l-.6 4.6a2.5 2.5 0 0 1-4.3 1.3L14.5 15h-5l-1.6 2.4a2.5 2.5 0 0 1-4.3-1.3L3 11.5A4 4 0 0 1 7 7Z"/><path d="M8 10v3M6.5 11.5h3"/>',
+ monitor:'<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M9 20h6M12 16v4"/>',
+ car:'<path d="M4 16v-3.5L6 7.5A2 2 0 0 1 7.9 6h8.2a2 2 0 0 1 1.9 1.5l2 5V16"/><path d="M3 16h18v2.5H3zM4 12.5h16"/>',
+ check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+ x:'<path d="M6 6l12 12M18 6 6 18"/>',
+ chev:'<path d="m9 5 7 7-7 7"/>',
+ back:'<path d="m15 5-7 7 7 7"/>',
+ bolt:'<path d="M13 3 5 13.5h6L10 21l9-11.5h-6L13 3Z"/>',
+ star:'<path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.8L12 3.5Z"/>',
+ pin:'<path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.3"/>',
+ bell:'<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15l1.5-2Z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>',
+ truck:'<path d="M3 6h11v10H3zM14 9.5h3.8L21 13v3h-7"/><circle cx="7" cy="18" r="1.8"/><circle cx="17.5" cy="18" r="1.8"/>',
+ lock:'<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>',
+ key:'<circle cx="8" cy="15" r="4"/><path d="m11 12 8.5-8.5M16 7l2.5 2.5M14 9l2 2"/>',
+ verified:'<path d="M12 2.8 14.4 5l3.2-.3.6 3.2 2.8 1.6-1.3 3 1.3 3-2.8 1.6-.6 3.2-3.2-.3L12 21.2 9.6 19l-3.2.3-.6-3.2L3 14.5l1.3-3L3 8.5l2.8-1.6.6-3.2 3.2.3L12 2.8Z"/><path d="m8.8 12 2.2 2.2 4.3-4.4"/>',
+ returns:'<path d="M4 10h11a5 5 0 0 1 0 10H9"/><path d="m8 6-4 4 4 4"/>',
+ store:'<path d="M4 9.5 5.5 4h13L20 9.5"/><path d="M5.5 12.5V20h13v-7.5"/>',
+ briefcase:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5h6v2M3 12.5h18"/>',
+ box:'<path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/>',
+ chart:'<path d="M4 20h16M7 16v-5M12 16V6M17 16v-8"/>',
+ wallet:'<path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H18v3"/><rect x="4" y="8" width="16" height="11" rx="2"/>',
+ tag:'<path d="M3.5 12.5 11.5 4.5H19.5V12.5L11.5 20.5 3.5 12.5Z"/><circle cx="15.5" cy="8.5" r="1.3"/>',
+ shield:'<path d="M12 3 5 6v5.5c0 4.4 3 8 7 9.5 4-1.5 7-5.1 7-9.5V6l-7-3Z"/>',
+ settings:'<circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/>',
+ file:'<path d="M6 3h8l4 4v14H6z"/><path d="M9 12h6M9 16h6"/>',
+ mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 6.5 8.5 6.5 8.5-6.5"/>',
+ sms:'<path d="M4 5h16v11H9l-5 4z"/><path d="M8 10h8"/>',
+ send:'<path d="M21 3 10 14M21 3l-7 18-4-7-7-4 18-7Z"/>',
+ flow:'<rect x="3" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="16" width="7" height="5" rx="1.5"/><path d="M6.5 8v4.5h11V16"/>',
+ filter:'<path d="M4 5h16l-6 7.5V19l-4 1.5v-8z"/>',
+ clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+ card:'<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3 10h18"/>',
+ bank:'<path d="M3 9.5 12 4l9 5.5M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18"/>',
+ receipt:'<path d="M6 3h12v18l-2.5-1.5L13 21l-2.5-1.5L8 21l-2-1.2z"/><path d="M9 8h6M9 12h6"/>',
+ scale:'<path d="M12 4v16M6 20h12M4 8h16M4 8l-2 6a3 3 0 0 0 4 0zM20 8l-2 6a3 3 0 0 0 4 0z"/>',
+ scan:'<path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10"/>',
+ plus:'<path d="M12 5v14M5 12h14"/>',
+ globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+ eye:'<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/>',
+ flag:'<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
+ alert:'<path d="M12 3.5 2.5 20h19L12 3.5Z"/><path d="M12 10v4.5M12 17.5v.5"/>',
+ warehouse:'<path d="M3 9.5 12 4l9 5.5V20H3z"/><path d="M7 20v-6h10v6M7 17h10"/>',
+ swap:'<path d="M7 4 3.5 7.5 7 11M3.5 7.5H17M17 13l3.5 3.5L17 20M20.5 16.5H7"/>',
+ logout:'<path d="M14 4h5v16h-5M10 8l-4 4 4 4M6 12h10"/>',
+ fingerprint:'<path d="M12 11v3a8 8 0 0 0 1.5 4.7M8.5 9.5A4 4 0 0 1 16 11v1.5M5.5 7.5A8 8 0 0 1 20 12v1M5 14a14 14 0 0 0 1 4M9 13a10 10 0 0 0 1.5 6"/>',
+ history:'<path d="M3.5 12a8.5 8.5 0 1 0 2.5-6L3.5 8.5"/><path d="M3.5 4v4.5H8M12 7.5V12l3 2"/>'
+};
+const ic=(n,s=18,extra="")=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}>${P[n]||""}</svg>`;
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const naira=n=>(n<0?"−":"")+"₦"+Math.abs(Math.round(n)).toLocaleString("en-NG");
+const fmt=n=>Math.round(n).toLocaleString("en-NG");
+const pct=(a,b)=>b?(a/b*100).toFixed(1)+"%":"—";
+const logoMark=`<span class="mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round"><path d="M6 7h12M12 7v12"/></svg></span>`;
+const applogo=sfx=>`<span class="applogo">${logoMark}<span>TechShop</span>${sfx?`<small>${sfx}</small>`:""}</span>`;
+const browser=(host,path,body)=>`<div class="browser"><div class="browser-bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">${ic("lock",12)}<span>${esc(host)}${esc(path)}</span></div></div><div class="page">${body}</div></div>`;
+const phone=(screen,label="Phone")=>`<div class="phone" aria-label="${esc(label)}"><span class="phone-notch"></span><div class="phone-screen">${screen}</div></div>`;
+const notice=(t="Preview: names, figures and messages are sample data. Nothing is sent.")=>`<div class="notice">${t}</div>`;
+const status=(t,tone="")=>`<span class="status ${tone}">${esc(t)}</span>`;
+const sideNav=(groups,cur)=>`<nav class="side" aria-label="Sections">${groups.map(g=>`${g[0]?`<span class="grp-t">${g[0]}</span>`:""}${g[1].map(x=>`<button type="button" data-go="${x[0]}" ${x[0]===cur?'aria-current="page"':""}>${ic(x[2],16)}${x[1]}</button>`).join("")}`).join("")}</nav>`;
+function field(id,label,val="",o={}){const e=o.err;const attrs=`id="${id}" name="${id}" ${e?`aria-invalid="true" aria-describedby="${id}-e"`:""} ${o.attrs||""}`;
+ const ctl=o.select?`<select ${attrs}>${o.select.map(x=>{const [v,l]=Array.isArray(x)?x:[x,x];return `<option value="${esc(v)}" ${String(v)===String(val)?"selected":""}>${esc(l)}</option>`}).join("")}</select>`:o.area?`<textarea ${attrs}>${esc(val)}</textarea>`:`<input ${attrs} value="${esc(val)}" ${o.type?`type="${o.type}"`:""} ${o.ph?`placeholder="${esc(o.ph)}"`:""} ${o.inputmode?`inputmode="${o.inputmode}"`:""} ${o.ac?`autocomplete="${o.ac}"`:""}>`;
+ return `<div class="field" style="${o.span?"grid-column:1/-1":""}"><label for="${id}">${label}${o.optional?' <span class="muted" style="font-weight:400">(optional)</span>':""}</label>${ctl}${e?`<span class="err" id="${id}-e">${esc(e)}</span>`:o.hint?`<span class="hint">${esc(o.hint)}</span>`:""}</div>`}
+function table(cols,rows,opts={}){const numCol=cols.map((c,i)=>rows.some(r=>/^[−-]?₦|^\d[\d,.]*%?$/.test(String(r[i]??"").replace(/<[^>]+>/g,""))));
+ return `<div class="tbl-wrap"><table><thead><tr>${cols.map((c,i)=>`<th class="${numCol[i]?"num":""}">${c}</th>`).join("")}</tr></thead><tbody>${rows.length?rows.map(r=>`<tr>${r.map((c,i)=>`<td class="${numCol[i]?"num":""}">${c}</td>`).join("")}</tr>`).join(""):`<tr><td colspan="${cols.length}" class="muted" style="text-align:center;padding:20px">${opts.empty||"Nothing here yet"}</td></tr>`}</tbody></table></div>`}
+const switchBtn=(act,on,label,extra="")=>`<button type="button" class="switch" role="switch" aria-checked="${!!on}" aria-label="${esc(label)}" data-act="${act}" ${extra}></button>`;
+
+/* Event framework: data-act (click), data-go (nav), data-chg (change), data-inp (input), form[data-form] (submit) */
+const ACT={},FORM={},CHG={},INP={};
+let UI_RENDER=()=>{},GO=()=>{};
+function rerender(keepFocus){const a=document.activeElement;const id=a&&a.id;const pos=a&&a.selectionStart;UI_RENDER();if(keepFocus&&id){const n=document.getElementById(id);if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch{}}}renderOverlay()}
+let TOAST="";function toast(m){TOAST=m;renderOverlay();clearTimeout(toast.t);toast.t=setTimeout(()=>{TOAST="";renderOverlay()},2800)}
+let MODAL=null;function modal(html){MODAL=html;renderOverlay()}function closeModal(){MODAL=null;renderOverlay()}
+function renderOverlay(){const o=$("#overlay");if(!o)return;o.innerHTML=(MODAL?`<div class="modal-back" data-act="__backdrop"><div class="modal" role="dialog" aria-modal="true">${typeof MODAL==="function"?MODAL():MODAL}</div></div>`:"")+(TOAST?`<div class="toast" role="status">${esc(TOAST)}</div>`:"")}
+ACT.__backdrop=(d,el,e)=>{if(e.target===el)closeModal()};
+ACT.closeModal=()=>closeModal();
+document.addEventListener("click",e=>{if(e.target.closest("#sim-view"))return;
+ const g=e.target.closest("[data-go]");if(g){e.preventDefault();GO(g.dataset.go,g.dataset.arg,g);return}
+ const a=e.target.closest("[data-act]");if(!a||a.matches("input,select,textarea"))return;if(a.dataset.act==="__backdrop"&&e.target!==a)return;const h=ACT[a.dataset.act];if(h){e.preventDefault();h(a.dataset,a,e)}});
+document.addEventListener("change",e=>{const el=e.target;if(el.closest("#sim-view"))return;const h=CHG[el.dataset.chg];if(h)h(el.dataset,el)});
+document.addEventListener("input",e=>{const el=e.target;if(el.closest("#sim-view"))return;const h=INP[el.dataset.inp];if(h)h(el.dataset,el)});
+document.addEventListener("submit",e=>{const f=e.target.closest("form[data-form]");if(!f)return;e.preventDefault();const h=FORM[f.dataset.form];if(h)h(Object.fromEntries(new FormData(f)),f)});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&MODAL)closeModal()});
+
+/* View tabs (UI mockup | System simulation) */
+function initViews(){const tabs=$$(".viewtabs [role=tab]");tabs.forEach(t=>t.addEventListener("click",()=>{tabs.forEach(x=>x.setAttribute("aria-selected",x===t));$("#ui-view").hidden=t.dataset.view!=="ui";$("#sim-view").hidden=t.dataset.view!=="sim";if(t.dataset.view==="sim"&&window.SIM_INSTANCE)window.SIM_INSTANCE.refresh()}))}
+
+/* ===== Generic system simulator =====
+   cfg = { viewBox:[w,h], nodes:{key:{x,y,w,h,t,s,info}}, groups:[{x,y,w,h,t}],
+           toggles:{key:[label, sub]}, opts:{...defaults},
+           scenarios:{key:{t, intro?, toggles:[keys], build(opts)->steps, state:[[key,label]]}},
+           baseState()->{}, isDown?(node,opts,scen), onToggle?(key,opts), extra?(scen,opts)->{title,html}|null }
+   step = {f,t,l,d,p,k,fx}   k: req | res | async | ext | fail                                       */
+const R=(f,t,l,d,p,fx)=>({f,t,l,d,p,k:"req",fx}), S=(f,t,l,d,p,fx)=>({f,t,l,d,p,k:"res",fx}),
+      A=(f,t,l,d,p,fx)=>({f,t,l,d,p,k:"async",fx}), X=(f,t,l,d,p,fx)=>({f,t,l,d,p,k:"ext",fx}),
+      F=(f,t,l,d,p,fx)=>({f,t,l,d,p,k:"fail",fx});
+function createSim(root,cfg){
+ const N=cfg.nodes,[VW,VH]=cfg.viewBox;const opts={...cfg.opts};
+ let scen=Object.keys(cfg.scenarios)[0],steps=[],cur=-1,playing=false,speed=1,focus=null,anim=null,timer=null,prev={},EDGES=[];
+ const KIND={req:["var(--accent)","Request"],res:["var(--success)","Response"],async:["var(--promo)","Async (outbox, jobs, webhooks)"],ext:["var(--violet)",cfg.extLabel||"External or special"],fail:["var(--danger)","Failure, block or fallback"]};
+ const color=k=>KIND[k][0];
+ root.innerHTML=`<div class="pill-nav" role="group" aria-label="Scenario" data-s="scen"></div>
+ <div class="sim" style="margin-top:12px"><div class="sim-canvas"><svg class="map" viewBox="0 0 ${VW} ${VH}" role="img" aria-label="System diagram"></svg>
+ <div class="legend">${Object.values(KIND).map(([c,l])=>`<span><i style="background:${c}"></i>${l}</span>`).join("")}</div></div>
+ <div class="sim-panel"><div class="card"><div class="sim-controls"><button class="btn btn-primary" data-s="play" type="button">Play</button><button class="btn" data-s="prev" type="button" aria-label="Previous step">◀</button><button class="btn" data-s="next" type="button" aria-label="Next step">▶</button><button class="btn" data-s="restart" type="button">Restart</button><div class="seg" role="group" aria-label="Speed">${[0.5,1,2].map(v=>`<button type="button" data-speed="${v}" aria-pressed="${v===1}">${v}×</button>`).join("")}</div></div>
+ <div class="progress"><i data-s="bar"></i></div><div class="now" data-s="now" aria-live="polite"></div><pre class="payload" data-s="payload" hidden></pre></div>
+ <div class="card" data-s="tgcard"><h2>What can go wrong</h2><div class="toggles" data-s="toggles"></div></div>
+ <div class="card" data-s="extra" hidden></div>
+ <div class="card"><h2>System state</h2><div class="simstate" data-s="state"></div></div>
+ <div class="card"><h2>Steps</h2><ol class="log" data-s="log"></ol></div></div></div>`;
+ const q=s=>root.querySelector(`[data-s="${s}"]`);const svg=root.querySelector("svg.map");
+ const ctr=n=>({x:N[n].x+N[n].w/2,y:N[n].y+N[n].h/2});
+ function clip(a,b){const n=N[a],c=ctr(a);const dx=b.x-c.x,dy=b.y-c.y;if(!dx&&!dy)return c;const s=Math.min((n.w/2)/Math.abs(dx||1e-9),(n.h/2)/Math.abs(dy||1e-9));return{x:c.x+dx*s,y:c.y+dy*s}}
+ function allEdges(){const set=new Map();const all={...opts};Object.keys(cfg.toggles).forEach(k=>all[k]=true);Object.values(cfg.scenarios).forEach(sc=>[sc.build({...opts}),sc.build(all)].forEach(ss=>ss.forEach(s=>{if(s.f!==s.t)set.set([s.f,s.t].sort().join("|"),[s.f,s.t])})));return[...set.values()]}
+ function drawStatic(){let h=`<defs><marker id="sim-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="context-stroke"/></marker></defs>`;
+  h+=(cfg.groups||[]).map(g=>`<rect class="group" x="${g.x}" y="${g.y}" width="${g.w}" height="${g.h}" rx="14"/>${g.t?`<text class="glabel" x="${g.x+12}" y="${g.y+18}">${esc(g.t)}</text>`:""}`).join("");
+  EDGES=allEdges();h+=`<g>${EDGES.map(([a,b])=>{const p=clip(a,ctr(b)),r=clip(b,ctr(a));return `<line class="edge" data-e="${a}|${b}" x1="${p.x}" y1="${p.y}" x2="${r.x}" y2="${r.y}"/>`}).join("")}</g><g data-s="hot"></g>`;
+  h+=Object.entries(N).map(([k,n])=>{const tall=n.h>60;return `<g class="node" data-node="${k}" tabindex="0" role="button" aria-label="${esc(n.t)}: ${esc(n.s||"")}"><rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="${n.db?18:10}"/>${n.db?`<ellipse cx="${n.x+n.w/2}" cy="${n.y+16}" rx="${n.w/2-14}" ry="7" fill="none" stroke="var(--border-strong)"/>`:""}<text x="${n.x+n.w/2}" y="${n.y+n.h/2-(tall?8:2)}" text-anchor="middle">${esc(n.t)}</text>${n.s?`<text class="sub" x="${n.x+n.w/2}" y="${n.y+n.h/2+(tall?8:12)}" text-anchor="middle">${esc(n.s)}</text>`:""}</g>`}).join("");
+  h+=`<g data-s="packet"></g>`;svg.innerHTML=h}
+ function build(){steps=cfg.scenarios[scen].build({...opts});cur=-1;stop()}
+ function computeState(){const st=cfg.baseState(scen,opts);for(let i=0;i<=cur;i++)steps[i].fx&&steps[i].fx(st);return st}
+ function renderControls(){q("scen").innerHTML=Object.entries(cfg.scenarios).map(([k,s])=>`<button type="button" data-scen="${k}" aria-pressed="${k===scen}">${esc(s.t)}</button>`).join("");
+  const tg=cfg.scenarios[scen].toggles||[];q("tgcard").hidden=!tg.length;q("toggles").innerHTML=tg.map(k=>`<label class="tg"><input type="checkbox" data-tg="${k}" ${opts[k]?"checked":""}><span>${esc(cfg.toggles[k][0])}<small>${esc(cfg.toggles[k][1])}</small></span></label>`).join("");
+  const ex=cfg.extra?cfg.extra(scen,opts):null;q("extra").hidden=!ex;if(ex)q("extra").innerHTML=`<h2>${esc(ex.title)}</h2>${ex.html}`}
+ function renderLog(){q("log").innerHTML=steps.map((s,i)=>`<li class="${i<cur?"done":i===cur?"cur":""}"><button type="button" data-step="${i}"><span class="k" style="background:${color(s.k)}"></span><span>${esc(N[s.f].t)} → ${esc(N[s.t].t)}: ${esc(s.l)}</span></button></li>`).join("");const c=q("log").querySelector(".cur");if(c&&!root.hidden&&root.offsetParent)c.scrollIntoView({block:"nearest"})}
+ function renderNow(){const now=q("now"),pl=q("payload");q("bar").style.width=steps.length?`${(cur+1)/steps.length*100}%`:"0";
+  if(focus&&cur<0){const n=N[focus];const links=EDGES.filter(e=>e.includes(focus)).map(e=>N[e[0]===focus?e[1]:e[0]].t);now.style.borderColor="var(--violet)";now.innerHTML=`<span class="eyebrow">Component</span><b>${esc(n.t)}</b><p>${esc(n.info||"")}</p>${links.length?`<p><b style="font-size:12px">Talks to:</b> ${esc(links.join(", "))}</p>`:""}`;pl.hidden=true;return}
+  if(cur<0){const sc=cfg.scenarios[scen];now.style.borderColor="var(--accent)";now.innerHTML=`<span class="eyebrow">${esc(sc.t)}</span><b>${steps.length} steps · press Play</b><p>${esc(sc.intro||"Turn on a failure in “What can go wrong” to see how the system copes. Click any box for what it does.")}</p>`;pl.hidden=true;return}
+  const s=steps[cur];now.style.borderColor=color(s.k);now.innerHTML=`<span class="eyebrow">Step ${cur+1} of ${steps.length} · ${esc(N[s.f].t)} → ${esc(N[s.t].t)}</span><b>${esc(s.l)}</b><p>${esc(s.d||"")}</p>`;
+  if(s.p){pl.hidden=false;pl.textContent=s.p}else pl.hidden=true}
+ function renderState(){const st=computeState();q("state").innerHTML=cfg.scenarios[scen].state.map(([k,l])=>`<div class="${prev[k]!==undefined&&prev[k]!==st[k]?"changed":""}"><span>${esc(l)}</span><b title="${esc(st[k])}">${esc(st[k])}</b></div>`).join("");prev=st}
+ function label(x,y,t,k){const txt=t.length>46?t.slice(0,44)+"…":t;const w=Math.min(320,txt.length*6.8+18);const X=Math.max(4,Math.min(VW-4-w,x-w/2));q("packet").insertAdjacentHTML("beforeend",`<g class="plabel"><rect x="${X}" y="${y-11}" width="${w}" height="20" rx="10" style="fill:${color(k)}"/><text x="${X+w/2}" y="${y+3}" text-anchor="middle" style="fill:var(--bg)">${esc(txt)}</text></g>`)}
+ function renderMap(){const s=steps[cur];const inv=new Set(steps.flatMap(x=>[x.f,x.t]));
+  root.querySelectorAll(".node").forEach(g=>{const k=g.dataset.node;g.classList.toggle("active",!!s&&(s.f===k||s.t===k));
+   g.classList.toggle("dim",cur>=0||!focus?!inv.has(k):!(k===focus||EDGES.some(e=>e.includes(focus)&&e.includes(k))));g.classList.toggle("focus",focus===k);g.classList.toggle("down",!!(cfg.isDown&&cfg.isDown(k,opts,scen)))});
+  root.querySelectorAll(".edge").forEach(l=>{const [a,b]=l.dataset.e.split("|");const inS=steps.some(x=>(x.f===a&&x.t===b)||(x.f===b&&x.t===a));const foc=focus&&cur<0&&(a===focus||b===focus);l.classList.toggle("dim",foc?false:(focus&&cur<0)?true:!inS);l.style.stroke=foc?"var(--violet)":"";l.classList.toggle("hot",!!foc)});
+  q("hot").innerHTML="";q("packet").innerHTML="";cancelAnimationFrame(anim);if(!s)return;
+  if(s.f===s.t){const n=N[s.f];q("hot").innerHTML=`<rect x="${n.x-5}" y="${n.y-5}" width="${n.w+10}" height="${n.h+10}" rx="14" fill="none" stroke="${color(s.k)}" stroke-width="2.5"><animate attributeName="opacity" values="1;.25;1" dur="1s" repeatCount="indefinite"/></rect>`;label(ctr(s.f).x,n.y-16,s.l,s.k);return}
+  const p=clip(s.f,ctr(s.t)),r=clip(s.t,ctr(s.f));q("hot").innerHTML=`<line x1="${p.x}" y1="${p.y}" x2="${r.x}" y2="${r.y}" stroke="${color(s.k)}" stroke-width="2.5" ${s.k==="async"?'stroke-dasharray="6 4"':""} marker-end="url(#sim-arrow)"/>`;
+  const dur=900/speed,reduce=matchMedia("(prefers-reduced-motion: reduce)").matches,t0=performance.now();
+  const frame=t=>{const k=reduce?1:Math.min(1,(t-t0)/dur);const e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;q("packet").innerHTML=`<circle cx="${p.x+(r.x-p.x)*e}" cy="${p.y+(r.y-p.y)*e}" r="7" fill="${color(s.k)}" stroke="var(--bg)" stroke-width="2"/>`;label((p.x+r.x)/2,(p.y+r.y)/2-14,s.l,s.k);if(k<1)anim=requestAnimationFrame(frame)};anim=requestAnimationFrame(frame)}
+ function goTo(i){cur=Math.max(-1,Math.min(steps.length-1,i));if(cur>=0)focus=null;renderLog();renderNow();renderState();renderMap();q("prev").disabled=cur<0;q("next").disabled=cur>=steps.length-1}
+ function tick(){if(cur>=steps.length-1){stop();return}goTo(cur+1);timer=setTimeout(tick,2600/speed)}
+ function play(){if(cur>=steps.length-1)goTo(-1);playing=true;q("play").textContent="Pause";tick()}
+ function stop(){playing=false;clearTimeout(timer);q("play").textContent=cur>=steps.length-1&&steps.length?"Replay":"Play"}
+ function full(){build();renderControls();prev={};goTo(-1)}
+ root.addEventListener("click",e=>{const t=e.target.closest("[data-s],[data-scen],[data-speed],[data-step],[data-opt],.node");if(!t)return;
+  if(t.dataset.scen){scen=t.dataset.scen;focus=null;full()}
+  else if(t.dataset.speed){speed=+t.dataset.speed;root.querySelectorAll("[data-speed]").forEach(b=>b.setAttribute("aria-pressed",b===t))}
+  else if(t.dataset.step){stop();goTo(+t.dataset.step)}
+  else if(t.dataset.opt){opts[t.dataset.opt]=t.dataset.val;full()}
+  else if(t.classList.contains("node")){stop();const k=t.dataset.node;focus=focus===k?null:k;cur=-1;renderLog();renderNow();renderState();renderMap()}
+  else if(t.dataset.s==="play")playing?stop():play();
+  else if(t.dataset.s==="next"){stop();goTo(cur+1)}
+  else if(t.dataset.s==="prev"){stop();goTo(cur-1)}
+  else if(t.dataset.s==="restart"){stop();goTo(-1)}});
+ root.addEventListener("keydown",e=>{const n=e.target.closest?.(".node");if(n&&(e.key==="Enter"||e.key===" ")){e.preventDefault();n.dispatchEvent(new MouseEvent("click",{bubbles:true}))}});
+ root.addEventListener("change",e=>{const k=e.target.dataset.tg;if(!k)return;opts[k]=e.target.checked;cfg.onToggle&&cfg.onToggle(k,opts);full()});
+ drawStatic();full();
+ return{refresh(){renderMap()}}
+}
+
+/*META {"file":"identity-access","title":"TechShop Identity","eyebrow":"Identity & access","heading":"Identity and access (auth) system","lead":"Sign in to the Market with a phone code, secure the account with an authenticator, sign in to the Staff portal with TOTP, hit a step-up check on a refund approval, and change roles in the Admin console. The phone on the right shows the SMS, the authenticator app and alerts. Switch to System simulation for what happens behind each step."}*/
+/* ================= Helpers ================= */
+const SECRETS={ngozi:"JBSWY3DPEHPK3PXP",tolu:"KRSXG5CTMVRXEZLU",adaeze:null};
+function totp(secret,offset=0){if(!secret)return"------";const t=Math.floor(Date.now()/30000)+offset;let h=2166136261;for(const c of secret+":"+t){h^=c.charCodeAt(0);h=Math.imul(h,16777619)>>>0}return String(h%1000000).padStart(6,"0")}
+const secsLeft=()=>30-Math.floor(Date.now()/1000)%30;
+function genSecret(){const a="ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";let s="";for(let i=0;i<16;i++)s+=a[Math.floor(Math.random()*32)];return s}
+function qr(seed){let h=0;for(const c of seed)h=(h*31+c.charCodeAt(0))>>>0;const n=21,cells=[];for(let y=0;y<n;y++)for(let x=0;x<n;x++){const finder=(x<7&&y<7)||(x>13&&y<7)||(x<7&&y>13);let on;if(finder){const fx=x>13?x-14:x,fy=y>13?y-14:y;on=fx===0||fx===6||fy===0||fy===6||(fx>1&&fx<5&&fy>1&&fy<5)}else{h=(h*1103515245+12345)>>>0;on=(h>>16)&1}if(on)cells.push(`<rect x="${x}" y="${y}" width="1" height="1"/>`)}return `<svg viewBox="-1 -1 23 23" width="150" height="150" style="background:#fff;border-radius:8px" role="img" aria-label="QR code for the authenticator app"><g fill="#111">${cells.join("")}</g></svg>`}
+const nowStr=()=>{const d=new Date(Date.now()+st.skew*60000);return d.toTimeString().slice(0,5)};
+const PERMS=[
+ ["Orders & support",[["orders.view",0],["orders.cancel",0],["support.reply",0],["customers.reveal_contact",1]]],
+ ["Finance",[["finance.view",0],["refunds.request",0],["refunds.approve",1],["payouts.approve",1],["ledger.adjust",1]]],
+ ["Vendors & risk",[["vendors.kyc_review",0],["vendors.reveal_id",1],["risk.resolve",0]]],
+ ["Logistics",[["dispatch.assign",0],["riders.manage_devices",0]]],
+ ["Marketing",[["marketing.edit",0],["marketing.approve",1]]],
+ ["Admin",[["admin.roles",1],["admin.mfa_reset",1],["admin.audit_view",0]]]
+];
+const ROLES0={
+ support_agent:{name:"Support agent",p:["orders.view","support.reply"]},
+ finance_officer:{name:"Finance officer",p:["finance.view","refunds.request","orders.view"]},
+ finance_manager:{name:"Finance manager",p:["finance.view","refunds.request","refunds.approve","payouts.approve","ledger.adjust","orders.view"]},
+ dispatcher:{name:"Dispatcher",p:["orders.view","dispatch.assign","riders.manage_devices"]},
+ kyc_reviewer:{name:"KYC reviewer",p:["vendors.kyc_review","vendors.reveal_id"]},
+ marketing_manager:{name:"Marketing manager",p:["marketing.edit","marketing.approve"]},
+ auditor:{name:"Auditor",p:["orders.view","finance.view","admin.audit_view"]},
+ it_admin:{name:"IT admin",p:["admin.roles","admin.mfa_reset","admin.audit_view"]}
+};
+const sensitive=new Set(PERMS.flatMap(g=>g[1].filter(x=>x[1]).map(x=>x[0])));
+
+/* ================= State ================= */
+const fresh=()=>({
+ view:"market",phoneView:"sms",skew:0,
+ m:{step:"phone",phone:"",err:"",challenge:null,sends:[],attempts:0,user:null,newUser:false,resendAt:0},
+ accounts:{"+2348031234567":{name:"Adaeze Okafor"}},
+ sessions:[{id:"s1",device:"Chrome on Windows",app:"Market web",where:"Lagos",last:"Now",current:true,family:"f1"},{id:"s2",device:"TechShop app on Android",app:"Customer app",where:"Lagos",last:"2 h ago",family:"f2"},{id:"s3",device:"Safari on iPhone",app:"Market web",where:"Abuja",last:"12 days ago",family:"f3"}],
+ mfa:{enabled:false,setup:null,codes:null,err:""},
+ sms:[], notes:[], authApps:[["TechShop Staff","ngozi@techshop.ng","ngozi"],["TechShop Staff","tolu@techshop.ng","tolu"]],
+ staff:{step:"login",who:"ngozi",err:"",mfaAt:null,user:null,stepUp:null},
+ refunds:[{id:"R-88",order:"TS-10466",amount:79000,reason:"Faulty earbuds",by:"tolu",status:"requested"},{id:"R-91",order:"TS-10471",amount:412000,reason:"Wrong laptop delivered",by:"chinedu",status:"requested"}],
+ roles:JSON.parse(JSON.stringify(ROLES0)),
+ members:[{id:"ngozi",name:"Ngozi Eze",email:"ngozi@techshop.ng",roles:["finance_manager"],status:"active",mfa:true,last:"Now"},{id:"tolu",name:"Tolu Adebayo",email:"tolu@techshop.ng",roles:["finance_officer"],status:"active",mfa:true,last:"1 h ago"},{id:"chinedu",name:"Chinedu Obi",email:"chinedu@techshop.ng",roles:["support_agent"],status:"active",mfa:true,last:"Yesterday"},{id:"emeka",name:"Emeka Nwosu",email:"emeka@techshop.ng",roles:["dispatcher"],status:"active",mfa:true,last:"3 h ago"},{id:"me",name:"Bola Ade (you)",email:"bola@techshop.ng",roles:["it_admin"],status:"active",mfa:true,last:"Now"}],
+ events:[["09:02","login_succeeded","emeka@techshop.ng","Staff portal · pwd+totp"],["08:44","login_failed","unknown","Staff portal · wrong password ×3 · delayed"],["08:10","otp_requested","+234 803 *** 4567","Market"]],
+ tab:"matrix"
+});
+let st=fresh();
+function ev(kind,who,detail){st.events.unshift([nowStr(),kind,who,detail])}
+const can=(uid,perm)=>{const m=st.members.find(x=>x.id===uid);return!!m&&m.status==="active"&&m.roles.some(r=>st.roles[r]?.p.includes(perm))};
+
+/* ================= Market sign-in ================= */
+function marketView(){const m=st.m;let body="";
+ if(m.user)body=`<div class="stack"><span class="badge badge-good">${ic("check",12)}Signed in</span><h2 style="font-size:24px">Welcome${m.newUser?"":" back"}, ${esc(m.user.split(" ")[0])}</h2><p class="sm muted">This browser now holds an encrypted <span class="mono">__Host-ts_session</span> cookie. JavaScript can’t read it; the Next.js server uses it to call the API.</p><div class="code">Set-Cookie: __Host-ts_session=AES-GCM(sid, refresh); Secure; HttpOnly; SameSite=Lax; Path=/</div><div class="row"><button class="btn btn-primary" type="button" data-act="goSecurity">Account › Security</button><button class="btn btn-secondary" type="button" data-act="mSignout">Sign out</button></div></div>`;
+ else if(m.step==="phone")body=`<form class="stack" data-form="otpReq" novalidate><h2 style="font-size:24px">Sign in or create an account</h2><p class="sm muted">We’ll text you a 6-digit code. No password needed.</p>${field("m-phone","Phone number",m.phone,{type:"tel",ph:"0803 123 4567",ac:"tel",err:m.err,hint:"Try 0803 123 4567 (existing account) or any other Nigerian mobile number (new account)."})}<button class="btn btn-primary btn-lg" type="submit">Send code</button><span class="xs muted row">${ic("shield",13)}Protected by an invisible bot check. Only Nigerian numbers.</span></form>`;
+ else if(m.step==="code"){const wait=Math.max(0,Math.ceil((m.resendAt-Date.now())/1000));body=`<form class="stack" data-form="otpVerify" novalidate><h2 style="font-size:24px">Enter the code</h2><p class="sm muted">Sent to ${esc(m.challenge.phone.replace(/(\+234\d{3})\d{3}(\d{4})/,"$1 *** $2"))}. Check the phone on the right.</p>${field("m-code","6-digit code","",{inputmode:"numeric",ac:"one-time-code",err:m.err})}<div class="row xs muted"><span>Attempts left: <b>${5-m.attempts}</b></span><span>·</span><span>Expires in 10 min</span></div><button class="btn btn-primary btn-lg" type="submit" ${m.challenge.burned?"disabled":""}>Verify</button><div class="row"><button class="btn btn-ghost btn-sm" type="button" data-act="resend" ${wait?"disabled":""} data-wait>${wait?`Resend in ${wait}s`:"Resend code"}</button><button class="btn btn-ghost btn-sm" type="button" data-act="mBack">Use another number</button></div></form>`}
+ else if(m.step==="name")body=`<form class="stack" data-form="signupName" novalidate><h2 style="font-size:24px">Create your account</h2><p class="sm muted">Your number is verified. What should we call you?</p><div class="form-grid">${field("m-first","First name","",{ac:"given-name",err:m.err})}${field("m-last","Last name","",{ac:"family-name"})}</div><button class="btn btn-primary btn-lg" type="submit">Create account</button></form>`;
+ const sends=m.sends.filter(t=>Date.now()-t<3600000).length;
+ return browser("market.techshop.ng","/sign-in",notice()+`<div class="appbar">${applogo("Market")}</div><div class="container section"><div class="duo" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))"><div class="card" style="padding:24px;max-width:460px">${body}</div>
+ <div class="card" style="background:var(--surface);border:0"><b class="sm">What the server enforces</b><ul class="sm muted" style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px"><li>Codes are stored as an HMAC, never in plain text.</li><li>5 wrong tries burn the code. Codes expire after 10 minutes.</li><li>Per number: 1 send a minute, 5 an hour, 10 a day. This number: <b>${sends}/5</b> this hour.</li><li>The reply looks the same whether or not an account exists.</li><li>A new device sends a “new sign-in” alert.</li></ul></div></div></div>`)}
+
+/* ================= Account security ================= */
+function securityView(){const m=st.mfa;const signed=!!st.m.user;
+ if(!signed)return browser("market.techshop.ng","/account/security",notice()+`<div class="appbar">${applogo("Market")}</div><div class="container section"><div class="empty"><b>Sign in first</b><span class="sm muted">Account › Security needs a signed-in customer.</span><button class="btn btn-primary btn-sm" type="button" data-act="view" data-v="market">Go to sign in</button></div></div>`);
+ let mfa="";
+ if(m.enabled)mfa=`<div class="row between"><span>${status("Authenticator app on","st-good")}</span><button class="btn btn-secondary btn-sm" type="button" data-act="mfaOff">Turn off</button></div>${m.codes?`<div class="card" style="background:var(--warning-subtle);border:0"><b class="sm">Save your recovery codes</b><span class="xs">Each works once if you lose your phone. We only store their hashes — this is the only time you’ll see them.</span><div class="code">${m.codes.join("   ")}</div><button class="btn btn-secondary btn-sm" type="button" data-act="codesSaved" style="align-self:flex-start">I’ve saved them</button></div>`:""}`;
+ else if(m.setup)mfa=`<form class="stack" data-form="mfaConfirm" novalidate><p class="sm">1. Scan this with an authenticator app (the phone on the right has one).</p><div class="row" style="align-items:flex-start">${qr(m.setup)}<div class="stack" style="gap:4px"><span class="xs muted">Or enter the key</span><span class="mono">${m.setup.match(/.{4}/g).join(" ")}</span><button class="btn btn-secondary btn-sm" type="button" data-act="addToAuth">Add to the phone’s authenticator</button></div></div><p class="sm">2. Enter the 6-digit code it shows.</p>${field("mfa-code","Code","",{inputmode:"numeric",err:m.err})}<div class="row"><button class="btn btn-primary" type="submit">Turn on</button><button class="btn btn-ghost" type="button" data-act="mfaCancel">Cancel</button></div></form>`;
+ else mfa=`<p class="sm muted">Add a second step when you sign in on a new device.</p><button class="btn btn-primary btn-sm" type="button" data-act="mfaSetup" style="align-self:flex-start">Set up an authenticator app</button>`;
+ return browser("market.techshop.ng","/account/security",notice()+`<div class="appbar">${applogo("Market")}<span class="sm muted">${esc(st.m.user)}</span></div><div class="container section stack"><h1 style="font-size:28px">Security</h1><div class="grid2">
+ <div class="panel"><div class="panel-h"><h3>Signed-in devices</h3><button class="btn btn-secondary btn-sm" type="button" data-act="revokeOthers">Sign out everywhere else</button></div>${table(["Device","Where","Last used",""],st.sessions.map(s=>[`<b>${esc(s.device)}</b><br><span class="xs muted">${esc(s.app)}</span>`,esc(s.where),s.current?status("This device","st-good"):esc(s.last),s.current?"":`<button class="btn btn-ghost btn-sm" type="button" data-act="revoke" data-id="${s.id}">Sign out</button>`]),{empty:"No other devices"})}
+ <div class="panel-b" style="border-top:1px solid var(--border)"><span class="xs muted">Test reuse detection:</span><button class="btn btn-secondary btn-sm" type="button" data-act="replay" style="align-self:flex-start;white-space:normal;text-align:left;height:auto;padding-block:8px" ${st.sessions.length<2?"disabled":""}>Attacker replays an old refresh token from ${esc(st.sessions.find(s=>!s.current)?.device||"another device")}</button></div></div>
+ <div class="panel"><div class="panel-h"><h3>Two-step sign-in</h3></div><div class="panel-b">${mfa}</div></div>
+ <div class="panel" style="grid-column:1/-1"><div class="panel-h"><h3>Recent activity</h3><span class="xs muted">From auth_events</span></div>${table(["When","Event","Detail"],st.events.filter(e=>!/@techshop/.test(e[2])).slice(0,8).map(e=>[e[0],`<span class="mono xs">${e[1]}</span>`,esc(e[3])]))}</div></div></div>`)}
+
+/* ================= Staff sign-in + refunds ================= */
+function staffView(){const s=st.staff;let body;
+ if(s.step==="login")body=`<div class="container section" style="max-width:440px"><form class="card stack" data-form="staffLogin" novalidate style="padding:24px"><h2 style="font-size:22px">Staff sign-in</h2>${field("s-email","Work email",s.who==="tolu"?"tolu@techshop.ng":"ngozi@techshop.ng",{select:[["ngozi@techshop.ng","ngozi@techshop.ng (Finance manager)"],["tolu@techshop.ng","tolu@techshop.ng (Finance officer)"]]})}${field("s-pass","Password","correct horse battery",{type:"password",err:s.err,hint:"Any password of 10+ characters works in this demo."})}<button class="btn btn-primary btn-lg" type="submit">Continue</button><span class="xs muted">SMS is never used as a staff second factor (SIM-swap risk).</span></form></div>`;
+ else if(s.step==="totp")body=`<div class="container section" style="max-width:440px"><form class="card stack" data-form="staffTotp" novalidate style="padding:24px"><h2 style="font-size:22px">Authenticator code</h2><p class="sm muted">Open the authenticator on the phone and enter the code for <b>${s.who}@techshop.ng</b>.</p>${field("s-totp","6-digit code","",{inputmode:"numeric",ac:"one-time-code",err:s.err})}<button class="btn btn-primary btn-lg" type="submit">Sign in</button><button class="link sm" type="button" data-act="useRecovery">Use a recovery code instead</button></form></div>`;
+ else{const me=st.members.find(x=>x.id===s.who);const mfaAge=Math.round((Date.now()+st.skew*60000-s.mfaAt)/60000);
+  body=`<div class="main"><div class="row between"><div><h1>Refunds</h1><span class="sm muted">Signed in as ${esc(me.name)} · ${me.roles.map(r=>st.roles[r]?.name).join(", ")||"no roles"}</span></div><div class="row"><span class="badge ${mfaAge>10?"badge-warn":"badge-good"}">MFA ${mfaAge} min ago</span><button class="btn btn-secondary btn-sm" type="button" data-act="skip15">${ic("clock",14)}Skip 15 minutes</button><button class="btn btn-ghost btn-sm" type="button" data-act="staffOut">Sign out</button></div></div>
+  <div class="panel">${table(["Refund","Order","Amount","Reason","Requested by","Status",""],st.refunds.map(r=>[`<b>${r.id}</b>`,r.order,naira(r.amount),esc(r.reason),esc(st.members.find(x=>x.id===r.by)?.name||r.by),status(r.status==="approved"?"Approved":"Awaiting approval",r.status==="approved"?"st-good":"st-warn"),r.status==="approved"?`<span class="xs muted">by ${esc(r.approver)}</span>`:`<button class="btn btn-primary btn-sm" type="button" data-act="approveRefund" data-id="${r.id}">Approve</button>`]))}</div>
+  <div class="card" style="background:var(--surface);border:0"><b class="sm">Rules on this button</b><span class="xs muted">Needs <span class="mono">refunds.approve</span> (sensitive ★) · MFA within the last 10 minutes, or a step-up · approver ≠ requester · access token lives 5 min and is refreshed silently by the BFF.</span></div></div>`}
+ return browser("staff.techshop.ng",s.step==="in"?"/finance/refunds":"/sign-in",notice()+`<div class="appbar">${applogo("Staff")}</div>`+body)}
+
+/* ================= Admin console ================= */
+function adminView(){const t=st.tab;let body="";
+ if(t==="matrix"){const keys=Object.keys(st.roles);body=`<div class="panel"><div class="panel-h"><h3>Roles × permissions</h3><span class="xs muted">★ sensitive: needs a recent MFA step-up. Changes apply on the next request (cache dropped by NOTIFY).</span></div><div class="tbl-wrap"><table><thead><tr><th>Permission</th>${keys.map(k=>`<th style="text-align:center;white-space:normal;min-width:84px">${esc(st.roles[k].name)}</th>`).join("")}</tr></thead><tbody>${PERMS.map(g=>`<tr><td colspan="${keys.length+1}" style="background:var(--surface)"><b class="xs">${g[0]}</b></td></tr>`+g[1].map(([p])=>`<tr><td class="mono xs">${p}${sensitive.has(p)?" ★":""}</td>${keys.map(k=>`<td style="text-align:center"><input type="checkbox" aria-label="${esc(st.roles[k].name)}: ${p}" data-chg="perm" data-role="${k}" data-perm="${p}" ${st.roles[k].p.includes(p)?"checked":""} style="width:16px;height:16px;accent-color:var(--accent)"></td>`).join("")}</tr>`).join("")).join("")}</tbody></table></div></div>`}
+ if(t==="members")body=`<div class="panel"><div class="panel-h"><h3>Staff members</h3><span class="xs muted">Exiting someone removes roles and revokes sessions in one transaction</span></div>${table(["Name","Roles","MFA","Last active","Status",""],st.members.map(m=>[`<b>${esc(m.name)}</b><br><span class="xs muted">${esc(m.email)}</span>`,m.roles.map(r=>`<span class="badge">${esc(st.roles[r]?.name||r)}</span>`).join(" ")||"<span class='muted'>—</span>",m.mfa?status("TOTP","st-good"):status("Not set","st-bad"),esc(m.last),status(m.status==="active"?"Active":"Exited",m.status==="active"?"st-good":""),m.status!=="active"?"":`<div class="row nowrap"><select class="input" style="min-height:32px;width:auto;font-size:12.5px" data-chg="grant" data-id="${m.id}" aria-label="Grant role to ${esc(m.name)}"><option value="">Grant role…</option>${Object.entries(st.roles).filter(([k])=>!m.roles.includes(k)).map(([k,r])=>`<option value="${k}">${esc(r.name)}</option>`).join("")}</select>${m.roles.length?`<button class="btn btn-ghost btn-sm" type="button" data-act="revokeRole" data-id="${m.id}">Remove last role</button>`:""}${m.id!=="me"?`<button class="btn btn-ghost btn-sm" type="button" data-act="exit" data-id="${m.id}" style="color:var(--danger)">Exit</button>`:""}</div>`]))}</div>`;
+ if(t==="events")body=`<div class="panel"><div class="panel-h"><h3>Auth events</h3><span class="xs muted">Append-only, partitioned monthly</span></div>${table(["When","Event","Who","Detail"],st.events.slice(0,20).map(e=>[e[0],`<span class="mono xs" style="color:${/fail|reuse|denied|rate|blocked/.test(e[1])?"var(--danger)":"inherit"}">${e[1]}</span>`,esc(e[2]),esc(e[3])]))}</div>`;
+ return browser("staff.techshop.ng","/admin/"+t,notice()+`<div class="appbar">${applogo("Staff · Admin console")}<span class="sm muted">Bola Ade · IT admin</span></div><div class="main"><div class="row between"><h1>Access control</h1><div class="pill-nav" role="group" aria-label="Admin section">${[["matrix","Roles"],["members","Staff members"],["events","Auth events"]].map(([k,l])=>`<button type="button" data-act="tab" data-v="${k}" aria-pressed="${t===k}">${l}</button>`).join("")}</div></div>${body}</div>`)}
+
+/* ================= Phone ================= */
+function phoneScreen(){const v=st.phoneView;const head=t=>`<div class="app-head"><b style="font-size:19px">${t}</b></div>`;
+ if(v==="sms")return head("Messages")+`<div class="app-body" style="gap:6px">${st.sms.length?st.sms.map(m=>`<span class="sms-meta">${esc(m.time)} · TechShop</span><div class="sms-bubble">${esc(m.body)}</div>`).join(""):`<span class="sm muted">No messages yet. Request a sign-in code.</span>`}</div>`;
+ if(v==="auth")return head("Authenticator")+`<div class="app-body" style="gap:8px">${st.authApps.map(a=>`<div class="card" style="gap:2px"><span class="xs muted">${esc(a[0])} · ${esc(a[1])}</span><div class="row between"><b class="mono" style="font-size:26px;letter-spacing:.12em" data-totp="${a[2]}">${totp(SECRETS[a[2]]).replace(/(\d{3})/,"$1 ")}</b><span class="xs muted" data-ttl>${secsLeft()}s</span></div></div>`).join("")}<span class="xs muted">Codes change every 30 seconds (RFC 6238).</span></div>`;
+ return head("Notifications")+`<div class="app-body">${st.notes.length?st.notes.map(n=>`<div class="card"><div class="row between"><b class="sm">${esc(n.t)}</b><span class="xs muted">${esc(n.time)}</span></div><span class="sm muted">${esc(n.b)}</span></div>`).join(""):`<span class="sm muted">Security alerts appear here.</span>`}</div>`}
+function note(t,b){st.notes.unshift({t,b,time:nowStr()})}
+
+/* ================= Render ================= */
+function render(){const left={market:marketView,security:securityView,staff:staffView,admin:adminView}[st.view]();
+ $("#ui-view").innerHTML=`<div class="pill-nav" role="group" aria-label="Screen" style="margin-bottom:12px;width:fit-content">${[["market","Market sign-in","user"],["security","Account › Security","shield"],["staff","Staff sign-in & refunds","lock"],["admin","Admin console","settings"]].map(x=>`<button type="button" data-act="view" data-v="${x[0]}" aria-pressed="${st.view===x[0]}">${ic(x[2],14)}${x[1]}</button>`).join("")}</div>
+ <div class="duo">${left}<div class="side-col"><div class="pill-nav" role="group" aria-label="Phone screen">${[["sms","Messages"],["auth","Authenticator"],["notes","Alerts"]].map(x=>`<button type="button" data-act="pv" data-v="${x[0]}" aria-pressed="${st.phoneView===x[0]}">${x[1]}${x[0]==="notes"&&st.notes.length?` (${st.notes.length})`:""}</button>`).join("")}</div>${phone(phoneScreen(),"Phone")}<button class="btn btn-ghost btn-sm" type="button" data-act="reset">Reset demo</button></div></div>`}
+UI_RENDER=render;
+setInterval(()=>{$$("[data-totp]").forEach(e=>e.textContent=totp(SECRETS[e.dataset.totp]).replace(/(\d{3})/,"$1 "));$$("[data-ttl]").forEach(e=>e.textContent=secsLeft()+"s");const b=$("[data-wait]");if(b&&st.m.step==="code"){const w=Math.max(0,Math.ceil((st.m.resendAt-Date.now())/1000));b.textContent=w?`Resend in ${w}s`:"Resend code";b.disabled=!!w}},1000);
+
+/* ================= Actions ================= */
+function sendOtp(phone){const m=st.m;const recent=m.sends.filter(t=>Date.now()-t<3600000);
+ if(recent.length>=5){m.err="Too many codes requested for this number. Try again in an hour.";ev("rate_limited",phone.slice(0,7)+"***","otp per-number limit 5/h");return false}
+ m.sends.push(Date.now());const code=String(Math.floor(100000+Math.random()*900000));m.challenge={phone,hash:code,burned:false};m.attempts=0;m.resendAt=Date.now()+60000;
+ st.sms.push({time:nowStr(),body:`Your TechShop sign-in code is ${code}. It expires in 10 minutes. Never share it — TechShop will never call to ask for it.`});ev("otp_requested",phone.replace(/(\+234\d{3})\d{3}(\d{4})/,"$1***$2"),"Market · critical lane");st.phoneView="sms";return true}
+function normPhone(v){const d=String(v).replace(/[^\d+]/g,"").replace(/^\+/,"");let n;if(/^234[789][01]\d{8}$/.test(d))n=d.slice(3);else if(/^0[789][01]\d{8}$/.test(d))n=d.slice(1);else if(/^[789][01]\d{8}$/.test(d))n=d;return n?"+234"+n:null}
+FORM.otpReq=v=>{const m=st.m;m.phone=v["m-phone"];const p=normPhone(v["m-phone"]);if(!p){m.err="Enter a Nigerian mobile number, for example 0803 123 4567.";render();return}m.err="";if(sendOtp(p))m.step="code";render()};
+FORM.otpVerify=v=>{const m=st.m,c=m.challenge;if(c.burned)return;const code=(v["m-code"]||"").replace(/\D/g,"");
+ if(code!==c.hash){m.attempts++;ev("otp_failed",c.phone.slice(0,7)+"***",`attempt ${m.attempts}/5`);if(m.attempts>=5){c.burned=true;m.err="Too many wrong codes. This code no longer works — request a new one."}else m.err=`That code isn’t right. ${5-m.attempts} attempt${5-m.attempts>1?"s":""} left.`;render();return}
+ const acct=st.accounts[c.phone];if(!acct){m.step="name";m.err="";render();return}
+ signIn(acct.name,false)};
+FORM.signupName=v=>{if(!v["m-first"].trim()){st.m.err="Enter your first name.";render();return}const name=v["m-first"].trim()+" "+(v["m-last"]||"").trim();st.accounts[st.m.challenge.phone]={name};signIn(name,true)};
+function signIn(name,isNew){const m=st.m;m.user=name;m.newUser=isNew;m.err="";ev("login_succeeded",name,"Market · otp · new device");note("New sign-in to your TechShop account","Chrome on Windows in Lagos, just now. Not you? Secure your account.");toast("Signed in · session created (refresh token stored as a hash)");render()}
+FORM.mfaConfirm=v=>{const m=st.mfa;if((v["mfa-code"]||"").replace(/\D/g,"")!==totp(m.setup)&&(v["mfa-code"]||"").replace(/\D/g,"")!==totp(m.setup,-1)){m.err="That code doesn’t match. Codes change every 30 seconds — use the current one.";render();return}
+ m.enabled=true;m.err="";m.codes=Array.from({length:10},()=>Math.random().toString(36).slice(2,6)+"-"+Math.random().toString(36).slice(2,6));SECRETS.adaeze=m.setup;m.setup=null;ev("mfa_enrolled",st.m.user,"totp");note("Two-step sign-in turned on","You’ll need your authenticator on new devices.");render()};
+FORM.staffLogin=v=>{const s=st.staff;const who=v["s-email"].split("@")[0];s.who=who;if((v["s-pass"]||"").length<10){s.err="Wrong email or password.";ev("login_failed",v["s-email"],"Staff · wrong password · delay 1 s");render();return}const m=st.members.find(x=>x.id===who);if(m.status!=="active"){s.err="Wrong email or password.";ev("login_failed",v["s-email"],"Staff · account exited");render();return}s.err="";s.step="totp";st.phoneView="auth";render()};
+FORM.staffTotp=v=>{const s=st.staff;const c=(v["s-totp"]||"").replace(/\D/g,"");if(c!==totp(SECRETS[s.who])&&c!==totp(SECRETS[s.who],-1)){s.err="That code isn’t right.";ev("mfa_failed",s.who+"@techshop.ng","Staff · totp");render();return}s.step="in";s.mfaAt=Date.now()+st.skew*60000;s.err="";ev("login_succeeded",s.who+"@techshop.ng","Staff portal · pwd+totp");render()};
+FORM.stepUp=v=>{const s=st.staff;const c=(v["su-code"]||"").replace(/\D/g,"");if(c!==totp(SECRETS[s.who])&&c!==totp(SECRETS[s.who],-1)){s.stepUp.err="That code isn’t right.";ev("mfa_failed",s.who+"@techshop.ng","step-up");modal(stepUpModal);return}s.mfaAt=Date.now()+st.skew*60000;ev("step_up_succeeded",s.who+"@techshop.ng","refunds.approve");const id=s.stepUp.id;s.stepUp=null;closeModal();doApprove(id)};
+const stepUpModal=()=>`<form class="stack" data-form="stepUp" novalidate><span class="eyebrow">Confirm it’s you</span><h2 style="font-size:20px">Enter your authenticator code</h2><p class="sm muted">Approving refunds is sensitive and your last MFA was over 10 minutes ago.</p>${field("su-code","6-digit code","",{inputmode:"numeric",err:st.staff.stepUp?.err})}<div class="row"><button class="btn btn-primary" type="submit">Confirm</button><button class="btn btn-ghost" type="button" data-act="closeModal">Cancel</button></div></form>`;
+function doApprove(id){const s=st.staff,r=st.refunds.find(x=>x.id===id);
+ if(!can(s.who,"refunds.approve")){ev("access_denied",s.who+"@techshop.ng","refunds.approve missing");toast("403 · you don’t have refunds.approve");return render()}
+ const age=(Date.now()+st.skew*60000-s.mfaAt)/60000;if(age>10){s.stepUp={id,err:""};ev("step_up_required",s.who+"@techshop.ng","refunds.approve · mfa "+Math.round(age)+" min ago");modal(stepUpModal);return render()}
+ if(r.by===s.who){ev("access_denied",s.who+"@techshop.ng","approver = requester");toast("Blocked: you requested this refund, so someone else must approve it");return render()}
+ r.status="approved";r.approver=st.members.find(x=>x.id===s.who).name;ev("refund_approved",s.who+"@techshop.ng",r.id+" · audit_log");toast(`${r.id} approved · ledger reversal posted`);render()}
+Object.assign(ACT,{
+ reset:()=>{st=fresh();SECRETS.adaeze=null;render();toast("Demo reset")},
+ view:d=>{st.view=d.v;render()},pv:d=>{st.phoneView=d.v;render()},
+ resend:()=>{if(sendOtp(st.m.challenge.phone)){st.m.err="";toast("New code sent · the old one no longer works")}render()},
+ mBack:()=>{st.m.step="phone";st.m.err="";render()},
+ mSignout:()=>{st.m.user=null;st.m.step="phone";ev("session_revoked",st.m.phone,"sign out");render()},
+ goSecurity:()=>{st.view="security";render()},
+ revoke:d=>{const s=st.sessions.find(x=>x.id===d.id);st.sessions=st.sessions.filter(x=>x.id!==d.id);ev("session_revoked",st.m.user,s.device+" · by user");toast("Signed out "+s.device);render()},
+ revokeOthers:()=>{const n=st.sessions.length-1;st.sessions=st.sessions.filter(x=>x.current);ev("session_revoked",st.m.user,`${n} other devices · by user`);toast(`Signed out ${n} other device${n===1?"":"s"}`);render()},
+ replay:()=>{const s=st.sessions.find(x=>!x.current);st.sessions=st.sessions.filter(x=>x!==s);ev("refresh_reuse_detected",st.m.user,`family ${s.family} revoked (${s.device})`);note("We signed out a device","An old sign-in token for “"+s.device+"” was reused, which can mean it was stolen. That device is signed out. Check your recent activity.");st.phoneView="notes";toast("Reuse detected → whole session family revoked");render()},
+ mfaSetup:()=>{st.mfa.setup=genSecret();st.mfa.err="";render()},mfaCancel:()=>{st.mfa.setup=null;render()},
+ addToAuth:()=>{SECRETS.adaeze=st.mfa.setup;if(!st.authApps.some(a=>a[2]==="adaeze"))st.authApps.unshift(["TechShop",st.m.user,"adaeze"]);st.phoneView="auth";render()},
+ codesSaved:()=>{st.mfa.codes=null;render()},
+ mfaOff:()=>{st.mfa.enabled=false;st.authApps=st.authApps.filter(a=>a[2]!=="adaeze");SECRETS.adaeze=null;ev("mfa_removed",st.m.user,"by user · re-auth");note("Two-step sign-in turned off","If this wasn’t you, secure your account.");render()},
+ useRecovery:()=>toast("Recovery codes work once each; using one alerts admins"),
+ skip15:()=>{st.skew+=15;toast("Clock moved forward 15 minutes");render()},
+ staffOut:()=>{st.staff.step="login";ev("session_revoked",st.staff.who+"@techshop.ng","sign out");render()},
+ approveRefund:d=>doApprove(d.id),
+ tab:d=>{st.tab=d.v;render()},
+ revokeRole:d=>{const m=st.members.find(x=>x.id===d.id);const r=m.roles.pop();if(d.id==="me"&&r==="it_admin"){m.roles.push(r);toast("You can’t remove your own admin role; another admin must");return}ev("role_revoked",m.email,st.roles[r].name+" · by Bola");toast(`${st.roles[r].name} removed from ${m.name} · effective on their next request`);render()},
+ exit:d=>{const m=st.members.find(x=>x.id===d.id);m.status="exited";const n=m.roles.length;m.roles=[];ev("staff_exited",m.email,`${n} role${n===1?"":"s"} removed · all sessions revoked · SSE closed`);if(st.staff.who===d.id&&st.staff.step==="in"){st.staff.step="login";st.staff.err="Your session ended."}toast(`${m.name} exited: roles and sessions gone in one transaction`);render()}
+});
+Object.assign(CHG,{
+ perm:(d,el)=>{const r=st.roles[d.role];if(d.perm==="admin.roles"&&d.role==="it_admin"&&!el.checked){el.checked=true;toast("Can’t remove admin.roles from the only admin role you hold");return}el.checked?r.p.push(d.perm):r.p.splice(r.p.indexOf(d.perm),1);ev(el.checked?"permission_granted":"permission_revoked","bola@techshop.ng",`${r.name}: ${d.perm}`);toast(`${r.name}: ${d.perm} ${el.checked?"granted":"removed"} · cache invalidated`);render()},
+ grant:(d,el)=>{if(!el.value)return;const m=st.members.find(x=>x.id===d.id);if(d.id==="me"){el.value="";toast("You can’t grant roles to yourself");return}m.roles.push(el.value);ev("role_granted",m.email,st.roles[el.value].name+" · by Bola");toast(`${st.roles[el.value].name} granted to ${m.name}`);render()}
+});
+render();
+
+/* ================= Simulation ================= */
+window.SIM_INSTANCE=createSim($("#sim-view"),{
+ viewBox:[1100,640],
+ nodes:{
+  browser:{x:20,y:40,w:140,h:50,t:"Browser",s:"cookie only",info:"Holds only an encrypted httpOnly cookie. JavaScript never sees a token."},
+  attacker:{x:20,y:140,w:140,h:50,t:"Attacker",s:"bots · stolen tokens",info:"Bots pumping OTPs, replayed refresh tokens, cross-site requests."},
+  app:{x:20,y:240,w:140,h:50,t:"Mobile app",s:"SecureStore",info:"Customer and logistics apps: refresh token in Keychain/Keystore, access token in memory."},
+  phone:{x:20,y:340,w:140,h:50,t:"User’s phone",s:"SMS · authenticator",info:"Receives OTP SMS; runs the authenticator app for TOTP."},
+  python:{x:20,y:520,w:140,h:50,t:"Python job",s:"client credentials",info:"The recommender authenticates with a client secret to the internal listener only."},
+  bff:{x:190,y:40,w:130,h:50,t:"Next.js BFF",s:"server-side calls",info:"Each web app’s server: decrypts its cookie, refreshes tokens when needed and calls the API with a bearer token. Checks Origin on state-changing calls."},
+  turnstile:{x:190,y:140,w:130,h:50,t:"Bot check",s:"Turnstile",info:"Invisible challenge on web OTP, sign-up and password forms; forced for everyone when the global OTP breaker trips."},
+  nginx:{x:350,y:40,w:80,h:360,t:"nginx",s:"TLS · IP limits",info:"Public entry. Routes /api only; the internal listener is not exposed."},
+  auth:{x:460,y:60,w:110,h:50,t:"auth",s:"OTP · password",info:"Sign-in endpoints: OTP request/verify, password, invite acceptance, reset."},
+  mfa:{x:585,y:60,w:110,h:50,t:"mfa",s:"TOTP · step-up",info:"TOTP verification (±1 step, no code reuse), recovery codes, step-up."},
+  limiter:{x:710,y:60,w:110,h:50,t:"rate limits",s:"Postgres counters",info:"Per number, IP, device and global OTP budget; progressive delays for passwords. Stored in Postgres, no Redis."},
+  session:{x:460,y:160,w:110,h:50,t:"sessions",s:"JWT · rotation",info:"Issues Ed25519 JWTs (with kid), rotates refresh tokens, detects reuse and revokes whole families."},
+  authz:{x:585,y:160,w:110,h:50,t:"authz",s:"aud · perms · scope",info:"Every request: signature and audience, session active, permission, sensitive → recent MFA, data scope. Caches 60 s; NOTIFY drops entries instantly."},
+  svc:{x:710,y:160,w:110,h:50,t:"refunds service",s:"SoD in SQL",info:"Domain service: ownership in every query; approver ≠ requester enforced in Go and by a CHECK."},
+  events:{x:460,y:260,w:110,h:50,t:"auth_events",s:"+ audit_log",info:"Append-only security events, shown to users (recent activity) and admins; alerts on reuse, admin sign-in and spikes."},
+  notify:{x:585,y:260,w:110,h:50,t:"notify",s:"critical lane",info:"Sends OTP and security alerts on the critical queue (own workers)."},
+  internal:{x:710,y:260,w:110,h:50,t:"internal listener",s:"aud=internal",info:"Separate port, not routed by nginx: service tokens and the recommender export/import."},
+  kms:{x:880,y:40,w:180,h:50,t:"KMS / secrets",s:"signing keys · peppers",info:"Ed25519 private keys (rotated every 90 days), OTP pepper, TOTP secret encryption keys. Never in the repo."},
+  pg:{x:880,y:130,w:180,h:150,t:"PostgreSQL",s:"users · sessions · roles",db:true,info:"users, user_sessions (hashes only), verification_codes (HMAC), user_mfa_factors (encrypted), roles, permissions, auth_events, auth_rate_limits."},
+  termii:{x:880,y:320,w:180,h:50,t:"SMS provider",s:"Termii + backup",info:"Delivers codes on the DND-capable transactional route."}
+ },
+ groups:[{x:445,y:30,w:390,h:300,t:"Go API"}],
+ opts:{wrong5:false,pumping:false,newUser:false,stolen:false,race:false,staleMfa:true,selfApprove:false,roleRemoved:false,csrf:false,expired:true,external:false},
+ toggles:{wrong5:["Wrong code 5 times","Challenge burned"],pumping:["Bot pumps OTPs to many numbers","Global breaker forces the bot check"],newUser:["Number has no account","Sign-up asks for a name"],stolen:["Attacker replays a stolen refresh token","Whole family revoked"],race:["Two tabs refresh at the same moment","10-second grace window"],staleMfa:["Last MFA over 10 minutes ago","Step-up required"],selfApprove:["Approver requested the refund","Blocked by separation of duties"],roleRemoved:["Admin removes the role mid-session","403 on the very next request"],csrf:["Evil site posts to the BFF","Origin check blocks it"],expired:["Access token expired","BFF refreshes first"],external:["Someone calls the internal API from outside","Not routed by nginx"]},
+ baseState:()=>({challenge:"—",attempts:0,sends:0,breaker:"closed",session:"—",family:"—",tokens:"—",perm:"—",mfa:"—",result:"—",cache:"warm"}),
+ isDown:()=>false,
+ scenarios:{
+  otp:{t:"Phone OTP sign-in",toggles:["newUser","wrong5","pumping"],state:[["challenge","Challenge"],["attempts","Wrong attempts"],["sends","Sends (number, 1 h)"],["breaker","Global OTP breaker"],["session","Session"]],
+   build:o=>[
+    ...(o.pumping?[F("attacker","nginx","2,000 OTP requests / 5 min","A bot cycles through thousands of numbers to earn SMS revenue (SMS pumping)."),A("limiter","pg","global budget > 3× normal","The breaker trips: every OTP request now needs the bot check; security channel alerted.",null,s=>{s.breaker="open · bot check for all"}),F("turnstile","attacker","challenge failed","Bots can’t pass; real users pass invisibly.")]:[]),
+    R("browser","bff","submit phone",""),
+    ...(o.pumping?[R("bff","turnstile","bot check token","")]:[]),
+    R("bff","nginx","POST /auth/otp/request","",`{ "phone":"0803 123 4567", "purpose":"login", "turnstileToken":"…" }`),
+    R("nginx","auth","route",""),
+    R("auth","limiter","check limits","+234 mobile range ✓ · number 1/min, 5/h, 10/day ✓ · IP 20/h ✓ · device 5 numbers/day ✓",null,s=>{s.sends=1}),
+    R("auth","pg","store HMAC(code)","verification_codes: code_hash = HMAC-SHA256(pepper, code), expires 10 min, attempts 0.",null,s=>{s.challenge="active"}),
+    A("auth","notify","Send(otp) · critical",""),
+    X("notify","termii","SMS · transactional route",""),
+    S("termii","phone","code arrives",""),
+    S("auth","bff","200 { challengeId, resendAfter: 60 }","Identical response whether or not the number has an account (no enumeration)."),
+    ...(o.wrong5?[
+     F("bff","auth","verify ×5 wrong","Constant-time compare; attempts 1…5.",null,s=>{s.attempts=5}),
+     F("auth","pg","challenge burned","After 5 failures the code is dead; auth_events otp_failed ×5. A new code must be requested (and counts against the limits).",null,s=>{s.challenge="burned"})
+    ]:[
+     R("bff","auth","POST /auth/otp/verify","",`{ "challengeId":"ch_91…", "code":"530218" }`),
+     R("auth","pg","match · consume","consumed_at = now; single use.",null,s=>{s.challenge="consumed"}),
+     ...(o.newUser?[S("auth","bff","needs_profile","New number: the BFF asks for a name, then POST /auth/signup completes it.")]:[]),
+     R("auth","session","create session",""),
+     R("session","kms","sign JWT (kid k-2026-10)","EdDSA signature with the current key."),
+     R("session","pg","user_sessions (hash only)","Stores SHA-256(refresh), family_id, device, aud=market.",null,s=>{s.session="active"}),
+     A("session","events","login_succeeded · new device",""),
+     A("events","notify","new sign-in alert",""),
+     S("session","bff","access (10 min) + refresh",""),
+     S("bff","browser","Set-Cookie __Host-ts_session","Encrypted with the app’s key; HttpOnly; Secure; SameSite=Lax.")
+    ])
+   ]},
+  refresh:{t:"Refresh rotation & reuse",toggles:["race","stolen"],state:[["tokens","Refresh tokens"],["family","Session family"],["result","Result"]],
+   build:o=>[
+    R("app","nginx","POST /auth/refresh {R1}","The app’s access token expired; it sends its refresh token.",null,s=>{s.tokens="R1 active";s.family="active"}),
+    R("nginx","session","route",""),
+    R("session","pg","find hash(R1) · rotate","R1 marked replaced_by R2 in the same family.",null,s=>{s.tokens="R1 replaced → R2"}),
+    S("session","app","access + R2",""),
+    ...(o.race?[R("app","session","second tab sends R1 (3 s later)","Within the 10-second grace window from the same device: returns the same R2, no alarm.",null,s=>{s.result="grace window ✓"})]:[]),
+    ...(o.stolen?[
+     F("attacker","nginx","POST /auth/refresh {R1}","R1 was copied from a compromised device earlier."),
+     F("nginx","session","R1 already replaced","Reuse outside the grace window = theft signal."),
+     F("session","pg","revoke whole family","R2 is revoked too, so both attacker and victim are signed out.",null,s=>{s.family="revoked";s.tokens="all revoked";s.result="reuse detected"}),
+     A("session","events","refresh_reuse_detected","Alert to the security channel; the user is told why they were signed out."),
+     A("events","notify","“We signed out a device”","")
+    ]:[S("session","events","refresh_ok","",null,s=>{s.result="rotated"})])
+   ]},
+  stepup:{t:"Staff login & step-up",toggles:["staleMfa","selfApprove"],state:[["session","Staff session"],["mfa","Last MFA"],["perm","Permission"],["result","Approve refund"]],
+   build:o=>[
+    R("bff","auth","POST /auth/password","Staff portal: work email + password. argon2id verify; staff_members.status = active."),
+    S("auth","bff","mfa_required {mfaToken}","A 2-minute token that only allows the TOTP step."),
+    R("phone","bff","authenticator code",""),
+    R("bff","mfa","POST /auth/mfa/totp",""),
+    R("mfa","pg","decrypt secret · check ±1 step · no reuse",""),
+    R("mfa","session","session amr=[pwd,totp], mfa_at=now","Staff access tokens live 5 minutes; session 12 hours.",null,s=>{s.session="active";s.mfa="just now"}),
+    ...(o.staleMfa?[A("bff","bff","20 minutes pass","",null,s=>{s.mfa="20 min ago"})]:[]),
+    R("bff","authz","POST /staff/refunds/R-91/approve",""),
+    R("authz","pg","roles → refunds.approve ✓","Cached 60 s; dropped instantly on role change.",null,s=>{s.perm="refunds.approve ✓ ★"}),
+    ...(o.staleMfa?[
+     F("authz","bff","401 step_up_required","Sensitive permission and mfa_at older than 10 minutes."),
+     R("phone","bff","current code",""),
+     R("bff","mfa","POST /auth/mfa/step-up","",null,s=>{s.mfa="just now (step-up)"}),
+     A("mfa","events","step_up_succeeded",""),
+     R("bff","authz","retry approve","")
+    ]:[]),
+    R("authz","svc","call service",""),
+    ...(o.selfApprove?[F("svc","pg","approved_by = requested_by → blocked","Separation of duties in Go and a database CHECK; audit entry access_denied.",null,s=>{s.result="403 · same person"})]:[
+     R("svc","pg","approve + ledger reversal + audit","",null,s=>{s.result="approved"}),
+     S("svc","bff","200","")])
+   ]},
+  revoke:{t:"Role removed mid-session",toggles:["roleRemoved"],state:[["perm","refunds.approve"],["cache","authz cache"],["result","Next request"]],
+   build:o=>[
+    R("bff","authz","GET /staff/refunds","Tolu’s token is valid for 4 more minutes — but it carries no permissions.",null,s=>{s.perm="granted";s.result="200"}),
+    S("authz","bff","200",""),
+    ...(o.roleRemoved?[
+     R("browser","bff","admin removes Finance officer from Tolu","Admin console › Staff members."),
+     R("bff","authz","DELETE role (admin.roles ★)",""),
+     R("authz","pg","delete staff_roles + audit + NOTIFY authz","pg_notify('authz', user_id) in the same transaction.",null,s=>{s.perm="removed"}),
+     A("pg","authz","every instance drops Tolu’s cache","",null,s=>{s.cache="dropped"}),
+     F("bff","authz","Tolu: GET /staff/refunds → 403","Effective on the very next request, not after the token expires.",null,s=>{s.result="403"})
+    ]:[])
+   ]},
+  bff:{t:"Web request through the BFF",toggles:["expired","csrf"],state:[["tokens","Access token"],["result","Result"]],
+   build:o=>[
+    ...(o.csrf?[F("attacker","bff","cross-site POST /account/phone","A hidden form on an evil site. SameSite=Lax keeps the cookie off most cross-site posts; the BFF also checks Origin and Sec-Fetch-Site.",null,s=>{s.result="403 blocked"})]:[]),
+    R("browser","bff","GET /account/orders (cookie)","A server component renders the page."),
+    R("bff","bff","decrypt __Host-ts_session","",null,s=>{s.tokens=o.expired?"expired":"valid"}),
+    ...(o.expired?[R("bff","session","POST /auth/refresh","Server-side, so the browser never sees the token pair.",null,s=>{s.tokens="refreshed"}),S("session","bff","new pair · cookie rewritten","")]:[]),
+    R("bff","nginx","GET /api/v1/me/orders · Bearer",""),
+    R("nginx","authz","aud=market ✓ · session ✓",""),
+    S("authz","bff","orders (own only, enforced in SQL)","",null,s=>{if(s.result==="—")s.result="200"}),
+    S("bff","browser","HTML","")
+   ]},
+  service:{t:"Service token for Python",toggles:["external"],state:[["tokens","Service token"],["result","Result"]],
+   build:o=>[
+    R("python","internal","POST /internal/auth/token","Client credentials over the private network.",`client_id=recommender&client_secret=…&scope=recs.export`),
+    R("internal","pg","service_clients: hash ✓ · scopes",""),
+    R("internal","kms","sign JWT aud=internal (5 min)","",null,s=>{s.tokens="issued (5 min)"}),
+    S("internal","python","token",""),
+    R("python","internal","GET /internal/recs/export","Accepted only on the internal listener with aud=internal and scope recs.export.",null,s=>{s.result="200"}),
+    ...(o.external?[F("attacker","nginx","GET /internal/recs/export","nginx has no route to the internal listener: 404. Even with a stolen token, aud=internal is rejected on the public port.",null,s=>{s.result="external → 404"})]:[])
+   ]}
+ }
+});
+
+initViews();
+</script>
