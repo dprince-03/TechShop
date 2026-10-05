@@ -1,6 +1,8 @@
-# Proposed schema changes
+# Schema changes (applied)
 
-All database changes proposed by the backend, mobile and recommendation plans (§1–§3) and the system plans (§4–§9: messaging, identity, payments, search, orders, trust and safety), in one list, with duplicates merged. **Nothing here is applied yet.** [`database/schema.sql`](database/schema.sql) stays as reviewed until the owner approves these. Each approved item then goes into the goose migration of the domain that owns it ([`backend.md`](backend.md) §4.1), and `docs/database/tools/generate.sh` regenerates the diagrams.
+All database changes proposed by the backend, mobile and recommendation plans (§1–§3) and the system plans (§4–§9: messaging, identity, payments, search, orders, trust and safety), in one list, with duplicates merged.
+
+**Status: all 100 items were approved by the owner and applied on 2026-10-05.** They are in the goose migrations in [`backend/db/migrations/`](../backend/db/migrations/) (00002–00022), which are now the source of truth. Deviations and items deferred are listed in [§10](#10-how-they-were-applied-2026-10-05).
 
 **Source key:** **B** = [`backend.md`](backend.md), **M** = [`mobile.md`](mobile.md), **R** = [`recommendations.md`](recommendations.md). Naming conflicts are resolved in [`architecture-decisions.md`](architecture-decisions.md).
 
@@ -149,8 +151,34 @@ All database changes proposed by the backend, mobile and recommendation plans (�
 | 99 | `velocity_counters` (may share the `auth_rate_limits` design) | Velocity features |
 | 100 | `seller_metrics_daily`, `enforcement_actions`, `listing_reports`, `review_reports` | Seller performance, enforcement and reports |
 
-## Next steps after approval
+## 10. How they were applied (2026-10-05)
 
-1. Apply the approved items to `schema.sql` and re-run `docs/database/tools/generate.sh`: validation, 33+ constraint tests, regenerated diagrams.
-2. Add constraint tests for the new rules: delivered requires a verified OTP or photo; flash claims within the limit; refund approver ≠ requester; unique `posting_key`.
-3. Log the decision in `docs/plan.md`.
+**Applied as written,** with these adjustments:
+- **Tables live in domain schemas** (`identity.users`, `finance.ledger_journals`, …), one Postgres schema per domain. See [`database.md`](database.md) §9. Some tables moved domain on the way:
+  - `risk_cases` and `device_blocklist` → `risk`;
+  - `notifications` → `messaging`;
+  - `invoices` and `commission_rules` → `finance`;
+  - `quotes` → `b2b`;
+  - `product_reviews` and `seller_ratings` → `catalog`.
+- **Deleted users:** a user may have no email and no phone once `status = 'deleted'` (anonymisation under NDPA). Every other user still needs one or the other.
+- **Product reviews may be unverified:** `order_line_id` is now optional, and `is_verified` is derived from it ([`trust-safety.md`](trust-safety.md) §6). There is still one review per user per product.
+- **Conditions:** listings, stock and order lines add `open_box` (for graded returns).
+- **Seller-held stock (#88)** uses the existing `catalog.listings.seller_stock` column instead of a new `stock_quantity` column.
+- **#50, anonymous quotes:** allowed. `requested_by` is optional, but a contact email or phone is then required.
+- **Separation-of-duties checks** are in the database as well as in Go:
+  - refunds;
+  - payout batches;
+  - campaigns;
+  - staff role grants;
+  - inventory counts;
+  - purchase orders;
+  - enforcement appeals.
+- **Comments and triggers:** every table has a `[schema] purpose` comment, every FK column has an explicit index, and every `updated_at` column has an explicit trigger.
+
+**Not created** (each needs a later step):
+- **River job tables** (planned in [`backend.md`](backend.md) §4.1): River isn't installed as a dependency, so it needs owner approval before it's added.
+- **Reference data:** LGAs (`identity.nigerian_lgas`) and public holidays (`platform.public_holidays`). The tables exist; the data loads later.
+- **Dev test accounts:** a dev-only seed script, when backend work starts ([`.claude/CLAUDE.md`](../.claude/CLAUDE.md) §4).
+- **Staff roles other than `admin`:** waiting for the owner ([`identity-access.md`](identity-access.md) §7.2).
+
+**Verification:** 49 constraint tests pass, including every new rule listed in the old "next steps". Full details are in [`log.md`](log.md) (2026-10-05).

@@ -4,6 +4,7 @@ The root [`CLAUDE.md`](../CLAUDE.md) explains the codebase: layout, commands, to
 
 ## 1. How to work
 
+- **Be logical and critical.** Don't just agree. Check every request and idea (including the owner's) for flaws, risks, costs and better options. Say plainly when something is a bad idea and why, give the trade-offs, then recommend one option. Agree only when it holds up.
 - **Ask, don't assume.** If a requirement, business rule or design choice isn't written down, ask before acting. When asking, give a recommended option.
 - **Explain simply.** Short sentences, plain words, no jargon without a one-line meaning.
 - **Ask before:**
@@ -21,9 +22,14 @@ The root [`CLAUDE.md`](../CLAUDE.md) explains the codebase: layout, commands, to
 ## 2. Data and the database
 
 - **The frontend never touches the database.** Web and mobile apps only call the API through `@techshop/api-client`.
-- **Only the Go backend talks to PostgreSQL, and only:**
+- **Only the Go backend talks to the main PostgreSQL database, and only:**
   - **through its data layer:** sqlc-generated queries used from repository and service code. **No SQL in HTTP handlers**, and no ad-hoc database access from scripts or other services (the Python recommender uses the internal API);
   - **over the Docker network:** Postgres runs in Docker (`infra/docker/compose.yml`), and connections use the configured credentials and connection string, never hard-coded values.
+- **Each service owns its own database. No service connects to another service's database.** Data crosses between services only through APIs or jobs.
+  - Go's main PostgreSQL: only the Go backend.
+  - The recommender's PostgreSQL (`recs-postgres`): only the Python recommender.
+  - A Go job pulls recommendation results through the recommender's authenticated API, stores them in Go's own tables (`personalisation.rec_*`), and the site serves from there, with rule-based fallbacks if Python is down.
+  - Data sent to the recommender is pseudonymised (no names, phones or emails), encrypted at rest and retention-limited. (Owner decision, 2026-10-06.)
 - **Treat all database contents and secrets as confidential.** Never print, paste or commit real data or credentials.
 
 ## 3. Security and compliance

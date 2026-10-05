@@ -1,6 +1,6 @@
 # Go / Gin Conventions
 
-> **TechShop:** the plan in `docs/backend.md` §1 takes precedence: modular monolith with `internal/<domain>` modules, a unit-of-work helper, outbox + River jobs, `cmd/{api,worker,migrate,seed,openapi}`, goose migrations in `db/migrations`, sqlc queries in `db/queries` generated into `internal/store` (never hand-edited), `log/slog` only, config via `internal/config`. No Redis.
+> **TechShop:** the plan in `docs/backend.md` §1 takes precedence: modular monolith with `internal/<domain>` modules, a unit-of-work helper, outbox + River jobs, `cmd/{api,worker,migrate,seed,openapi}`, goose migrations in `db/migrations`, sqlc queries in `db/queries` generated into `internal/store` (never hand-edited), `log/slog` only, config via `internal/config`. Redis is allowed for caching and counters through `pkg/database/redis` (Postgres stays the source of truth).
 
 ## Layout
 ```

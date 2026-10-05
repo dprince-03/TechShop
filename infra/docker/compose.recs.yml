@@ -1,0 +1,25 @@
+# The recommender's private database, kept in its own file so the main stack starts without it.
+# Start with the main stack (shares its network):
+#   RECS_POSTGRES_PASSWORD=… docker compose -f infra/docker/compose.yml -f infra/docker/compose.recs.yml up -d
+services:
+  # The recommender's private database (owner rule: each service owns its DB).
+  # Only the Python recommender connects to it, over the Docker network; no host port is published.
+  # The password is required (no weak default): set RECS_POSTGRES_PASSWORD before starting.
+  recs-postgres:
+    image: postgres:17-alpine
+    container_name: techshop-recs-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: recs
+      POSTGRES_PASSWORD: ${RECS_POSTGRES_PASSWORD:?set RECS_POSTGRES_PASSWORD to a long random value}
+      POSTGRES_DB: recs
+    volumes:
+      - recs_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U recs -d recs"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  recs_postgres_data:

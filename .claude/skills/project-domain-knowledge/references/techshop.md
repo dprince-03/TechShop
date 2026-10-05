@@ -93,7 +93,7 @@ Full detail: `docs/database/flows.md` and the system docs.
 
 - **Web:** Next.js 16 apps (corporate, market, wholesale, seller, staff), custom CSS + design tokens, no Tailwind.
 - **Mobile:** Expo SDK 57 apps (customer, logistics).
-- **API:** Go 1.26 + Gin, pgx, goose, sqlc, slog, River jobs, SSE. No Redis.
+- **API:** Go 1.26 + Gin, pgx, goose, sqlc, slog, River jobs, SSE. Redis allowed for caching and fast counters (no-Redis rule dropped 2026-10-06); Postgres stays the source of truth.
 - **Recommender:** Python, through internal API endpoints only.
 - **Plans and decisions:** `docs/` (start at `README.md` › Planning docs) and `docs/architecture-decisions.md`. Interactive mockups are in `docs/mockups/`.
 

@@ -5,23 +5,34 @@ import { readFileSync, writeFileSync } from "node:fs";
 const out = process.argv[2];
 const { tables, columns, fks } = JSON.parse(readFileSync(0, "utf8"));
 
+// One entry per Postgres schema (backend/db/migrations/00002_foundation.sql), in reading order.
 const DOMAINS = [
   ["identity", "Identity & access"],
-  ["sellers", "Sellers & businesses"],
-  ["catalogue", "Catalogue"],
+  ["sellers", "Sellers"],
+  ["b2b", "Business buyers (B2B)"],
+  ["catalog", "Catalogue & reviews"],
+  ["search", "Search"],
   ["inventory", "Inventory"],
   ["purchasing", "Purchasing"],
   ["pos", "Point of sale"],
   ["sales", "Sales"],
-  ["payments", "Payments & money"],
+  ["fulfilment", "Fulfilment & shipping"],
   ["logistics", "Logistics"],
-  ["after-sales", "After-sales"],
-  ["cars", "Cars"],
+  ["payments", "Payments"],
+  ["finance", "Finance & ledger"],
+  ["aftersales", "After-sales"],
+  ["messaging", "Messaging"],
   ["marketing", "Marketing"],
-  ["support", "Support & risk"],
   ["content", "Content"],
+  ["support", "Support"],
+  ["risk", "Trust & safety"],
+  ["cars", "Cars"],
+  ["personalisation", "Personalisation & recommendations"],
   ["platform", "Platform"],
 ];
+
+const dupes = tables.map((t) => t.name).filter((n, i, a) => a.indexOf(n) !== i);
+if (dupes.length) throw new Error(`Table names must be unique across schemas for the diagrams: ${dupes.join(", ")}`);
 
 const unknown = tables.filter((t) => !DOMAINS.some(([k]) => k === t.domain));
 if (unknown.length) throw new Error(`Tables with unknown domain: ${unknown.map((t) => t.name).join(", ")}`);
@@ -67,7 +78,7 @@ const index = [
   ...DOMAINS.flatMap(([key]) =>
     tables
       .filter((t) => t.domain === key)
-      .map((t) => `| \`${t.name}\` | ${domainName[key]} | ${colsOf(t.name).length} | ${t.purpose.replace(/\|/g, "\\|")} |`),
+      .map((t) => `| \`${key}.${t.name}\` | ${domainName[key]} | ${colsOf(t.name).length} | ${t.purpose.replace(/\|/g, "\\|")} |`),
   ),
 ];
 
@@ -97,7 +108,7 @@ const domainSections = DOMAINS.map(([key, label]) => {
   return [
     `## ${label}`,
     "",
-    own.map((t) => `- \`${t}\`: ${tables.find((x) => x.name === t).purpose}`).join("\n"),
+    own.map((t) => `- \`${key}.${t}\`: ${tables.find((x) => x.name === t).purpose}`).join("\n"),
     "",
     external.length ? `Links to other domains: ${external.map((e) => `\`${e}\``).join(", ")} (shown without columns).` : "",
     "",
@@ -127,7 +138,7 @@ writeFileSync(
   [
     "# TechShop entity-relationship diagrams",
     "",
-    "> **Generated** by `docs/database/tools/generate.sh` from `schema.sql` loaded into Postgres 17. Do not edit by hand. Change the schema and regenerate.",
+    "> **Generated** by `docs/database/tools/generate.sh` from the goose migrations (`backend/db/migrations`) loaded into Postgres 17. Do not edit by hand. Change a migration and regenerate. Each section is one Postgres schema; tables are shown without the schema prefix.",
     "",
     "Overview and design notes: [`../database.md`](../database.md).",
     "",

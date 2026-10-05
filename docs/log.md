@@ -171,3 +171,138 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
     - `skills/module-scaffolding/{SKILL.md,references/go-gin-module.md}`, `skills/database-migrations/SKILL.md`, `skills/devops-deployment/SKILL.md`;
     - `skills/project-domain-knowledge/{SKILL.md,references/techshop.md}` (new).
   - Not touched: `backend/`, `frontend/`, `mobile/`, `shared/`, root `CLAUDE.md`. No commands that change the system were run.
+- Database build (2026-10-05):
+  - Wrote `backend/db/migrations/00002_foundation` … `00022_reference_data`. **Result:** 195 tables (plus 6 default partitions) in 22 schemas, 378 foreign keys, 9 named reference sequences.
+  - Added explicit FK indexes and `updated_at` triggers with a scratchpad helper that introspects a throwaway database and appends statements to the migration that created each table: 283 FK indexes, 66 triggers.
+  - **Verification** (throwaway `postgres:17-alpine` on a private Docker network; goose built from the backend module and run inside a container on that network):
+    - **Goose cycle:** up 0 → 22 succeeded; `down-to 0` left 0 objects and 0 schemas; up to 22 again succeeded.
+    - **Coverage:** 0 unindexed FKs, 0 tables missing the `updated_at` trigger, every table has a `[schema] purpose` comment.
+    - **Constraint tests:** `docs/database/tools/constraint-tests.sql` rewritten for the schemas. **49 PASS, 0 FAIL.** New rules covered:
+      - refund approver ≠ requester;
+      - payout batch approver ≠ preparer;
+      - campaign approver ≠ creator;
+      - flash claims ≤ stock limit;
+      - unique posting key;
+      - closed period rejects postings;
+      - unbalanced journal;
+      - append-only entries and journals;
+      - delivered job needs a verified code or photo;
+      - no self-granted roles;
+      - tracked links only to techshop.ng;
+      - `delivery_otp` purpose removed.
+    - **sqlc:** `go tool sqlc generate` in a scratch copy (sample queries across 6 schemas) succeeded, with 201 model types. Nothing was added to `backend/db/queries` or `internal/store`.
+    - **Risk checker:** `check_migration.py` flagged only `drop`/`cascade` in Down sections and plain `create index` on new, empty tables. This is expected for a first build.
+  - **Applied to the local project database** (`techshop-postgres`) over the compose network, from a runner container (`postgres` host, compose credentials):
+    - before: only the empty `00001` baseline, no other tables or data;
+    - after: version 22, 195 tables, 37 states, 18 ledger accounts;
+    - the container was stopped afterwards, and the volume kept.
+  - **Docs:**
+    - `database.md` updated (source of truth, migration list, schema map);
+    - `schema-changes.md` marked applied, with deviations (§10);
+    - `database/schema.sql` regenerated as a `pg_dump --schema-only`;
+    - `database/tools/{generate.sh,introspect.sql,generate.mjs}` now load the migrations and handle multiple schemas;
+    - `erd.md` regenerated: 195 tables, 376 relationships drawn (2 composite FKs aren't drawn), 23 diagrams;
+    - 48 diagrams rendered;
+    - 4 stale ERD images from the old domain names removed;
+    - 189 doc links resolve.
+  - **Not touched:** backend Go code, Makefile, compose, `.env` files. No dependencies added. No git commands run.
+  - **Ports:** no containers left running; 5432 closed.
+- Backend M0 + M1 (2026-10-05):
+  - **Packages added:** huma/v2, riverqueue/river (+ riverpgxv5), golang-jwt/jwt/v5, golang.org/x/crypto, pquerna/otp, aws-sdk-go-v2 (s3, credentials), johnfercher/maroto/v2; google/uuid promoted to a direct dependency.
+  - **Migration:** `00023_river_jobs.sql` (River 001–008 in schema `river`).
+  - **M0 platform:**
+    - config with secret checks; problem+json errors; request IDs and security headers;
+    - route guards (audience, permission, step-up); signed cursors; unit of work; outbox relay; River jobs;
+    - realtime hub (SSE); Postgres rate limits; idempotency keys;
+    - envelope encryption (AES-GCM with associated data); presigned storage (fake by default, S3 adapter);
+    - RBAC checker with NOTIFY invalidation;
+    - `cmd/{api,worker,migrate,seed,openapi}`; dev seed.
+  - **M1 modules:**
+    - **identity:** phone OTP (limits, single use, 5 attempts), sign-up, password (argon2id, delay, no enumeration), staff TOTP, recovery codes, seller new-device OTP, step-up, refresh rotation with reuse detection, sessions, addresses, consents, privacy requests, staff invites, roles, exits, MFA reset, audit and security logs, service tokens;
+    - **notify:** one send pipeline with critical, transactional and marketing queues, consent, caps and quiet hours, inbox plus SSE, preferences, push tokens, delivery webhooks;
+    - **catalog:** categories, attributes, products, listings with auto-checks, FCCPA guard, moderation, read-model rebuild, search with synonyms, price intents, did-you-mean and facets, buy box, saved items, stock alerts, search merchandising;
+    - **inventory:** single stock path, race-free reservations, device units with IMEI Luhn and blocklist checks, transfers, blind counts with a second-person approval;
+    - **files, content, tracking** (consent-gated).
+  - **Verification:**
+    - unit tests: money, validate, crypto, auth, notify;
+    - end-to-end in containers, all passing: health, OTP sign-up and refresh-reuse revocation, addresses and TOTP step-up, staff admin (immediate role revocation, invite, exit), catalogue and search (synonyms, price intent, typo, facets, redirect, zero-result insight fixed by a synonym), buy box and FCCPA guard, saved, content, files, tracking consent, inventory (negative stock, IMEI, count separation of duties);
+    - OpenAPI spec: 99 paths.
+- Backend M2 — commerce (2026-10-05):
+  - **New modules:** `ledger`, `marketing`, `sales`, `payments`; queries in `db/queries/{sales,payments,finance,marketing}.sql` (sqlc). No migrations added.
+  - **Platform fixes found by M2 tests:**
+    - the outbox relay failed whole batches when one commit queued the same unique River job twice ("ON CONFLICT DO UPDATE command cannot affect row a second time"), so no events were delivered — `uow` now drops exact-duplicate jobs before the bulk insert (unit test added);
+    - `uow.Tx.Savepoint` added (nested transaction that keeps the outer one alive);
+    - Huma fields with a `default` tag needed `omitempty` to be optional;
+    - 11 golangci-lint findings fixed, 5 of them in M0/M1 code (unchecked writes in the SSE hub, a deprecated `strings.Title`, an overwritten logger parameter, …).
+  - **Endpoints:**
+    - cart (guest token, merge), payment methods, checkout preview, idempotent `POST /orders`, my orders, cancel order or line, order SSE stream, guest tracking (phone check, rate limit);
+    - payment retry and status, my refunds, store credit, signed webhooks per provider;
+    - staff orders (masked contact, cancel);
+    - finance (dashboard, trial balance, journals, account ledger, reversal, adjustment, periods and close, refunds request/approve/reject, payments re-verify, provider health, reconciliation exceptions);
+    - marketing (promotions, flash prices, coupons and unique codes, segments and preview, campaigns with submit/approve/pause/resume/cancel, journeys);
+    - tracked link redirect and one-click unsubscribe.
+    - The OpenAPI spec is now 156 paths / 172 operations.
+  - **Jobs:** webhook processing, refund execution, order expiry (every minute), payment sweep (5 min), marketing tick (promotion schedule, due campaigns, journeys; every minute), abandoned carts (hourly), nightly ledger checks.
+  - **Seed:** default Lagos addresses for both test customers, marketing consent for one, coupon `WELCOME10`, a live flash deal (5 units, 1 per person), a scheduled December sale, a "Lagos shoppers" audience, an active abandoned-cart journey; the seed now exports every fixture product's ids.
+  - **Config:** payment settings validated outside development (Paystack key strength; Monnify/OPay refused until their live adapters exist). `backend/.env.example` now documents all 64 settings (it still had only the original scaffold's entries).
+  - **Verification:**
+    - unit tests (all passing, also with `-race`): pricing discount allocation and price hash, segment SQL binds every value, holdout/A-B bucketing, ledger line merge and account codes, fake webhook signatures, naira formatting, job de-duplication, config secret refusal (11 cases);
+    - `gofmt`, `go vet`, golangci-lint (0 issues), `go build` — the backend part of `make check` and CI;
+    - end-to-end against the containerised stack (fresh migrate + seed), **15/15 passing**, zero ERROR log lines:
+      - guest cart → merge → preview → stale hash 409 → order → idempotent replay (same order, `Idempotent-Replayed: true`) → forged webhook 401 → signed webhook → paid → duplicate webhook acknowledged once → exactly one sale journal → trial balance zero → staff view masks the phone → guest tracking needs the right phone;
+      - last-unit race: two concurrent checkouts → one 201, one `409 out_of_stock`; cancelling the unpaid winner releases the unit;
+      - coupons (unknown, once per customer, released on cancellation) and flash prices (guest list price, signed-in flash price);
+      - refunds: cancellation raises a system refund; officer refused above ₦500k; manager approves; order `refunded`; a self-requested refund can't be self-approved; over-refund 422; support can't approve; ledger balanced;
+      - transfer: half paid keeps the order pending; the rest pays it;
+      - expiry: an unpaid order is cancelled after the provider check (stack runs with `ORDER_PAYMENT_TTL=100s`);
+      - campaigns: creator can't approve (separation of duties), exec lacks the permission, admin approves, recipients snapshotted, campaign sent; forged unsubscribe refused.
+  - **Provider docs:** the live Paystack adapter follows Paystack's public API (initialize, verify, refund, `x-paystack-signature` HMAC-SHA512). Not exercised against the sandbox (no keys, no live calls); confirm before go-live. Monnify and OPay signature schemes are not yet confirmed.
+  - **Test harness note:** earlier runs of the throwaway test Postgres created anonymous Docker volumes (the image declares a `VOLUME`). The harness now uses tmpfs, so no new volumes are created; the old ones were left in place (never delete volumes) and are listed in the final report.
+- Backend M3 — logistics and fulfilment (2026-10-05):
+  - **New modules:** `logistics`, `wms`; `sales.Move` (fulfilment state machine with delivery side effects) and the `DeliveryQuoter` port; queries in `db/queries/{logistics,fulfilment}.sql` plus additions to `sales.sql`. No migrations added; no new packages.
+  - **Endpoints (spec now 189 paths):**
+    - public delivery estimate;
+    - rider: register phone, start/end shift, my jobs, job actions, offline batch sync, location upload, SSE feed;
+    - dispatch (staff web and the app's dispatcher mode): board with counts, job trail, assign/unassign/return to hub, riders (create, zones, suspend/reinstate), phone approval/revocation, zones and rate bands, SSE feed;
+    - staff warehouse: waves, pick lists (claim, scan), pack, manifests (create, sign), carriers, shipping view;
+    - signed carrier webhook; development-only fake carrier trigger.
+  - **Jobs:** logistics housekeeping every 15 minutes (close 12-hour shifts, purge location points older than 90 days).
+  - **Seed:** Lagos and Abuja zones with three weight bands each (TechShop and seller rates), the fake carrier, and a rider test account (`rider@dev.techshop.ng`, phone OTP sign-in, phone `dev-rider-phone-0001` pre-approved by the seeded dispatcher).
+  - **Bugs found and fixed while testing:**
+    - a wrong delivery code would have deadlocked: the attempt counter was updated on a second connection while the job row was locked. It is now recorded in the same transaction after the savepoint rolls back;
+    - parcel labels could contain `-`/`_` (base64): now an unambiguous uppercase alphabet;
+    - the single-action route required `jobId` in the body although it's in the path;
+    - the e2e helper could pick up an older sign-in code; it now waits for a new one.
+  - **Verification:**
+    - unit tests (all passing, also with `-race`): fulfilment state machine, rider job view never contains the customer's phone or surname, carrier webhook signature;
+    - `gofmt`, `go vet`, golangci-lint (0 issues);
+    - end-to-end against the containerised stack (fresh migrate + seed): **18/18 passing**, zero ERROR log lines:
+      - doorstep: receive an IMEI unit → order paid → wave → wrong/unknown IMEI refused → pick → over-pick refused → pack (rider job) → assign refused off shift → shift refused without consent → shift → assign → customer token refused on rider routes → rider can't dispatch → rider job list has no phone number → wrong label refused → pickup → delivery code by SMS → offline batch applied once, replay reported as duplicate → location visible to dispatch → no proof refused → wrong code refused → delivered with code → order delivered → no tracking after shift ends → trial balance zero;
+      - carrier: Kano address → pack books the fake carrier → manifest (double manifest refused) → signed hand-over → forged webhook 401 → in transit (order shipped) → delivered → replayed event acknowledged as duplicate → trial balance zero;
+      - delivery estimate: Lagos ≤2 kg ₦2,500, ≤10 kg seller band ₦4,500, Kano not covered;
+      - all M0–M2 tests still pass.
+    - **Real call:** the order SSE stream returned the snapshot for a delivered order; the dispatch stream refused an unauthenticated call with 401.
+  - **Not covered end to end yet:** commission on delivery of a marketplace (seller) fulfilment. Every seeded vendor listing ships itself, which needs seller fulfilment (M4). The code path is the same `sales.Move` → `ledger.Commission`.
+  - **Build paused after M3 at the owner's request.**
+- Recommendation scaffold (2026-10-06):
+  - **Created:** `recommendation/` (61 files): pyproject, README, `.env.example` (no DATABASE_URL), configs (surfaces, gates, 8 model configs), the `src/techshop_recs` package (stubs per the plan), tests (including `test_no_db_access.py`), plus `infra/docker/recommendation.Dockerfile`.
+  - **Verification:** all Python files compile (`py_compile`).
+  - **Not done:** nothing installed or run.
+- `backend/pkg/` (2026-10-06):
+  - **Moved** `money`, `validate` and `crypto` from `internal/` to `pkg/` and updated imports.
+  - **New packages:**
+    - `pkg/pagination`: signed cursors. `internal/httpx` keeps thin wrappers, so handlers didn't change and a bad cursor is still a 422.
+    - `pkg/database/postgres`: a reusable pgx pool with plain Options. `internal/database.NewPool` wires the config into it. `pkg/database/doc.go` reserves `redis/` and `mongo/`.
+    - `pkg/logging`.
+  - **Stay internal:** the problem+json helpers (tied to Huma and TechShop's database rules) and migrations.
+  - **Verification:**
+    - `go build`, `go vet` and `go test ./...` pass, including a new pagination test;
+    - golangci-lint: 0 issues;
+    - nothing in `pkg/` imports `internal/`.
+    - End-to-end tests were not re-run, because behaviour is unchanged.
+- Recommender database (2026-10-06):
+  - **Rules:** updated the data rules in `CLAUDE.md` and `.claude/CLAUDE.md`, and added the critical-thinking rule.
+  - **Docker:** added the `recs-postgres` service in `infra/docker/compose.recs.yml` (separate file so the main stack still starts without its password). `docker compose config` validates it, and it refuses to start without `RECS_POSTGRES_PASSWORD`.
+  - **Recommender:** added `RECS_DATABASE_URL` to `recommendation/` (`.env.example`, settings), the psycopg driver to `pyproject.toml` (declared, not installed), and rewrote `test_no_db_access.py` (it now blocks Go's database instead of every database).
+  - **Not built yet:** the Go pull job and the recommender's results API.
+- No-Redis rule dropped (2026-10-06): decision #30 recorded; docs, skills and the `pkg/database` doc comment updated. No code or infrastructure changed.

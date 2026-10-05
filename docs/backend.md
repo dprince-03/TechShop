@@ -459,6 +459,8 @@ Production refuses to start with development-only values (`LOCAL_KEK`, `PAYMENTS
 
 ### 5.4 Caching: no Redis for now
 
+> **Superseded 2026-10-06:** the owner dropped the no-Redis rule. Redis may be used for caching and fast counters; see [`architecture-decisions.md`](architecture-decisions.md) #30.
+
 Everything Redis would typically do is already covered:
 - **Jobs:** River.
 - **Global rate limits:** database counters.

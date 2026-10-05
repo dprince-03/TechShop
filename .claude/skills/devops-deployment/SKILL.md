@@ -8,7 +8,7 @@ description: Containerize, configure, and deploy applications — Dockerfiles, d
 ## Workflow
 
 1. Identify the target platform and what exists already (Dockerfile, compose, workflows, `render.yaml`, Terraform).
-   - **TechShop:** every Docker file (Dockerfiles, compose files) lives in `infra/docker/`; there's no root `.env`; CI (`.github/workflows/ci.yml`) and deployment workflows are separate files; `make check` runs what CI runs; no Redis; hosting isn't decided yet, so ask before choosing a platform.
+   - **TechShop:** every Docker file (Dockerfiles, compose files) lives in `infra/docker/`; there's no root `.env`; CI (`.github/workflows/ci.yml`) and deployment workflows are separate files; `make check` runs what CI runs; Redis is allowed (caching and counters; password, ACLs, TLS, never public); hosting isn't decided yet, so ask before choosing a platform.
 2. Read the relevant reference:
    - Docker & compose → `references/docker.md`
    - Nginx & TLS → `references/nginx.md`

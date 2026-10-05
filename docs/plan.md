@@ -341,3 +341,142 @@ The owner added project-only Claude settings: `.claude/CLAUDE.md` working rules,
 
    The free-text entries (not supported by Claude Code) moved into `.claude/CLAUDE.md`.
 5. **Backend items wait** until it's time for backend work: dev test accounts (seed, dev-only) and refusing weak or default secrets at startup.
+
+## 2026-10-05 — Database built (migrations are now the source of truth)
+
+The owner asked for the complete database, with "all schemas, tables and all".
+
+**Owner decisions:**
+1. **Scope:** build from the reviewed schema plus **all 100 proposals** in `docs/schema-changes.md`.
+2. **Layout:** **one Postgres schema per domain**, 22 in total: `platform`, `identity`, `sellers`, `b2b`, `catalog`, `search`, `inventory`, `purchasing`, `pos`, `sales`, `fulfilment`, `logistics`, `payments`, `finance`, `aftersales`, `messaging`, `marketing`, `content`, `support`, `risk`, `cars`, `personalisation`.
+3. **Backend work allowed:** write goose migrations and run them locally. Nothing else in `backend/`.
+
+**Decisions taken while building:**
+- **Migrations are the source of truth:** `backend/db/migrations/00002`–`00022`. `docs/database/schema.sql` is now a generated dump. This supersedes the phasing in `database.md` §9 and the order in `backend.md` §4.1.
+- **Indexes and triggers are explicit:** every FK index and `updated_at` trigger is written out, not created by loops, as `backend.md` §4.1 asked.
+- **High-volume logs are partitioned** monthly with a default partition: `user_events`, `auth_events`, `message_events`, `risk_decisions`, `search_queries`, `rider_location_pings`.
+- **Deviations from the proposals:** listed in `schema-changes.md` §10. In short: deleted users may lack email and phone; reviews may be unverified; `open_box` condition added; some tables changed domain.
+- **Deferred:**
+  - River job tables (the River dependency needs owner approval);
+  - LGAs and holidays data;
+  - dev test accounts;
+  - staff roles other than `admin`.
+
+## 2026-10-05 — Backend build started (M0 → M7)
+
+The owner approved building the complete backend in milestone order, with these packages: Huma v2, River, golang-jwt v5, x/crypto (argon2id), pquerna/otp, aws-sdk-go-v2 (S3) and maroto (PDFs).
+
+**Decisions:**
+1. **Structure:** Huma v2 on the existing Gin router.
+   - **Modules:** `internal/<domain>` modules behind a small `kit.Module` interface, wired in `internal/app`.
+   - **Transactions and jobs:** a unit of work (`internal/uow`) writes outbox events, audit rows and River jobs in the same commit.
+   - **Background work:** River runs jobs in its own `river` schema (migration `00023_river_jobs.sql`, generated from River's own migration files). The outbox relay wakes on `pg_notify('outbox')`.
+   - **Realtime:** SSE plus LISTEN/NOTIFY, which also handles cache invalidation for permissions and sessions.
+2. **Permission catalogue:**
+   - The catalogue (`internal/rbac/permissions.go`) is synced to the database at API start-up, together with the system `admin` role.
+   - The other staff roles are **dev seed data only** until the owner approves the role list.
+   - The B2B permission keys are named `business.*`, because the schema's key check doesn't allow digits.
+3. **Secrets:** config refuses missing, short, default or placeholder secrets outside development. `LOCAL_KEK`, `PAYMENTS_FAKE` and the log providers are development-only.
+4. **5xx errors** are logged with the request ID and never expose internals.
+5. **Search** is the one sanctioned dynamic query: `internal/catalog/search_query.go`, fully parameterised. Every other query is sqlc.
+6. **Testing:** everything runs in throwaway containers on a private Docker network. Postgres, the API and the end-to-end test binary are all containers, so nothing connects to a database from the host. Binaries are copied in with `docker cp`, because Docker Desktop can't mount the scratchpad.
+
+## 2026-10-05 — Backend M2 (commerce) decisions
+
+1. **Module shape:** `ledger` → `marketing` → `sales` (cart, pricing, checkout, orders) → `payments`. Sales reaches payments only through a `PaymentPort` interface, so imports point one way.
+2. **Pricing order:** list price (tier price on the wholesale channel only) → flash price (signed-in only, within stock and per-person limits) → the **single best automatic promotion** (no stacking) → **at most one coupon** on what remains → delivery per seller → VAT → `priceHash`. Checkout reprices inside the order transaction; a different hash is `409 price_changed`.
+3. **VAT and order totals (PLACEHOLDER until finance confirms):** consumer prices are VAT-inclusive; VAT is computed only on TechShop's own (first-party) lines at `VAT_BPS`. Because the schema requires `total = subtotal + delivery − discount + vat`, `orders.subtotal_kobo` stores the items total **net of VAT**; screens show `itemsKobo` (gross) from the API.
+4. **Who pays for a discount:** without a schema change, each line's discount has exactly one funder.
+   - Seller-funded promotions must target only that seller's listings and can't carry coupons; a TechShop coupon never stacks on a line with a seller-funded discount.
+   - At payment the ledger asks "did a seller-funded promotion target this listing when the order was placed?".
+   - TechShop-funded discounts on marketplace items post to a new account **`expense:promotions`** (sellers are still paid their full price). This adds one account to the chart in `payments-finance.md` §4.1.
+5. **Delivery fees** are flat config values by who ships and whether the parcel crosses a state line, until logistics zones and rates arrive (M3).
+6. **Payments:**
+   - every provider is a port; **fakes are the default** and include a development checkout page (`/dev/pay/...`) that sends signed webhooks;
+   - only Paystack has a live adapter; config refuses Monnify and OPay outside development until theirs are built and confirmed against the sandboxes;
+   - webhooks are checked on the raw body, stored once per provider event and processed by a job that **re-verifies** with the provider;
+   - card amount mismatches go to `pending_review` with a reconciliation exception; transfer under- and overpayments follow §4.3;
+   - the expiry job asks the provider before cancelling; a 5-minute sweep re-verifies stale payments;
+   - circuit breaker per provider (5 failures open it for a minute).
+7. **Late payment (PLACEHOLDER, owner decision #57):** `LATE_PAYMENT_POLICY=reinstate_or_refund` — reinstate if all stock can be reserved again (savepoint), otherwise book the money to `liability:customer_refunds` and raise a refund request. Audited.
+8. **Refunds:** every refund, including automatic ones (cancellations, overpayments), waits for a human approver. Approver ≠ requester; above `REFUND_MANAGER_THRESHOLD_KOBO` needs `refunds.approve`; step-up required. Refunds of excess money are marked with the reason prefix `Excess payment:` and post no approve journal.
+9. **Ledger:** typed templates only (`Sale`, `Commission`, `RefundApprove`, `RefundPaid`, `Reverse`, plus `Adjust` behind `ledger.adjust` and step-up); `posting_key` makes every posting idempotent; a refund reverses the sale's credits pro rata; nightly checks raise reconciliation exceptions.
+10. **Marketing:**
+    - promotion values: `percentage` = whole percent (≤ 90), `fixed_amount` = kobo;
+    - audiences are a typed allowlist compiled to parameterised SQL (the second sanctioned dynamic query, after search);
+    - every campaign needs approval by someone other than its creator, with `marketing.approve` and step-up;
+    - recipients are snapshotted at send time with a stable hash-based holdout and A/B split;
+    - journeys run every minute (wait, condition, branch, send, issue coupon, exit); triggers are sign-up, abandoned cart (hourly scan), order paid and order delivered;
+    - orders are attributed to the last marketing click within 7 days.
+11. **Guest checkout:** carts work for guests (`X-Cart-Token`, merged on sign-in), but placing an order needs a signed-in customer. This follows the recommended "phone OTP at checkout" (architecture decision #15 is still for the owner to confirm).
+
+## 2026-10-06 — Correction queued: backend layout (do after M3)
+
+The owner flagged that the backend ignored their folders and lumped each feature into large `http.go` + `service.go` files.
+
+**Cause:**
+- The owner's `backend/pkg/` (empty) and an intended `internal/modules/` were not checked before work started.
+- The `coding-conventions` skill note said `docs/backend.md` "takes precedence", so its layered per-feature layout was not followed.
+
+**Correction, to do after M3 finishes (owner: not now, to save tokens):**
+1. Restructure every feature into `internal/modules/<feature>/`, with handler, routes, dto, service, repository (wraps sqlc), model, errors and tests per feature. Shared app plumbing goes in `internal/platform/`. Exact layout to confirm with the owner before starting.
+2. `pkg/` holds reusable, non-TechShop code: money (kobo), validation, crypto helpers, HTTP error helpers, pagination cursors, and **the Postgres connection client**. Design the DB clients so **Redis and MongoDB** can be added later. That reverses the earlier "no Redis" decision (architecture-decisions #12), so it needs an owner decision when it happens.
+3. Remove the "takes precedence" note from the coding-conventions skill so the layered layout is the default.
+4. Re-run all unit and end-to-end tests after the move (same behaviour).
+
+## 2026-10-05 — Backend M3 (logistics and fulfilment) decisions; build paused after M3
+
+**Scope change from the owner:** stop after M3. M4–M7 are not started.
+
+1. **Modules:** `logistics` (zones, rates, riders, devices, shifts, delivery jobs, rider app, dispatch) and `wms` (waves, picking, packing, manifests, carriers). Both move fulfilments only through `sales.Move`, the single fulfilment state machine (`docs/orders-fulfilment.md` §2.1). Delivery posts the marketplace commission journal and tells the customer.
+2. **Zone pricing:** sales asks logistics through a `DeliveryQuoter` port (imports stay one-way). The zone for the address (LGA-specific first, then state-wide) and the smallest weight band that fits set the fee. With no zone, the M2 flat fees still apply.
+3. **Rider or carrier is decided at packing:** an address inside a delivery zone gets an own-rider delivery job; anywhere else a carrier shipment is booked. Carriers sit behind a port with **only a fake carrier** until the owner chooses couriers (open decision #9).
+4. **Riders:**
+   - riders are staff members who sign in with phone OTP on the logistics app;
+   - a shift needs location consent and a phone approved by someone else (database check). The device is read from the signed-in session, never from a client header;
+   - shifts close automatically after 12 hours; raw location points are deleted after 90 days.
+5. **Delivery proof:**
+   - picking up needs the scanned parcel label;
+   - the customer gets a 6-digit delivery code (HMAC-hashed, 24 hours, 5 tries; wrong tries are counted even though the action is rejected);
+   - photo proof is the fallback, marked `photo_offline` when recorded without signal.
+6. **Offline sync:** one batch endpoint applies each action once per `clientEventId`. Each item runs in its own savepoint, so one rejected item (for example `job_reassigned`) never blocks the rest.
+7. **Privacy:**
+   - riders see the recipient's first name, address and landmark — never the phone number;
+   - customers see the rider's position only while their own parcel is en route; dispatch sees riders on shift.
+8. **Warehouse:**
+   - a wave takes paid TechShop lines committed in that warehouse;
+   - serialised devices must be picked by IMEI or serial: the unit must be in stock in that warehouse for the right model and condition, and it is bound to the order line as sold;
+   - packing checks the weight against the catalogue (flagged when more than 10% off);
+   - manifests list the parcels leaving with one rider or one carrier; the signature hands them over;
+   - carrier tracking webhooks are signed and stored once per event.
+
+## 2026-10-06: Recommendation project scaffolded
+
+- **Location:** uses the owner's root folder `recommendation/` (the plan said `recommender/`; the owner's folder wins).
+- **Structure:** follows `docs/recommendations.md` §9.
+- **Dockerfile:** placed at `infra/docker/recommendation.Dockerfile`, per the rule that all Docker files go in `infra/docker/`.
+- **Dependencies:** declared in `pyproject.toml` from the approved plan; nothing installed yet (`uv sync` when work starts).
+
+## 2026-10-06: `pkg/` done (step 2 of the queued layout correction)
+
+- **Done:** reusable code now lives in `backend/pkg/` (money, validate, crypto, pagination, logging, `database/postgres`), with `redis/` and `mongo/` reserved. Adding Redis still needs the owner's decision, because it reverses architecture decision #12.
+- **Still queued:** the per-feature `internal/modules/<feature>/` restructure.
+
+## 2026-10-06 — Recommender gets its own database; "be logical and critical" rule
+
+1. **Owner decision:** the Python recommender owns a private Postgres (`recs-postgres` in `infra/docker/compose.recs.yml`, no published port, required password).
+   - A Go job pulls results through the recommender's authenticated API and stores them in `personalisation.rec_*`; the site serves from Go with fallbacks.
+   - No service connects to another's database. This is now a rule in `CLAUDE.md` and `.claude/CLAUDE.md`, and `architecture-decisions.md` #29.
+2. **Postgres chosen over MongoDB** (model outputs are tabular). Redis remains undecided (it would reverse decision #12).
+3. **New working rule** in `.claude/CLAUDE.md` §1: be logical and critical; challenge ideas (including the owner's), give trade-offs, then recommend.
+
+## 2026-10-06 — No-Redis rule dropped
+
+- **Owner decision:** Redis is allowed. Recorded as `architecture-decisions.md` #30, which supersedes #12.
+- **Limits:** Redis is for caching and counters only; Postgres remains the source of truth for money, orders, stock, sessions, audit logs and jobs.
+- **Docs and skills** updated (backend.md §5.4 note, techshop.md, the devops and coding-conventions skills, `pkg/database/doc.go`).
+- **Nothing built yet:** the Redis client, compose service and the move of counters/caches happen when that work is scheduled.
+
+## 2026-10-06 — Recommender database confirmed: Postgres
+
+The owner asked whether MongoDB suits ML better. Answer: training data lives in files (Parquet), the database only holds tabular results and model bookkeeping, and Postgres covers flexibility (`jsonb`) and vectors (`pgvector`). The owner kept Postgres (decision #29 stands).

@@ -1,0 +1,5 @@
+# Candidate sources and fallback chain per shelf (docs/recommendations.md §3).
+home_for_you:     {sources: [ranker, blender, popularity], personal: true}
+similar_items:    {sources: [content, item2vec, popularity_category], personal: false}
+bought_together:  {sources: [cooccurrence, compatibility, popularity_category], personal: false}
+trending:         {sources: [popularity_state_category], personal: false}

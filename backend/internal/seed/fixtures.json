@@ -1,0 +1,1272 @@
+{
+ "categories": [
+  {
+   "slug": "phones",
+   "name": "Phones",
+   "description": "Android, iOS, and feature phones — new, UK-used, and refurbished.",
+   "subcategories": [
+    {
+     "slug": "android",
+     "name": "Android"
+    },
+    {
+     "slug": "ios",
+     "name": "iOS"
+    },
+    {
+     "slug": "refurbished",
+     "name": "Refurbished"
+    },
+    {
+     "slug": "feature-phones",
+     "name": "Feature phones"
+    }
+   ]
+  },
+  {
+   "slug": "laptops",
+   "name": "Laptops",
+   "description": "Business, gaming, and workstation laptops.",
+   "subcategories": [
+    {
+     "slug": "business",
+     "name": "Business"
+    },
+    {
+     "slug": "gaming",
+     "name": "Gaming"
+    },
+    {
+     "slug": "workstation",
+     "name": "Workstation"
+    }
+   ]
+  },
+  {
+   "slug": "accessories",
+   "name": "Accessories",
+   "description": "Audio, chargers, power banks, cases, and storage.",
+   "subcategories": [
+    {
+     "slug": "audio",
+     "name": "Audio"
+    },
+    {
+     "slug": "power",
+     "name": "Power & charging"
+    },
+    {
+     "slug": "storage",
+     "name": "Storage"
+    }
+   ]
+  },
+  {
+   "slug": "gaming",
+   "name": "Gaming",
+   "description": "Consoles, controllers, and gaming gear.",
+   "subcategories": [
+    {
+     "slug": "consoles",
+     "name": "Consoles"
+    },
+    {
+     "slug": "controllers",
+     "name": "Controllers"
+    }
+   ]
+  },
+  {
+   "slug": "smart-home",
+   "name": "Smart home",
+   "description": "Speakers, lighting, security cameras, and plugs.",
+   "subcategories": [
+    {
+     "slug": "security",
+     "name": "Security"
+    },
+    {
+     "slug": "lighting",
+     "name": "Lighting"
+    }
+   ]
+  },
+  {
+   "slug": "office",
+   "name": "Office",
+   "description": "Printers, monitors, networking, and power backup.",
+   "subcategories": [
+    {
+     "slug": "printers",
+     "name": "Printers"
+    },
+    {
+     "slug": "power-backup",
+     "name": "Power backup"
+    }
+   ]
+  },
+  {
+   "slug": "workstations",
+   "name": "Workstations",
+   "description": "Desktop towers and pro displays for demanding work.",
+   "subcategories": [
+    {
+     "slug": "towers",
+     "name": "Towers"
+    },
+    {
+     "slug": "displays",
+     "name": "Pro displays"
+    }
+   ]
+  },
+  {
+   "slug": "cars",
+   "name": "Cars",
+   "description": "Inspected brand-new and used cars from verified dealers.",
+   "subcategories": [
+    {
+     "slug": "brand-new",
+     "name": "Brand new"
+    },
+    {
+     "slug": "foreign-used",
+     "name": "Foreign used"
+    }
+   ]
+  }
+ ],
+ "products": [
+  {
+   "stock": "in-stock",
+   "condition": "new",
+   "id": "p1",
+   "name": "Nova X5 Pro 5G",
+   "brand": "Nova",
+   "category": "phones",
+   "subcategory": "android",
+   "keySpec": "12GB RAM · 256GB",
+   "price": {
+    "amount": 89900000,
+    "currency": "NGN"
+   },
+   "compareAtPrice": {
+    "amount": 105000000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.7,
+    "count": 312
+   },
+   "seller": {
+    "id": "s-techshop",
+    "name": "TechShop",
+    "type": "techshop"
+   },
+   "badges": [
+    "deal"
+   ],
+   "slug": "nova-x5-pro-5g"
+  },
+  {
+   "stock": "in-stock",
+   "condition": "new",
+   "id": "p2",
+   "name": "Orbit One 15 Max",
+   "brand": "Orbit",
+   "category": "phones",
+   "subcategory": "ios",
+   "keySpec": "256GB · Titanium",
+   "price": {
+    "amount": 215000000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.8,
+    "count": 540
+   },
+   "seller": {
+    "id": "s-techshop",
+    "name": "TechShop",
+    "type": "techshop"
+   },
+   "badges": [
+    "best-seller"
+   ],
+   "slug": "orbit-one-15-max"
+  },
+  {
+   "stock": "in-stock",
+   "condition": "new",
+   "id": "p3",
+   "name": "Nova A3 Lite",
+   "brand": "Nova",
+   "category": "phones",
+   "subcategory": "android",
+   "keySpec": "6GB RAM · 128GB",
+   "price": {
+    "amount": 18900000,
+    "currency": "NGN"
+   },
+   "compareAtPrice": {
+    "amount": 21500000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.4,
+    "count": 1204
+   },
+   "seller": {
+    "id": "s-ikeja",
+    "name": "Ikeja Gadget Hub",
+    "type": "vendor",
+    "rating": 4.6
+   },
+   "slug": "nova-a3-lite"
+  },
+  {
+   "stock": "low-stock",
+   "condition": "uk-used",
+   "id": "p4",
+   "name": "Orbit One 13 (UK-used)",
+   "brand": "Orbit",
+   "category": "phones",
+   "subcategory": "ios",
+   "keySpec": "128GB · Battery 89%",
+   "price": {
+    "amount": 64000000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.3,
+    "count": 87
+   },
+   "seller": {
+    "id": "s-kano",
+    "name": "Sabon Gari Mobile",
+    "type": "vendor",
+    "rating": 4.3
+   },
+   "slug": "orbit-one-13-uk-used"
+  },
+  {
+   "stock": "in-stock",
+   "condition": "new",
+   "id": "p5",
+   "name": "Vela Fold Z",
+   "brand": "Vela",
+   "category": "phones",
+   "subcategory": "android",
+   "keySpec": "12GB RAM · 512GB",
+   "price": {
+    "amount": 248000000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.6,
+    "count": 64
+   },
+   "seller": {
+    "id": "s-techshop",
+    "name": "TechShop",
+    "type": "techshop"
+   },
+   "badges": [
+    "new"
+   ],
+   "slug": "vela-fold-z"
+  },
+  {
+   "stock": "in-stock",
+   "condition": "refurbished",
+   "id": "p6",
+   "name": "Nova C1 Refurbished",
+   "brand": "Nova",
+   "category": "phones",
+   "subcategory": "refurbished",
+   "keySpec": "4GB RAM · 64GB",
+   "price": {
+    "amount": 9950000,
+    "currency": "NGN"
+   },
+   "compareAtPrice": {
+    "amount": 12400000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.1,
+    "count": 233
+   },
+   "seller": {
+    "id": "s-abuja",
+    "name": "Wuse Tech Store",
+    "type": "vendor",
+    "rating": 4.4
+   },
+   "slug": "nova-c1-refurbished"
+  },
+  {
+   "stock": "in-stock",
+   "condition": "new",
+   "id": "p7",
+   "name": "Kestrel Book 14 Business",
+   "brand": "Kestrel",
+   "category": "laptops",
+   "subcategory": "business",
+   "keySpec": "Core i7 · 16GB · 512GB SSD",
+   "price": {
+    "amount": 139000000,
+    "currency": "NGN"
+   },
+   "compareAtPrice": {
+    "amount": 152000000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.6,
+    "count": 148
+   },
+   "seller": {
+    "id": "s-techshop",
+    "name": "TechShop",
+    "type": "techshop"
+   },
+   "badges": [
+    "deal"
+   ],
+   "slug": "kestrel-book-14-business"
+  },
+  {
+   "stock": "in-stock",
+   "condition": "new",
+   "id": "p8",
+   "name": "Arcadia Strix 16 Gaming",
+   "brand": "Arcadia",
+   "category": "laptops",
+   "subcategory": "gaming",
+   "keySpec": "RTX-class GPU · 32GB · 1TB",
+   "price": {
+    "amount": 325000000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.8,
+    "count": 92
+   },
+   "seller": {
+    "id": "s-techshop",
+    "name": "TechShop",
+    "type": "techshop"
+   },
+   "badges": [
+    "best-seller"
+   ],
+   "slug": "arcadia-strix-16-gaming"
+  },
+  {
+   "stock": "low-stock",
+   "condition": "new",
+   "id": "p9",
+   "name": "Forge Mobile WS 17",
+   "brand": "Forge",
+   "category": "laptops",
+   "subcategory": "workstation",
+   "keySpec": "Pro GPU · 64GB · 2TB",
+   "price": {
+    "amount": 489000000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.9,
+    "count": 21
+   },
+   "seller": {
+    "id": "s-techshop",
+    "name": "TechShop",
+    "type": "techshop"
+   },
+   "slug": "forge-mobile-ws-17"
+  },
+  {
+   "stock": "in-stock",
+   "condition": "new",
+   "id": "p10",
+   "name": "Kestrel Air 13",
+   "brand": "Kestrel",
+   "category": "laptops",
+   "subcategory": "business",
+   "keySpec": "Ryzen 5 · 8GB · 256GB SSD",
+   "price": {
+    "amount": 68900000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.3,
+    "count": 410
+   },
+   "seller": {
+    "id": "s-abuja",
+    "name": "Wuse Tech Store",
+    "type": "vendor",
+    "rating": 4.4
+   },
+   "slug": "kestrel-air-13"
+  },
+  {
+   "stock": "in-stock",
+   "condition": "new",
+   "id": "p11",
+   "name": "Arcadia Nitro 15",
+   "brand": "Arcadia",
+   "category": "laptops",
+   "subcategory": "gaming",
+   "keySpec": "RTX-class GPU · 16GB · 512GB",
+   "price": {
+    "amount": 185000000,
+    "currency": "NGN"
+   },
+   "compareAtPrice": {
+    "amount": 210000000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.5,
+    "count": 176
+   },
+   "seller": {
+    "id": "s-ikeja",
+    "name": "Ikeja Gadget Hub",
+    "type": "vendor",
+    "rating": 4.6
+   },
+   "badges": [
+    "deal"
+   ],
+   "slug": "arcadia-nitro-15"
+  },
+  {
+   "stock": "in-stock",
+   "condition": "new",
+   "id": "p12",
+   "name": "Pulse Buds Pro",
+   "brand": "Pulse",
+   "category": "accessories",
+   "subcategory": "audio",
+   "keySpec": "ANC · 30h battery",
+   "price": {
+    "amount": 7900000,
+    "currency": "NGN"
+   },
+   "compareAtPrice": {
+    "amount": 9900000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.5,
+    "count": 865
+   },
+   "seller": {
+    "id": "s-techshop",
+    "name": "TechShop",
+    "type": "techshop"
+   },
+   "badges": [
+    "deal"
+   ],
+   "slug": "pulse-buds-pro"
+  },
+  {
+   "stock": "in-stock",
+   "condition": "new",
+   "id": "p13",
+   "name": "Volt 20,000mAh Power Bank",
+   "brand": "Volt",
+   "category": "accessories",
+   "subcategory": "power",
+   "keySpec": "65W fast charge",
+   "price": {
+    "amount": 3850000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.6,
+    "count": 2104
+   },
+   "seller": {
+    "id": "s-kano",
+    "name": "Sabon Gari Mobile",
+    "type": "vendor",
+    "rating": 4.3
+   },
+   "badges": [
+    "best-seller"
+   ],
+   "slug": "volt-20-000mah-power-bank"
+  },
+  {
+   "stock": "in-stock",
+   "condition": "new",
+   "id": "p14",
+   "name": "Pulse Studio Headphones",
+   "brand": "Pulse",
+   "category": "accessories",
+   "subcategory": "audio",
+   "keySpec": "Over-ear · Wireless",
+   "price": {
+    "amount": 14500000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.4,
+    "count": 312
+   },
+   "seller": {
+    "id": "s-techshop",
+    "name": "TechShop",
+    "type": "techshop"
+   },
+   "slug": "pulse-studio-headphones"
+  },
+  {
+   "stock": "in-stock",
+   "condition": "new",
+   "id": "p15",
+   "name": "Volt 1TB Portable SSD",
+   "brand": "Volt",
+   "category": "accessories",
+   "subcategory": "storage",
+   "keySpec": "USB-C · 1,050MB/s",
+   "price": {
+    "amount": 11200000,
+    "currency": "NGN"
+   },
+   "compareAtPrice": {
+    "amount": 13400000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.7,
+    "count": 198
+   },
+   "seller": {
+    "id": "s-ikeja",
+    "name": "Ikeja Gadget Hub",
+    "type": "vendor",
+    "rating": 4.6
+   },
+   "slug": "volt-1tb-portable-ssd"
+  },
+  {
+   "stock": "in-stock",
+   "condition": "new",
+   "id": "p16",
+   "name": "Arcadia Play 5 Console",
+   "brand": "Arcadia",
+   "category": "gaming",
+   "subcategory": "consoles",
+   "keySpec": "1TB · 4K",
+   "price": {
+    "amount": 98500000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.9,
+    "count": 433
+   },
+   "seller": {
+    "id": "s-techshop",
+    "name": "TechShop",
+    "type": "techshop"
+   },
+   "badges": [
+    "best-seller"
+   ],
+   "slug": "arcadia-play-5-console"
+  },
+  {
+   "stock": "in-stock",
+   "condition": "new",
+   "id": "p17",
+   "name": "Arcadia Pro Controller",
+   "brand": "Arcadia",
+   "category": "gaming",
+   "subcategory": "controllers",
+   "keySpec": "Wireless · Haptic",
+   "price": {
+    "amount": 8900000,
+    "currency": "NGN"
+   },
+   "compareAtPrice": {
+    "amount": 10500000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.6,
+    "count": 290
+   },
+   "seller": {
+    "id": "s-abuja",
+    "name": "Wuse Tech Store",
+    "type": "vendor",
+    "rating": 4.4
+   },
+   "badges": [
+    "deal"
+   ],
+   "slug": "arcadia-pro-controller"
+  },
+  {
+   "stock": "in-stock",
+   "condition": "new",
+   "id": "p18",
+   "name": "Arcadia Handheld S",
+   "brand": "Arcadia",
+   "category": "gaming",
+   "subcategory": "consoles",
+   "keySpec": "7\" OLED · 512GB",
+   "price": {
+    "amount": 72000000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.5,
+    "count": 58
+   },
+   "seller": {
+    "id": "s-techshop",
+    "name": "TechShop",
+    "type": "techshop"
+   },
+   "badges": [
+    "new"
+   ],
+   "slug": "arcadia-handheld-s"
+  },
+  {
+   "stock": "in-stock",
+   "condition": "new",
+   "id": "p19",
+   "name": "Lumen Home Speaker",
+   "brand": "Lumen",
+   "category": "smart-home",
+   "keySpec": "Voice assistant · Wi-Fi",
+   "price": {
+    "amount": 6800000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.3,
+    "count": 154
+   },
+   "seller": {
+    "id": "s-techshop",
+    "name": "TechShop",
+    "type": "techshop"
+   },
+   "slug": "lumen-home-speaker"
+  },
+  {
+   "stock": "in-stock",
+   "condition": "new",
+   "id": "p20",
+   "name": "Lumen Guard Camera 2K",
+   "brand": "Lumen",
+   "category": "smart-home",
+   "subcategory": "security",
+   "keySpec": "Night vision · App alerts",
+   "price": {
+    "amount": 5400000,
+    "currency": "NGN"
+   },
+   "compareAtPrice": {
+    "amount": 6500000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.5,
+    "count": 377
+   },
+   "seller": {
+    "id": "s-ikeja",
+    "name": "Ikeja Gadget Hub",
+    "type": "vendor",
+    "rating": 4.6
+   },
+   "badges": [
+    "deal"
+   ],
+   "slug": "lumen-guard-camera-2k"
+  },
+  {
+   "stock": "in-stock",
+   "condition": "new",
+   "id": "p21",
+   "name": "Lumen Smart Bulb (4-pack)",
+   "brand": "Lumen",
+   "category": "smart-home",
+   "subcategory": "lighting",
+   "keySpec": "Colour · Schedules",
+   "price": {
+    "amount": 2900000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.2,
+    "count": 96
+   },
+   "seller": {
+    "id": "s-techshop",
+    "name": "TechShop",
+    "type": "techshop"
+   },
+   "slug": "lumen-smart-bulb-4-pack"
+  },
+  {
+   "stock": "in-stock",
+   "condition": "new",
+   "id": "p22",
+   "name": "Fieldwork Laser Printer M2",
+   "brand": "Fieldwork",
+   "category": "office",
+   "subcategory": "printers",
+   "keySpec": "Mono · Wi-Fi · Duplex",
+   "price": {
+    "amount": 24500000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.4,
+    "count": 122
+   },
+   "seller": {
+    "id": "s-techshop",
+    "name": "TechShop",
+    "type": "techshop"
+   },
+   "slug": "fieldwork-laser-printer-m2"
+  },
+  {
+   "stock": "in-stock",
+   "condition": "new",
+   "id": "p23",
+   "name": "Fieldwork 2kVA Inverter + UPS",
+   "brand": "Fieldwork",
+   "category": "office",
+   "subcategory": "power-backup",
+   "keySpec": "Pure sine wave",
+   "price": {
+    "amount": 41000000,
+    "currency": "NGN"
+   },
+   "compareAtPrice": {
+    "amount": 46500000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.6,
+    "count": 211
+   },
+   "seller": {
+    "id": "s-abuja",
+    "name": "Wuse Tech Store",
+    "type": "vendor",
+    "rating": 4.4
+   },
+   "badges": [
+    "deal"
+   ],
+   "slug": "fieldwork-2kva-inverter-ups"
+  },
+  {
+   "stock": "in-stock",
+   "condition": "new",
+   "id": "p24",
+   "name": "Vantage 27\" QHD Monitor",
+   "brand": "Vantage",
+   "category": "office",
+   "keySpec": "IPS · 75Hz · USB-C",
+   "price": {
+    "amount": 28500000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.5,
+    "count": 167
+   },
+   "seller": {
+    "id": "s-techshop",
+    "name": "TechShop",
+    "type": "techshop"
+   },
+   "slug": "vantage-27-qhd-monitor"
+  },
+  {
+   "stock": "low-stock",
+   "condition": "new",
+   "id": "p25",
+   "name": "Forge Tower W9",
+   "brand": "Forge",
+   "category": "workstations",
+   "subcategory": "towers",
+   "keySpec": "24-core · 128GB · Pro GPU",
+   "price": {
+    "amount": 795000000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.9,
+    "count": 12
+   },
+   "seller": {
+    "id": "s-techshop",
+    "name": "TechShop",
+    "type": "techshop"
+   },
+   "slug": "forge-tower-w9"
+  },
+  {
+   "stock": "in-stock",
+   "condition": "new",
+   "id": "p26",
+   "name": "Vantage Pro Display 32\" 4K",
+   "brand": "Vantage",
+   "category": "workstations",
+   "subcategory": "displays",
+   "keySpec": "Colour-accurate · HDR",
+   "price": {
+    "amount": 115000000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.7,
+    "count": 34
+   },
+   "seller": {
+    "id": "s-techshop",
+    "name": "TechShop",
+    "type": "techshop"
+   },
+   "slug": "vantage-pro-display-32-4k"
+  },
+  {
+   "stock": "in-stock",
+   "condition": "new",
+   "id": "p27",
+   "name": "Forge Compact WS",
+   "brand": "Forge",
+   "category": "workstations",
+   "subcategory": "towers",
+   "keySpec": "12-core · 64GB · 2TB",
+   "price": {
+    "amount": 340000000,
+    "currency": "NGN"
+   },
+   "compareAtPrice": {
+    "amount": 375000000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.6,
+    "count": 19
+   },
+   "seller": {
+    "id": "s-techshop",
+    "name": "TechShop",
+    "type": "techshop"
+   },
+   "badges": [
+    "deal"
+   ],
+   "slug": "forge-compact-ws"
+  }
+ ],
+ "cars": [
+  {
+   "id": "c1",
+   "slug": "meridian-c300-2022",
+   "title": "Meridian C300 Sedan",
+   "year": 2022,
+   "mileageKm": 18400,
+   "location": "Lekki, Lagos",
+   "condition": "foreign-used",
+   "transmission": "automatic",
+   "price": {
+    "amount": 3850000000,
+    "currency": "NGN"
+   },
+   "inspected": true,
+   "seller": {
+    "id": "s-autolane",
+    "name": "Lekki Auto Lane",
+    "type": "vendor",
+    "rating": 4.5
+   }
+  },
+  {
+   "id": "c2",
+   "slug": "kodo-rx-2024",
+   "title": "Kodo RX SUV",
+   "year": 2024,
+   "mileageKm": 0,
+   "location": "Victoria Island, Lagos",
+   "condition": "brand-new",
+   "transmission": "automatic",
+   "price": {
+    "amount": 6200000000,
+    "currency": "NGN"
+   },
+   "inspected": true,
+   "seller": {
+    "id": "s-techshop",
+    "name": "TechShop",
+    "type": "techshop"
+   }
+  },
+  {
+   "id": "c3",
+   "slug": "astra-city-2019",
+   "title": "Astra City Hatchback",
+   "year": 2019,
+   "mileageKm": 64200,
+   "location": "Wuse II, Abuja",
+   "condition": "nigerian-used",
+   "transmission": "manual",
+   "price": {
+    "amount": 980000000,
+    "currency": "NGN"
+   },
+   "inspected": true,
+   "seller": {
+    "id": "s-autolane",
+    "name": "Lekki Auto Lane",
+    "type": "vendor",
+    "rating": 4.5
+   }
+  },
+  {
+   "id": "c4",
+   "slug": "talon-p4-2021",
+   "title": "Talon P4 Pickup",
+   "year": 2021,
+   "mileageKm": 41000,
+   "location": "GRA, Port Harcourt",
+   "condition": "foreign-used",
+   "transmission": "automatic",
+   "price": {
+    "amount": 2990000000,
+    "currency": "NGN"
+   },
+   "inspected": false,
+   "seller": {
+    "id": "s-autolane",
+    "name": "Lekki Auto Lane",
+    "type": "vendor",
+    "rating": 4.5
+   }
+  }
+ ],
+ "wholesaleProducts": [
+  {
+   "stock": "in-stock",
+   "condition": "new",
+   "id": "p3",
+   "name": "Nova A3 Lite",
+   "brand": "Nova",
+   "category": "phones",
+   "subcategory": "android",
+   "keySpec": "6GB RAM · 128GB",
+   "price": {
+    "amount": 18900000,
+    "currency": "NGN"
+   },
+   "compareAtPrice": {
+    "amount": 21500000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.4,
+    "count": 1204
+   },
+   "seller": {
+    "id": "s-techshop",
+    "name": "TechShop",
+    "type": "techshop"
+   },
+   "slug": "nova-a3-lite",
+   "minOrderQuantity": 5,
+   "tiers": [
+    {
+     "minQuantity": 5,
+     "unitPrice": {
+      "amount": 17600000,
+      "currency": "NGN"
+     }
+    },
+    {
+     "minQuantity": 20,
+     "unitPrice": {
+      "amount": 16900000,
+      "currency": "NGN"
+     }
+    },
+    {
+     "minQuantity": 50,
+     "unitPrice": {
+      "amount": 16200000,
+      "currency": "NGN"
+     }
+    }
+   ]
+  },
+  {
+   "stock": "in-stock",
+   "condition": "new",
+   "id": "p10",
+   "name": "Kestrel Air 13",
+   "brand": "Kestrel",
+   "category": "laptops",
+   "subcategory": "business",
+   "keySpec": "Ryzen 5 · 8GB · 256GB SSD",
+   "price": {
+    "amount": 68900000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.3,
+    "count": 410
+   },
+   "seller": {
+    "id": "s-techshop",
+    "name": "TechShop",
+    "type": "techshop"
+   },
+   "slug": "kestrel-air-13",
+   "minOrderQuantity": 3,
+   "tiers": [
+    {
+     "minQuantity": 3,
+     "unitPrice": {
+      "amount": 65500000,
+      "currency": "NGN"
+     }
+    },
+    {
+     "minQuantity": 10,
+     "unitPrice": {
+      "amount": 63200000,
+      "currency": "NGN"
+     }
+    },
+    {
+     "minQuantity": 25,
+     "unitPrice": {
+      "amount": 61000000,
+      "currency": "NGN"
+     }
+    }
+   ]
+  },
+  {
+   "stock": "in-stock",
+   "condition": "new",
+   "id": "p13",
+   "name": "Volt 20,000mAh Power Bank",
+   "brand": "Volt",
+   "category": "accessories",
+   "subcategory": "power",
+   "keySpec": "65W fast charge",
+   "price": {
+    "amount": 3850000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.6,
+    "count": 2104
+   },
+   "seller": {
+    "id": "s-techshop",
+    "name": "TechShop",
+    "type": "techshop"
+   },
+   "badges": [
+    "best-seller"
+   ],
+   "slug": "volt-20-000mah-power-bank",
+   "minOrderQuantity": 10,
+   "tiers": [
+    {
+     "minQuantity": 10,
+     "unitPrice": {
+      "amount": 3400000,
+      "currency": "NGN"
+     }
+    },
+    {
+     "minQuantity": 50,
+     "unitPrice": {
+      "amount": 3150000,
+      "currency": "NGN"
+     }
+    },
+    {
+     "minQuantity": 200,
+     "unitPrice": {
+      "amount": 2900000,
+      "currency": "NGN"
+     }
+    }
+   ]
+  },
+  {
+   "stock": "in-stock",
+   "condition": "new",
+   "id": "p22",
+   "name": "Fieldwork Laser Printer M2",
+   "brand": "Fieldwork",
+   "category": "office",
+   "subcategory": "printers",
+   "keySpec": "Mono · Wi-Fi · Duplex",
+   "price": {
+    "amount": 24500000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.4,
+    "count": 122
+   },
+   "seller": {
+    "id": "s-techshop",
+    "name": "TechShop",
+    "type": "techshop"
+   },
+   "slug": "fieldwork-laser-printer-m2",
+   "minOrderQuantity": 2,
+   "tiers": [
+    {
+     "minQuantity": 2,
+     "unitPrice": {
+      "amount": 23200000,
+      "currency": "NGN"
+     }
+    },
+    {
+     "minQuantity": 10,
+     "unitPrice": {
+      "amount": 22100000,
+      "currency": "NGN"
+     }
+    },
+    {
+     "minQuantity": 30,
+     "unitPrice": {
+      "amount": 21200000,
+      "currency": "NGN"
+     }
+    }
+   ]
+  },
+  {
+   "stock": "in-stock",
+   "condition": "new",
+   "id": "p24",
+   "name": "Vantage 27\" QHD Monitor",
+   "brand": "Vantage",
+   "category": "office",
+   "keySpec": "IPS · 75Hz · USB-C",
+   "price": {
+    "amount": 28500000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.5,
+    "count": 167
+   },
+   "seller": {
+    "id": "s-techshop",
+    "name": "TechShop",
+    "type": "techshop"
+   },
+   "slug": "vantage-27-qhd-monitor",
+   "minOrderQuantity": 4,
+   "tiers": [
+    {
+     "minQuantity": 4,
+     "unitPrice": {
+      "amount": 26800000,
+      "currency": "NGN"
+     }
+    },
+    {
+     "minQuantity": 15,
+     "unitPrice": {
+      "amount": 25900000,
+      "currency": "NGN"
+     }
+    },
+    {
+     "minQuantity": 40,
+     "unitPrice": {
+      "amount": 24900000,
+      "currency": "NGN"
+     }
+    }
+   ]
+  },
+  {
+   "stock": "in-stock",
+   "condition": "new",
+   "id": "p12",
+   "name": "Pulse Buds Pro",
+   "brand": "Pulse",
+   "category": "accessories",
+   "subcategory": "audio",
+   "keySpec": "ANC · 30h battery",
+   "price": {
+    "amount": 7900000,
+    "currency": "NGN"
+   },
+   "compareAtPrice": {
+    "amount": 9900000,
+    "currency": "NGN"
+   },
+   "rating": {
+    "average": 4.5,
+    "count": 865
+   },
+   "seller": {
+    "id": "s-techshop",
+    "name": "TechShop",
+    "type": "techshop"
+   },
+   "badges": [
+    "deal"
+   ],
+   "slug": "pulse-buds-pro",
+   "minOrderQuantity": 10,
+   "tiers": [
+    {
+     "minQuantity": 10,
+     "unitPrice": {
+      "amount": 7100000,
+      "currency": "NGN"
+     }
+    },
+    {
+     "minQuantity": 50,
+     "unitPrice": {
+      "amount": 6650000,
+      "currency": "NGN"
+     }
+    },
+    {
+     "minQuantity": 150,
+     "unitPrice": {
+      "amount": 6200000,
+      "currency": "NGN"
+     }
+    }
+   ]
+  }
+ ]
+}

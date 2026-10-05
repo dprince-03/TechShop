@@ -1,0 +1,10 @@
+# Data thresholds per generator; a generator also has to beat the popularity baseline offline.
+popularity:   {min_events: 0}
+content:      {min_products: 50}
+cooccurrence: {min_orders: 2000}
+als:          {min_users: 5000, min_interactions: 50000}
+bpr:          {min_users: 5000, min_interactions: 50000}
+item2vec:     {min_sessions: 20000}
+two_tower:    {min_users: 50000, min_interactions: 500000}
+sequence:     {min_sessions: 100000}
+ranker:       {min_labelled_impressions: 200000}

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Rules
 
-- **Only the Go API (`backend/`) touches PostgreSQL.** Web and mobile apps must never get a DB driver, ORM, or `DATABASE_URL`; they call the API through `@techshop/api-client` (`shared/api-client`). Schema, migrations, and queries all live in `backend/`.
+- **Only the Go API (`backend/`) touches the main PostgreSQL database.** The Python recommender (`recommendation/`) has its own private Postgres and talks to Go only through APIs; no service reads another's database. Web and mobile apps must never get a DB driver, ORM, or `DATABASE_URL`; they call the API through `@techshop/api-client` (`shared/api-client`). Schema, migrations, and queries all live in `backend/`.
 - **Layout:** web apps in `frontend/apps/`, mobile apps in `mobile/apps/`, platform-neutral code used by both in `shared/` (no Next.js, React Native, or DOM-only APIs there), local infrastructure in `infra/`.
 - **Separate install roots:** `frontend/` and `mobile/` each have their own `node_modules` and lockfile — Expo pins a different React version than Next.js. Never add a repo-root `package.json`/workspace. Mobile pins React via `overrides` in `mobile/package.json`; keep it matching the Expo SDK and verify with `npm run doctor`.
 - **No Tailwind or CSS frameworks.** Web UI is custom CSS on the design system in `frontend/packages/ui`; tokens come from `shared/design-tokens` — load the `frontend-design` skill before any UI work (web or mobile). Feature components use CSS Modules + tokens.

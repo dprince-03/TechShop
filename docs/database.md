@@ -1,20 +1,26 @@
 # TechShop database plan
 
-The complete proposed data model for TechShop: schema, relationships, lifecycles, flows and access. **This is a design document.** Nothing here is applied to a database yet; the SQL becomes goose migrations in `backend/db/migrations/` when backend work starts.
+The data model for TechShop: schema, relationships, lifecycles, flows and access.
+
+**Status (2026-10-05):** built.
+- **Source of truth:** the goose migrations in [`backend/db/migrations/`](../backend/db/migrations/). Change the database there, never in `schema.sql`.
+- **Contents:** 195 tables in 22 Postgres schemas, one schema per domain (§9). This includes every proposal in [`schema-changes.md`](schema-changes.md).
+- **Applied:** to the local Docker database.
+- **Verified:** constraint tests, a full up → down → up cycle, and sqlc parsing.
 
 | Document | What's in it |
 |---|---|
-| [`database/schema.sql`](database/schema.sql) | Full proposed DDL: every table, key, constraint, index and trigger. Each table carries a `[domain] purpose` comment |
+| [`database/schema.sql`](database/schema.sql) | **Generated** `pg_dump --schema-only` of the migrated database: every table, key, constraint, index and trigger in one file. Each table carries a `[schema] purpose` comment |
 | [`database/erd.md`](database/erd.md) | Entity-relationship diagrams for every domain, plus an overview of all tables. **Generated from the schema** |
 | [`database/states.md`](database/states.md) | State machines for every status lifecycle |
 | [`database/flows.md`](database/flows.md) | Sequence diagrams for the key processes, money flow, ledger journal templates |
 | [`database/access.md`](database/access.md) | Staff roles and permissions (proposal), which app owns which data, personal-data classification |
-| [`database/tools/`](database/tools/) | Scripts that load the schema into a throwaway Postgres, regenerate `erd.md` and the table index, and render diagrams |
+| [`database/tools/`](database/tools/) | Scripts that load the migrations into a throwaway Postgres, run the constraint tests, regenerate `schema.sql`, `erd.md` and the table index, and render diagrams |
 | [`database/diagrams/`](database/diagrams/) | Every diagram rendered as SVG |
 
 
 **Related plans:**
-- Proposed schema changes from the backend, mobile, recommendation and system plans (not yet applied): [`schema-changes.md`](schema-changes.md)
+- Schema changes from the backend, mobile, recommendation and system plans (all applied 2026-10-05): [`schema-changes.md`](schema-changes.md)
 - System plans: [`messaging-marketing.md`](messaging-marketing.md), [`identity-access.md`](identity-access.md), [`payments-finance.md`](payments-finance.md), [`search-catalogue.md`](search-catalogue.md), [`orders-fulfilment.md`](orders-fulfilment.md), [`trust-safety.md`](trust-safety.md)
 - How the API is built on this model: [`backend.md`](backend.md)
 - Cross-plan decisions: [`architecture-decisions.md`](architecture-decisions.md)
@@ -187,23 +193,78 @@ All diagrams are Mermaid (they render on GitHub). Rendered SVGs are in [`databas
 
 Details and the per-table classification are in [`database/access.md`](database/access.md).
 
-## 9. Migration phasing (goose)
+## 9. Migrations and schemas (goose)
 
-`backend/db/migrations/00001_init.sql` is the empty baseline. The proposal splits `schema.sql` into migrations in this order, each shippable on its own:
+The migrations in `backend/db/migrations/` are the source of truth (the earlier phasing in this section is superseded; see [`plan.md`](plan.md), 2026-10-05).
 
-| Phase | Migration | Domains | Unlocks |
-|---|---|---|---|
-| 1 | `00002_identity` | Identity & access, files | Sign-in, staff accounts, addresses |
-| 1 | `00003_catalogue` | Sellers (incl. TechShop row), catalogue | Real product, category and search pages |
-| 1 | `00004_inventory` | Inventory | Stock levels, device units |
-| 1 | `00005_sales` | Carts, orders, fulfilments | Cart and checkout |
-| 1 | `00006_payments` | Payments, ledger | Paystack / OPay / Moniepoint |
-| 2 | `00007_logistics` | Logistics | Dispatch and logistics app |
-| 2 | `00008_marketplace` | KYC, bank accounts, commission, payouts, reviews | Seller centre, vendor payouts |
-| 2 | `00009_after_sales` | Returns, warranty, repairs, trade-ins | Help centre flows |
-| 3 | `00010_b2b` | Businesses, credit, quotes, invoices, purchasing | Wholesale site |
-| 3 | `00011_cars` | Cars | Car listings and viewings |
-| 3 | `00012_growth` | Marketing, content, support, risk, POS, platform extras | Remaining staff modules |
+**Conventions every migration follows:**
+- Each file has a goose `Up` and a full `Down`.
+- Tables use qualified names (`schema.table`), with a `[schema] purpose` comment on every table.
+- **Explicit indexes:** every foreign-key column has an explicit index.
+- **Explicit triggers:** every `updated_at` column has an explicit `platform.set_updated_at()` trigger. There are no generic loops.
+- **Append-only tables** use `platform.forbid_change()`: the ledger, stock movements and delivery events.
+- **Partitioned tables** are partitioned monthly with a default partition; the worker adds months ahead with `platform.ensure_monthly_partitions()`. These are the high-volume logs: `user_events`, `auth_events`, `message_events`, `risk_decisions`, `search_queries` and `rider_location_pings`.
+
+| Migration | Creates |
+|---|---|
+| `00001_init` | Empty baseline |
+| `00002_foundation` | Extensions (`citext`, `pg_trgm`), the 22 schemas, helper functions |
+| `00003_identity` | Users, sessions, codes, MFA, roles and permissions, staff, consents, privacy requests, auth events and limits |
+| `00004_platform` | Files, audit log, outbox (+ NOTIFY), idempotency keys, feature flags, holidays, encryption keys |
+| `00005_partners` | Sellers, KYC, bank accounts; businesses, members, credit; addresses |
+| `00006_catalog` | Categories, brands, attributes, products, variants, images, listings, prices, moderation, compatibility, search read model |
+| `00007_search` | Synonyms, redirects, pins, query log, suggestions, catalogue gaps |
+| `00008_inventory` | Warehouses, bins, stock levels, device units, movements, transfers, counts, costs; purchasing |
+| `00009_pos` | Tills and shifts |
+| `00010_sales` | Carts, quotes, orders, fulfilments, order lines, history, stock reservations, reviews and ratings |
+| `00011_logistics` | Zones, rates, riders (devices, zones, shifts, locations), delivery and pickup jobs, events |
+| `00012_fulfilment` | Parcels, pick lists, packing, manifests, carriers, shipments, seller SLA events |
+| `00013_payments` | Payments, webhooks, refunds, transfer accounts, disputes, provider health, reconciliation |
+| `00014_finance` | Invoices, ledger (posting keys, period close, balance check), commission, payout batches, payouts, holds |
+| `00015_aftersales` | Returns, inspections, warranty, repairs, trade-ins |
+| `00016_messaging` | Message log and inbox, provider events, suppressions, preferences, templates, push tokens |
+| `00017_marketing` | Promotions, flash claims, coupons and codes, segments, campaigns, journeys, tracked links |
+| `00018_content_support` | CMS pages, banners, help articles; support tickets |
+| `00019_risk` | Risk rules and decisions, cases, KYC checks, link graph, lists, blocklist, seller metrics, enforcement, reports |
+| `00020_cars` | Car listings, photos, inspections, documents, viewings, financing |
+| `00021_personalisation` | Behaviour events, identity links, recommendation outputs and staging tables |
+| `00022_reference_data` | States, TechShop as first-party seller, chart of accounts, provider health, open periods, admin role, default flag |
+
+**Domain → Postgres schema:**
+
+| Schema | Domain |
+|---|---|
+| `platform` | Files, audit log, outbox, idempotency, flags, encryption keys, helper functions |
+| `identity` | Users, sessions, codes, MFA, roles, staff, addresses, consents |
+| `sellers` | Marketplace shops, members, KYC, bank accounts |
+| `b2b` | Business buyers, members, credit, quotes |
+| `catalog` | Products, variants, listings, prices, reviews, the search read model |
+| `search` | Search merchandising and analytics |
+| `inventory` | Stock levels, device units, movements, reservations, counts, costs |
+| `purchasing` | Suppliers, purchase orders, goods receipts |
+| `pos` | Store tills and shifts |
+| `sales` | Carts, orders, fulfilments, order lines |
+| `fulfilment` | Warehouse work, parcels, carriers, seller SLAs |
+| `logistics` | Delivery zones, riders, delivery jobs |
+| `payments` | Payments, refunds, disputes, reconciliation |
+| `finance` | Ledger, periods, invoices, commission, payouts |
+| `aftersales` | Returns, warranty, repairs, trade-ins |
+| `messaging` | Message log, preferences, templates, push tokens |
+| `marketing` | Promotions, coupons, campaigns, journeys |
+| `content` | CMS pages, banners, help |
+| `support` | Tickets |
+| `risk` | Trust and safety |
+| `cars` | Car sales |
+| `personalisation` | Events and recommendations |
+
+**Run them:**
+- `make migrate-up` (from `backend/`) runs them.
+- Locally, Postgres runs in Docker (`infra/docker/compose.yml`). Connect over the Docker network ([`.claude/CLAUDE.md`](../.claude/CLAUDE.md) §2).
+
+**Not created yet:**
+- **River job tables.** River isn't a project dependency yet, so it needs owner approval.
+- **Dev test accounts** (a dev-only seed, when backend work starts).
+- **LGAs and public holidays** (reference data to load later).
 
 ## 10. Frontend → data traceability
 
@@ -232,4 +293,13 @@ Details and the per-table classification are in [`database/access.md`](database/
 docs/database/tools/generate.sh
 ```
 
-This starts a throwaway `postgres:17-alpine` container (separate from the project's), loads `schema.sql`, runs constraint and coverage tests, regenerates `erd.md` and the table index from the live schema, renders every diagram to `diagrams/`, then removes the container.
+**What it does:**
+1. Starts a throwaway `postgres:17-alpine` container (separate from the project's).
+2. Loads every migration's Up section in order.
+3. Runs the constraint tests (`tools/constraint-tests.sql`).
+4. Runs the coverage checks: every table commented, every FK indexed, every `updated_at` trigger present.
+5. Regenerates `schema.sql`, `erd.md` and the table index.
+6. Renders every diagram to `diagrams/`.
+7. Removes the container.
+
+The full goose cycle (`up` → `down` to 0 → `up`) is run with the goose binary against a throwaway container; see [`log.md`](log.md).

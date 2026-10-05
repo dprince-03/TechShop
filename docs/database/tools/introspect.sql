@@ -1,12 +1,13 @@
 -- Emits the loaded schema as one JSON document for generate.mjs:
--- tables (domain + purpose from comments), columns with keys, and foreign keys.
+-- tables (domain = Postgres schema, purpose from comments), columns with keys, and foreign keys.
+-- Covers every domain schema; partitions are folded into their parent table.
 with tables as (
-  select c.oid, c.relname as name,
-         substring(obj_description(c.oid) from '^\[([a-z-]+)\]') as domain,
-         regexp_replace(obj_description(c.oid), '^\[[a-z-]+\]\s*', '') as purpose
+  select c.oid, c.relname as name, n.nspname as domain,
+         regexp_replace(obj_description(c.oid), '^\[[a-z0-9_-]+\]\s*', '') as purpose
   from pg_class c
   join pg_namespace n on n.oid = c.relnamespace
-  where n.nspname = 'public' and c.relkind = 'r'
+  where n.nspname not in ('public', 'information_schema') and n.nspname not like 'pg\_%'
+    and c.relkind in ('r', 'p') and not c.relispartition
 ),
 pk as (
   select i.indrelid, unnest(i.indkey) as attnum from pg_index i where i.indisprimary
@@ -17,7 +18,7 @@ uk as (
   where i.indisunique and not i.indisprimary and i.indnkeyatts = 1 and i.indpred is null and i.indkey[0] <> 0
 ),
 fkcol as (
-  select conrelid, conkey[1] as attnum from pg_constraint where contype = 'f' and array_length(conkey, 1) = 1
+  select conrelid, conkey[1] as attnum from pg_constraint where contype = 'f' and conparentid = 0 and array_length(conkey, 1) = 1
 ),
 cols as (
   select t.name as table_name, a.attnum, a.attname as name,
@@ -38,7 +39,8 @@ fks as (
   join pg_class src on src.oid = c.conrelid
   join pg_class dst on dst.oid = c.confrelid
   join pg_attribute a on a.attrelid = c.conrelid and a.attnum = c.conkey[1]
-  where c.contype = 'f' and array_length(c.conkey, 1) = 1
+  where c.contype = 'f' and c.conparentid = 0 and array_length(c.conkey, 1) = 1
+    and src.oid in (select oid from tables)
 )
 select json_build_object(
   'tables', (select json_agg(json_build_object('name', name, 'domain', domain, 'purpose', purpose) order by name) from tables),
