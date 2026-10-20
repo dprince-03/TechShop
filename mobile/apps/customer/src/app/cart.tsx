@@ -26,7 +26,7 @@ export default function CartScreen() {
 
   if (!lines.length) {
     return (
-      <Screen>
+      <Screen underHeader>
         <Title>Your cart is empty</Title>
         <Body muted>Items you add appear here.</Body>
         <Button label="Continue shopping" variant="primary" onPress={() => router.replace("/")} />
@@ -35,7 +35,7 @@ export default function CartScreen() {
   }
 
   return (
-    <Screen>
+    <Screen underHeader>
       <Title>Your cart</Title>
       {error ? <Notice tone="danger">{error}</Notice> : null}
       {lines.map((l) => (

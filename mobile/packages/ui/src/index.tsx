@@ -3,7 +3,7 @@
 // customer app keeps the same large targets (above the 44 px minimum).
 import { tokens, type ColorScheme } from "@techshop/design-tokens";
 import type { ReactNode } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, useColorScheme, View, type TextInputProps } from "react-native";
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, useColorScheme, View, type TextInputProps } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export { tokens };
@@ -15,12 +15,32 @@ export function useColors(): ColorScheme {
 
 const RIDER_TARGET = tokens.control.lg;
 
-export function Screen({ children, scroll = true }: { children: ReactNode; scroll?: boolean }) {
+type ScreenProps = {
+  children: ReactNode;
+  scroll?: boolean;
+  /** A navigation header already sits above (and covers the status bar): don't add the top inset again. */
+  underHeader?: boolean;
+  /** Pull-to-refresh, for screens showing server data that can change. */
+  onRefresh?: () => void;
+  refreshing?: boolean;
+};
+
+export function Screen({ children, scroll = true, underHeader, onRefresh, refreshing = false }: ScreenProps) {
   const c = useColors();
   const body = <View style={styles.content}>{children}</View>;
   return (
-    <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={["top", "left", "right"]}>
-      {scroll ? <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">{body}</ScrollView> : body}
+    <SafeAreaView style={[styles.screen, { backgroundColor: c.bg }]} edges={underHeader ? ["left", "right"] : ["top", "left", "right"]}>
+      {scroll ? (
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+          refreshControl={onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} /> : undefined}
+        >
+          {body}
+        </ScrollView>
+      ) : (
+        body
+      )}
     </SafeAreaView>
   );
 }
@@ -59,7 +79,7 @@ export function Button({ label, onPress, variant = "secondary", disabled, busy, 
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityHint={accessibilityHint}
-      accessibilityState={{ disabled: disabled || busy, busy }}
+      accessibilityState={{ disabled: Boolean(disabled || busy), busy: Boolean(busy) }}
       disabled={disabled || busy}
       onPress={onPress}
       style={({ pressed }) => [

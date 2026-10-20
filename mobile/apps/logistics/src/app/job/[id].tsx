@@ -1,7 +1,7 @@
 import * as Location from "expo-location";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { Linking, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Linking, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 import type { Schema } from "@techshop/api-client";
 
@@ -31,7 +31,7 @@ async function position() {
 export default function JobScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { session } = useSession();
-  const { jobs, refresh } = useJobs();
+  const { jobs, refresh, loading } = useJobs();
   const router = useRouter();
   const c = useColors();
   const [busy, setBusy] = useState(false);
@@ -43,11 +43,13 @@ export default function JobScreen() {
   const [note, setNote] = useState("");
 
   const job = jobs.find((j) => j.id === id);
+  // Still loading (from the API or the phone's cache): don't claim the job is gone yet.
+  if (!job && loading) return <ActivityIndicator style={{ flex: 1 }} accessibilityLabel="Loading job" />;
   if (!job) {
     return (
-      <Screen>
+      <Screen underHeader>
         <Body muted>This job isn’t in your list any more. It may have been reassigned.</Body>
-        <Button label="Back to today" onPress={() => router.back()} />
+        <Button label="Back to today" onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} />
       </Screen>
     );
   }
@@ -73,7 +75,7 @@ export default function JobScreen() {
   };
 
   return (
-    <Screen>
+    <Screen underHeader>
       <Title>{job.recipientName}</Title>
       <Body>{[job.address, job.city, job.stateCode].filter(Boolean).join(", ")}</Body>
       {job.landmark ? <Body muted>Landmark: {job.landmark}</Body> : null}

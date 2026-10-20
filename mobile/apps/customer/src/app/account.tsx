@@ -12,7 +12,7 @@ export default function Account() {
   const [busy, setBusy] = useState(false);
   if (status === "signed-out") return <Redirect href="/sign-in" />;
   return (
-    <Screen>
+    <Screen underHeader>
       <Title>{me ? `Hello, ${me.firstName}` : "Your account"}</Title>
       {me ? (
         <Card>
@@ -22,7 +22,7 @@ export default function Account() {
         </Card>
       ) : null}
       <Button label="Your orders" onPress={() => router.push("/orders")} />
-      <Body muted small>Addresses and checkout in the app are coming soon.</Body>
+      <Body muted small>Addresses you add at checkout are saved to your account.</Body>
       <Button
         label="Sign out"
         variant="danger"

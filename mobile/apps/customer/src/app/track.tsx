@@ -32,7 +32,7 @@ export default function Track() {
   };
 
   return (
-    <Screen>
+    <Screen underHeader>
       <Title>Track an order</Title>
       <Field label="Order number" value={number} onChangeText={setNumber} autoCapitalize="characters" placeholder="TS-10482" />
       <Field label="Phone used at checkout" value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="0803 123 4567" error={error} />

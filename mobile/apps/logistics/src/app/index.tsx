@@ -1,4 +1,5 @@
-import { Redirect, useRouter } from "expo-router";
+import { Redirect, useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -19,6 +20,17 @@ export default function Today() {
   const sync = useSync();
   const router = useRouter();
   const c = useColors();
+  const [disclose, setDisclose] = useState(false);
+
+  // Each screen keeps its own copy of jobs and the queue; coming back to Today (e.g. after a
+  // pickup on the job screen) reloads both so the list and the "waiting to sync" count are current.
+  const reloadQueue = sync.reload;
+  useFocusEffect(
+    useCallback(() => {
+      void refresh();
+      void reloadQueue();
+    }, [refresh, reloadQueue]),
+  );
 
   if (status === "restoring") return <ActivityIndicator style={{ flex: 1 }} accessibilityLabel="Loading" />;
   if (status === "signed-out") return <Redirect href="/sign-in" />;
@@ -50,7 +62,27 @@ export default function Today() {
         {shift.onShift ? (
           <Button label="End shift" busy={shift.busy} onPress={shift.end} accessibilityHint="Stops sharing your location" />
         ) : (
-          <Button label="Start shift" variant="primary" busy={shift.busy} onPress={shift.start} accessibilityHint="Shares your location with dispatch while on shift" />
+          <>
+            {disclose ? (
+              <Card>
+                <Text accessibilityRole="header" style={{ color: c.text, fontSize: tokens.fontSize.lg, fontWeight: "600" }}>
+                  Location while on shift
+                </Text>
+                <Body>TechShop Logistics uses your location while you are on shift, so dispatch can give you nearby jobs and customers can see their parcel is on the way.</Body>
+                <Body muted small>It stops when you end your shift. Raw location points are deleted after 90 days.</Body>
+                <Button label="Continue" variant="primary" busy={shift.busy} onPress={() => { setDisclose(false); void shift.start(); }} />
+                <Button label="Not now" onPress={() => setDisclose(false)} />
+              </Card>
+            ) : (
+              <Button
+                label="Start shift"
+                variant="primary"
+                busy={shift.busy}
+                onPress={async () => ((await shift.needsDisclosure()) ? setDisclose(true) : shift.start())}
+                accessibilityHint="Shares your location with dispatch while on shift"
+              />
+            )}
+          </>
         )}
         {sync.pending || sync.conflicts.length ? (
           <Button label={`${sync.pending} waiting to sync${sync.conflicts.length ? ` · ${sync.conflicts.length} need attention` : ""}`} onPress={() => router.push("/sync")} />

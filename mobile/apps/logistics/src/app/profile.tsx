@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 
 import { Body, Button, Card, Screen, Title } from "@techshop/mobile-ui";
@@ -10,11 +11,12 @@ export default function Profile() {
   const { me, signOut } = useSession();
   const [id, setId] = useState("");
   const [busy, setBusy] = useState(false);
+  const router = useRouter();
   useEffect(() => {
     void deviceId().then(setId);
   }, []);
   return (
-    <Screen>
+    <Screen underHeader>
       <Title>{me ? `${me.firstName} ${me.lastName}` : "Profile"}</Title>
       <Card>
         <Body muted small>This phone’s ID</Body>
@@ -29,6 +31,8 @@ export default function Profile() {
           setBusy(true);
           await clearJobCache();
           await signOut();
+          // Today sends a signed-out rider to sign-in.
+          router.replace("/");
         }}
       />
     </Screen>

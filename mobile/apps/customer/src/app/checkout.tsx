@@ -129,7 +129,7 @@ export default function Checkout() {
 
   if (transfer) {
     return (
-      <Screen>
+      <Screen underHeader>
         <Title>Pay by bank transfer</Title>
         <Card>
           <Body>{`Transfer exactly ${formatKobo(transfer.amountKobo)} to:`}</Body>
@@ -145,7 +145,7 @@ export default function Checkout() {
   const choice = (selected: boolean) => ({ minHeight: tokens.control.lg, borderWidth: 1, borderRadius: tokens.radius.md, padding: tokens.space[3], justifyContent: "center" as const, borderColor: selected ? c.accent : c.borderStrong, backgroundColor: selected ? c.accentSubtle : c.bg });
 
   return (
-    <Screen>
+    <Screen underHeader>
       <Title>Checkout</Title>
       {error ? <Notice tone="danger">{error}</Notice> : null}
       <Text accessibilityRole="header" style={{ color: c.text, fontSize: tokens.fontSize.xl, fontWeight: "600" }}>1. Delivery address</Text>

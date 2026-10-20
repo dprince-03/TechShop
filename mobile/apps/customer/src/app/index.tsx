@@ -17,7 +17,7 @@ export default function Home() {
   const [q, setQ] = useState("");
   const { status, me } = useSession();
   const { count } = useCart();
-  const cats = useLoad(async () => ((await api.get("/api/v1/categories")) ?? []).filter((x) => !x.parentId && x.isActive), "categories");
+  const cats = useLoad(async () => ((await api.get("/api/v1/categories")) ?? []).filter((x) => !x.parentId && x.isActive && x.kind !== "vehicle"), "categories");
   const deals = useLoad(() => api.get("/api/v1/deals", { query: { limit: 20, sort: "discount" } }), "deals");
 
   return (

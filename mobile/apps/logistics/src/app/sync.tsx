@@ -7,7 +7,7 @@ const KIND: Record<string, string> = { picked_up: "Picked up", en_route: "On the
 export default function SyncScreen() {
   const sync = useSync();
   return (
-    <Screen>
+    <Screen underHeader>
       <Title>Sync</Title>
       <Body muted>{sync.pending ? `${sync.pending} action${sync.pending === 1 ? "" : "s"} waiting for signal.` : "Everything is sent."}</Body>
       <Button label="Sync now" variant="primary" busy={sync.syncing} onPress={sync.syncNow} />

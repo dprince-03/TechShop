@@ -5,11 +5,19 @@ import { AppState } from "react-native";
 
 import { ApiError, type Schema } from "@techshop/api-client";
 
-import { useSession } from "@/features/auth/SessionProvider";
+import { registerDevice, useSession } from "@/features/auth/SessionProvider";
 
 type Shift = Schema<"LogisticsRiderShift">;
 
 const SHIFT_KEY = "ts.shift";
+const FIX_TIMEOUT_MS = 8_000;
+
+/** A fresh fix, or the last known one if none arrives within 8 s (weak signal, indoors). */
+async function currentPosition() {
+  const fresh = Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null);
+  const timeout = new Promise<null>((r) => setTimeout(() => r(null), FIX_TIMEOUT_MS));
+  return (await Promise.race([fresh, timeout])) ?? (await Location.getLastKnownPositionAsync().catch(() => null));
+}
 const LOCATION_EVERY_MS = 60_000;
 
 /**
@@ -42,13 +50,16 @@ export function useShift() {
         setError("Allow location to start a shift: dispatch needs it to route deliveries.");
         return;
       }
-      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null);
+      const pos = await currentPosition();
       const s = await session.api.post("/api/v1/rider/shift/start", {
         body: { locationConsent: true, latitude: pos?.coords.latitude, longitude: pos?.coords.longitude },
       });
       await remember(s);
     } catch (e) {
-      if (e instanceof ApiError && e.code === "device_not_approved") setError("This phone isn’t approved yet. Ask dispatch to approve it (Profile shows its ID).");
+      if (e instanceof ApiError && e.code === "device_not_approved") {
+        await registerDevice(session);
+        setError("This phone isn’t approved yet. Ask dispatch to approve it (Profile shows its ID).");
+      }
       else if (e instanceof ApiError && e.isUnavailable) setError("No connection. A shift can only start online.");
       else setError(e instanceof ApiError && e.detail ? e.detail : "We couldn’t start your shift.");
     } finally {
@@ -94,5 +105,8 @@ export function useShift() {
     };
   }, [shift, session]);
 
-  return { shift, onShift: Boolean(shift), start, end, busy, error };
+  /** True until the rider has granted location: show the disclosure before the OS prompt. */
+  const needsDisclosure = useCallback(async () => (await Location.getForegroundPermissionsAsync()).status !== "granted", []);
+
+  return { shift, onShift: Boolean(shift), start, end, busy, error, needsDisclosure };
 }

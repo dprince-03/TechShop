@@ -24,6 +24,18 @@ type SessionContext = {
 
 const Ctx = createContext<SessionContext | null>(null);
 
+/**
+ * Registers this phone so it appears in dispatch's approval list (safe to repeat: the API
+ * upserts by rider and device). Best effort: a failure is retried at the next shift start.
+ */
+export async function registerDevice(session: MobileSession) {
+  try {
+    await session.api.post("/api/v1/rider/devices", { body: { deviceId: await deviceId(), platform: Platform.OS === "ios" ? "ios" : "android" } });
+  } catch {
+    // Not fatal: starting a shift explains the phone still needs approval.
+  }
+}
+
 const message = (e: unknown, fallback: string) => {
   if (e instanceof ApiError) {
     if (e.isUnavailable) return "No connection to TechShop. Check your data and try again.";
@@ -94,6 +106,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         if (r.status !== "signed_in" || !r.tokens) return "This number isn’t registered as a TechShop rider.";
         await session.accept(r.tokens);
         await loadMe();
+        await registerDevice(session);
         setChallengeId(null);
         return null;
       } catch (e) {

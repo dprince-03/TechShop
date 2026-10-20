@@ -22,12 +22,12 @@ export default function Product() {
   const [status, setStatus] = useState<{ ok: boolean; text: string } | null>(null);
   const [adding, setAdding] = useState<string | null>(null);
   if (r.loading && !r.data) return <ActivityIndicator style={{ flex: 1 }} accessibilityLabel="Loading product" />;
-  if (!r.data) return <Screen><Notice tone="danger">{r.error ?? "Not found."}</Notice></Screen>;
+  if (!r.data) return <Screen underHeader><Notice tone="danger">{r.error ?? "Not found."}</Notice></Screen>;
   const p = r.data;
   const offers = p.offers ?? [];
   const specs = (p.attributes ?? []).map((a) => ({ label: a.label, value: a.valueText ?? (a.valueNumber !== null ? `${a.valueNumber}${a.unit ? ` ${a.unit}` : ""}` : a.valueBool !== null ? (a.valueBool ? "Yes" : "No") : null) })).filter((s) => s.value);
   return (
-    <Screen>
+    <Screen underHeader>
       <Stack.Screen options={{ title: p.brand ?? "Product" }} />
       <Title>{p.name}</Title>
       {!p.inStock ? <Notice tone="warning">Out of stock right now.</Notice> : null}

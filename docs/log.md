@@ -445,3 +445,24 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
     - `nginx -t` passes on the new config;
     - market and staff started with their own `npm run dev` on 4102 and 4105: market e2e **15/15**, staff e2e **13/13**.
   - Servers and the test stack were stopped afterwards.
+- Mobile apps tested on the Android emulator (Pixel 8 AVD, Android 17, Expo Go 57; API reached via `adb reverse` because the apps' `.env.local` points at `localhost:8080`):
+  - **Customer journey, passing:** browse → category → product → add to cart as a guest → quantity change → sign up by phone code (new number → profile) → guest cart merged → checkout with a new address (state matched from the API list) → API quote (VAT ₦0 on a marketplace item, as designed) → provider page in the in-app browser → order placed → payment confirmed → order list and detail.
+  - **Rider journey, passing:** sign in by phone code → the phone registers for approval → shift refused until dispatch approves → approved → shift started → assigned job appears (first name and address only, no phone) → wrong label refused → pickup by label → offline "start delivery" queued → survives an app restart offline ("1 waiting to sync") → synced on reconnect → wrong delivery code refused → delivered. The customer app then shows the order as Delivered. End shift; sign-out revokes the session (logout 204).
+  - **Stale login after a backend reset:** both apps sign out cleanly.
+  - **14 issues found and fixed:**
+    1. customer: "Cars" category shown though cars aren't sold in the app → vehicle categories hidden;
+    2. both apps: double top gap under navigation headers → `Screen underHeader`;
+    3. customer: sign-in from the cart didn't return to the cart → returns to the previous screen;
+    4. customer: order screen couldn't refresh → pull-to-refresh (`Screen onRefresh`);
+    5. customer: stale "checkout coming soon" text;
+    6. both: buttons could keep a stale "busy" state for screen readers → explicit booleans;
+    7. logistics: "Back to today" crashed with no history (`GO_BACK not handled`) → back or replace;
+    8. logistics: no in-app location disclosure before the OS prompt (a Google Play requirement) → a disclosure card before the first request;
+    9. logistics: shift start waited ~25 s for a GPS fix → 8 s limit, then the last known position (now ~4 s);
+    10. logistics: the phone was never registered, so dispatch could never approve a new rider → registered at sign-in and again when a shift is refused;
+    11. logistics: Today didn't refresh after a pickup;
+    12. logistics: Today didn't show the "waiting to sync" count (11 and 12: reload on focus);
+    13. logistics: the job screen said "not in your list" while still loading → spinner;
+    14. logistics: sign-out stayed on Profile → back to sign-in.
+  - **After the fixes:** lint, typecheck, unit tests, `expo-doctor` 21/21 and both Android bundle exports pass. Fixes 1–5, 7, 9, 10, 11–14 were re-checked on the emulator. Fix 8 was not seen: location permission was already granted from the first run, and the card only shows before the first system prompt. Fix 6 is checked in code only.
+  - **Notes:** the machine restarted mid-test (the emulator, test database and scratch scripts were rebuilt). While checking a payment, one status read went straight to the throwaway test database; everything else used the API.

@@ -595,3 +595,12 @@ Implements `identity-access.md` §5.1 as a shared package in `frontend/packages/
 **Supersedes** the ports in "Multi-app monorepo restructure" and "Corporate dev port moved to 3005".
 
 **Owner action:** a local `backend/.env` that sets `CORS_ALLOWED_ORIGINS` or `PAYMENT_CALLBACK_URL` with the old ports needs the new ones. Claude doesn't read or edit `.env` files.
+
+## 2026-10-20 — Claude Code project settings made valid again
+
+The owner had commented out the `ask` and `deny` lists in `.claude/settings.json` with `//`. JSON doesn't allow comments, so Claude Code ignored the whole file, including `allow`. Owner decision:
+- keep `allow`;
+- drop `ask`;
+- keep a short `deny` for irreversible actions and the `.claude/CLAUDE.md` "never" rules: `.env` read/edit/write, force-push, `reset --hard`, `clean -f`, `branch -D`, `rm -rf`, migration rollbacks, Docker volume deletion, `psql … DROP`, `ssh`/`scp`/`sftp`/`rsync` to remotes.
+
+`git add` and `git commit` are no longer denied, so commits can be made when asked. Deny rules are enforced by Claude Code itself; Claude can't override them.

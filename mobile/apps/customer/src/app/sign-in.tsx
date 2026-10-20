@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Body, Button, Field, Screen, Title } from "@techshop/mobile-ui";
 
@@ -23,17 +23,15 @@ export default function SignIn() {
     setError(e);
   };
 
-  if (s.status === "signed-in") {
-    return (
-      <Screen>
-        <Title>You’re signed in</Title>
-        <Button label="Continue shopping" variant="primary" onPress={() => router.replace("/")} />
-      </Screen>
-    );
-  }
+  // Signed in: return to where the shopper came from (e.g. the cart), or home.
+  useEffect(() => {
+    if (s.status !== "signed-in") return;
+    if (router.canGoBack()) router.back();
+    else router.replace("/");
+  }, [s.status, router]);
 
   return (
-    <Screen>
+    <Screen underHeader>
       <Title>Sign in or create an account</Title>
       {s.step === "phone" ? (
         <>
