@@ -426,3 +426,4 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
     - mobile tests pass;
     - the cart endpoints, including guest token and merge, are covered by the commerce contract tests (8/8);
     - not run on a device.
+- Customer app orders (06:45): order list and order detail (parcels by seller, totals, history; awaiting-payment note), and guest tracking (order number + checkout phone) linked from home and account. Typecheck, ESLint, `expo-doctor` 21/21 and the Android bundle export pass. The endpoints are covered by the commerce contract tests. Not run on a device.

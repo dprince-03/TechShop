@@ -37,6 +37,7 @@ export default function Home() {
             onPress={() => router.push(status === "signed-in" ? "/account" : "/sign-in")}
           />
           <Button label={count ? `Cart · ${count} item${count === 1 ? "" : "s"}` : "Cart"} onPress={() => router.push("/cart")} />
+          {status !== "signed-in" ? <Button label="Track an order" onPress={() => router.push("/track")} /> : null}
           <Field label="Search" value={q} onChangeText={setQ} placeholder="Phones, laptops, consoles…" returnKeyType="search" onSubmitEditing={() => q.trim() && router.push({ pathname: "/search", params: { q: q.trim() } })} />
           <Button label="Search" variant="primary" disabled={!q.trim()} onPress={() => router.push({ pathname: "/search", params: { q: q.trim() } })} />
           <Text accessibilityRole="header" style={{ color: c.text, fontSize: tokens.fontSize.xl, fontWeight: "600" }}>Shop by category</Text>

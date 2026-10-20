@@ -19,6 +19,9 @@ export default function RootLayout() {
         <Stack.Screen name="sign-in" options={{ title: "Sign in", presentation: "modal" }} />
         <Stack.Screen name="account" options={{ title: "Account" }} />
         <Stack.Screen name="cart" options={{ title: "Cart" }} />
+        <Stack.Screen name="orders/index" options={{ title: "Your orders" }} />
+        <Stack.Screen name="orders/[number]" options={{ title: "Order" }} />
+        <Stack.Screen name="track" options={{ title: "Track an order" }} />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

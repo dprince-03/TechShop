@@ -21,7 +21,8 @@ export default function Account() {
           {me.email ? <Body muted>{me.email}</Body> : null}
         </Card>
       ) : null}
-      <Body muted small>Orders, addresses and checkout in the app are coming soon.</Body>
+      <Button label="Your orders" onPress={() => router.push("/orders")} />
+      <Body muted small>Addresses and checkout in the app are coming soon.</Body>
       <Button
         label="Sign out"
         variant="danger"
