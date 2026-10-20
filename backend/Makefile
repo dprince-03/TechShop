@@ -2,7 +2,8 @@ include .env
 export
 
 MIGRATIONS_DIR := db/migrations
-GOOSE := go tool goose -dir $(MIGRATIONS_DIR) postgres "$(DATABASE_URL)"
+# Migrations run as the table owner when DATABASE_MIGRATE_URL is set.
+GOOSE := go tool goose -dir $(MIGRATIONS_DIR) postgres "$(or $(DATABASE_MIGRATE_URL),$(DATABASE_URL))"
 
 .PHONY: run dev build test lint fmt tidy \
 	migrate-up migrate-down migrate-status migrate-reset migrate-create sqlc

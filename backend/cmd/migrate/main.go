@@ -18,14 +18,7 @@ func main() {
 		logger.Error("config", slog.Any("error", err))
 		os.Exit(1)
 	}
-	ctx := context.Background()
-	pool, err := database.NewPool(ctx, cfg)
-	if err != nil {
-		logger.Error("database", slog.Any("error", err))
-		os.Exit(1)
-	}
-	defer pool.Close()
-	if err := database.Migrate(ctx, pool); err != nil {
+	if err := database.MigrateWithOwner(context.Background(), cfg); err != nil {
 		logger.Error("migrate", slog.Any("error", err))
 		os.Exit(1)
 	}

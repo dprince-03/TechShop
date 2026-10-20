@@ -30,6 +30,10 @@ func main() {
 		os.Exit(1)
 	}
 	defer pool.Close()
+	if err := database.CheckAppRole(ctx, pool, cfg, logger); err != nil {
+		logger.Error("database", slog.Any("error", err))
+		os.Exit(1)
+	}
 	a, err := app.New(cfg, pool, logger, app.Options{Work: true})
 	if err != nil {
 		logger.Error("app", slog.Any("error", err))

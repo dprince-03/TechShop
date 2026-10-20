@@ -34,16 +34,19 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	if cfg.MigrateOnStartup {
+		if err := database.MigrateWithOwner(ctx, cfg); err != nil {
+			return err
+		}
+		logger.Info("database migrations applied")
+	}
 	pool, err := database.NewPool(ctx, cfg)
 	if err != nil {
 		return err
 	}
 	defer pool.Close()
-	if cfg.MigrateOnStartup {
-		if err := database.Migrate(ctx, pool); err != nil {
-			return err
-		}
-		logger.Info("database migrations applied")
+	if err := database.CheckAppRole(ctx, pool, cfg, logger); err != nil {
+		return err
 	}
 
 	a, err := app.New(cfg, pool, logger, app.Options{Work: cfg.WorkerInProcess})

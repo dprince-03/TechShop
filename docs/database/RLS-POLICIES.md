@@ -18,9 +18,17 @@ TechShop has **no Postgres row-level security policies today** (no `enable row l
 
 Per-table data classification and who may see what: [`access.md`](access.md).
 
-## Known gap
+## Database users (done, 2026-10-21, migration 00024)
 
-Locally and in the current deploy plan, the API and the migrations use **one database user** that owns every table. That breaks least privilege (`.claude/rules/01` §6: separate users for the app, migrations and read-only analytics). It should be fixed before production, and it is a prerequisite for RLS anyway: table owners bypass RLS.
+| Login / role | Used by | Can do |
+|---|---|---|
+| table owner (e.g. `techshop`) | `cmd/migrate` only, via `DATABASE_MIGRATE_URL` | Everything, including DDL |
+| `techshop_app` (member of `techshop_rw`) | API and worker, via `DATABASE_URL` | Read and write rows; **no DDL**; **cannot update or delete** `platform.audit_log`, ledger journals and entries, stock movements, delivery events |
+| `techshop_ro` (group, no login yet) | Future reporting | `select` on `catalog`, `search`, `inventory`, `purchasing`, `content` only (no personal data) |
+
+- Locally: `make db-users APP_DB_PASSWORD=…` (repo root) after migrating creates `techshop_app`.
+- Outside development the API and worker **refuse to start** if `DATABASE_URL` is a superuser or owns the tables (`internal/platform/database/roles.go`).
+- `platform.ensure_monthly_partitions` runs as its owner (`security definer`, pinned `search_path`) so the worker can add partitions without DDL rights.
 
 ## Recommendation
 

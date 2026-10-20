@@ -1,6 +1,6 @@
 COMPOSE := docker compose -f infra/docker/compose.yml
 
-.PHONY: install infra-up infra-down infra-logs db-up \
+.PHONY: install infra-up infra-down infra-logs db-up db-users \
 	dev-api dev-web dev-corporate dev-market dev-wholesale dev-seller dev-staff \
 	dev-customer dev-logistics tokens api-types test-api-client \
 	migrate-up migrate-down migrate-status migrate-create sqlc check
@@ -25,6 +25,10 @@ infra-logs:
 
 db-up: ## Postgres only
 	$(COMPOSE) up -d postgres
+
+db-users: ## Create the API's least-privilege login (after migrations): make db-users APP_DB_PASSWORD=…
+	@test $${#APP_DB_PASSWORD} -ge 16 || (echo "set APP_DB_PASSWORD (16+ random characters)" && exit 1)
+	$(COMPOSE) exec -T postgres sh -c 'psql -U "$$POSTGRES_USER" -d "$$POSTGRES_DB" -v app_password="$$1" -f -' sh "$$APP_DB_PASSWORD" < infra/docker/postgres/app-users.sql
 
 # ---------- Run ----------
 

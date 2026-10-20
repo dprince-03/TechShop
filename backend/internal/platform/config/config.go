@@ -29,6 +29,7 @@ type Config struct {
 
 	// Database
 	DatabaseURL        string        `env:"DATABASE_URL,required"`
+	DatabaseMigrateURL string        `env:"DATABASE_MIGRATE_URL"` // table owner, for migrations only; empty = DATABASE_URL
 	MigrateOnStartup   bool          `env:"DB_MIGRATE_ON_STARTUP" envDefault:"false"`
 	DBMaxConns         int32         `env:"DB_MAX_CONNS" envDefault:"10"`
 	DBMinConns         int32         `env:"DB_MIN_CONNS" envDefault:"1"`
@@ -122,6 +123,14 @@ func Load() (*Config, error) {
 	return &cfg, nil
 }
 
+// MigrationURL is the connection used to run migrations: the table owner when configured.
+func (c *Config) MigrationURL() string {
+	if c.DatabaseMigrateURL != "" {
+		return c.DatabaseMigrateURL
+	}
+	return c.DatabaseURL
+}
+
 // IsDevelopment reports whether this is a local development environment.
 func (c *Config) IsDevelopment() bool { return c.Env == "development" }
 
@@ -189,8 +198,13 @@ func (c *Config) validate() error {
 	if c.SMSProvider == "log" || c.EmailProvider == "log" {
 		errs = append(errs, errors.New("SMS_PROVIDER and EMAIL_PROVIDER cannot be 'log' outside development"))
 	}
-	if err := checkDatabasePassword(c.DatabaseURL); err != nil {
+	if err := checkDatabasePassword("DATABASE_URL", c.DatabaseURL); err != nil {
 		errs = append(errs, err)
+	}
+	if c.DatabaseMigrateURL != "" {
+		if err := checkDatabasePassword("DATABASE_MIGRATE_URL", c.DatabaseMigrateURL); err != nil {
+			errs = append(errs, err)
+		}
 	}
 	return errors.Join(errs...)
 }
@@ -210,14 +224,14 @@ func checkStrong(name, value string) error {
 }
 
 // checkDatabasePassword refuses default or short database passwords outside development.
-func checkDatabasePassword(databaseURL string) error {
+func checkDatabasePassword(name, databaseURL string) error {
 	u, err := url.Parse(databaseURL)
 	if err != nil {
-		return fmt.Errorf("DATABASE_URL is not a valid URL: %w", err)
+		return fmt.Errorf("%s is not a valid URL: %w", name, err)
 	}
 	pw, _ := u.User.Password()
 	if weakPasswords[strings.ToLower(pw)] || len(pw) < 16 {
-		return errors.New("DATABASE_URL uses a default or short password (need 16+ characters)")
+		return fmt.Errorf("%s uses a default or short password (need 16+ characters)", name)
 	}
 	return nil
 }

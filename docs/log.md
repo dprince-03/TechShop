@@ -493,3 +493,10 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
 - New in `docs/database/`: `DATA-MODEL.md`, `SCHEMA.md`, `MIGRATIONS.md`, `RLS-POLICIES.md`, `SEED-DATA.md`. Short, linking to the existing `erd.md`, `states.md`, `access.md` instead of duplicating them.
 - Facts checked against the code: 205 tables in 22 schemas + `river` (counted from migrations); token audiences from `platform/auth/tokens.go`; CI runs migrations up only; seed roles from the seed output; vendors and warehouses from `seed/commerce.go`.
 - `RLS-POLICIES.md` states the truth: **no RLS today**; access is enforced in the API. It flags a real gap (one DB user owns everything, against rule 01 §6) and recommends a role split, then RLS on seller-scoped tables. Owner decision needed.
+
+## 2026-10-21 — M4 step 0: least-privilege database users (owner approved RLS in M4)
+
+- Migration `00024_database_roles`: group roles `techshop_rw` (DML on all app schemas incl. future tables via default privileges; update/delete revoked on audit log, ledger, stock movements, delivery events) and `techshop_ro` (select on non-personal schemas). `ensure_monthly_partitions` made `security definer` with a pinned `search_path`.
+- Config `DATABASE_MIGRATE_URL` (owner, migrations only); `cmd/migrate`, startup migrations and `make migrate-*` use it. `CheckAppRole` refuses a superuser/owner login outside development, warns locally. `make db-users` + `infra/docker/postgres/app-users.sql` create `techshop_app` (password via env, never stored).
+- **Verified** on a throwaway stack (migrate as owner, seed + API as `techshop_app`): app login cannot create/drop tables or change history (permission denied), can read and insert; full backend e2e suite passes as `techshop_app`; no permission errors in API logs.
+- Owner action for local setup: run `make db-users APP_DB_PASSWORD=…`, then set `DATABASE_URL` to `techshop_app` and `DATABASE_MIGRATE_URL` to the owner (see `backend/.env.example`). Until then it still works with a warning.
