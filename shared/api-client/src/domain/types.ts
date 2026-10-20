@@ -39,7 +39,8 @@ export type Product = {
   slug: string;
   name: string;
   brand: string;
-  category: CategorySlug;
+  /** Top-level category, when known (drives the placeholder art). */
+  category?: CategorySlug;
   subcategory?: string;
   /** Short spec line shown on cards, e.g. "8GB RAM · 256GB". */
   keySpec?: string;
@@ -49,6 +50,8 @@ export type Product = {
   compareAtPrice?: Money;
   rating?: { average: number; count: number };
   seller: Seller;
+  /** Number of seller offers; more than one shows "From N sellers". */
+  offerCount?: number;
   stock: "in-stock" | "low-stock" | "out-of-stock";
   badges?: ("new" | "deal" | "best-seller")[];
 };

@@ -1,11 +1,16 @@
+import type { ReactNode } from "react";
+
 import styles from "./SampleDataNotice.module.css";
 
-/** Development-only notice: everything on the page is sample data. Remove when real data is wired up. */
-export function SampleDataNotice() {
+/**
+ * Marks sample data. Required on any page (or section) whose content is not yet served by the
+ * API; pass `children` to say exactly what is sample.
+ */
+export function SampleDataNotice({ children }: { children?: ReactNode }) {
   return (
     <p className={styles.notice} role="note">
-      Preview: products, sellers, prices and figures on this page are sample
-      data.
+      {children ??
+        "Preview: products, sellers, prices and figures on this page are sample data."}
     </p>
   );
 }

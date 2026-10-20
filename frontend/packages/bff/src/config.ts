@@ -10,6 +10,12 @@ export type BffConfig = {
   cookieName: string;
   /** Secure cookies (always in production; `__Host-` prefix needs it). */
   secure: boolean;
+  /**
+   * Request header holding the shopper's IP, set by the reverse proxy in front of this app
+   * (nginx: `X-Real-IP`). Forwarded to the API so its per-IP limits see the real client.
+   * Unset = don't forward (an app reached without a proxy must not trust client headers).
+   */
+  clientIpHeader?: string;
 };
 
 const MIN_SECRET_LENGTH = 32;
@@ -45,6 +51,11 @@ export function loadConfig(
   }
 
   const secure = production || apiUrl.startsWith("https://");
+  const ipHeader = env.CLIENT_IP_HEADER?.trim().toLowerCase();
+  if (ipHeader && !/^[a-z0-9-]{1,64}$/.test(ipHeader))
+    throw new Error(
+      `${app}: CLIENT_IP_HEADER must be a header name, e.g. x-real-ip`,
+    );
   return {
     app,
     audience,
@@ -53,5 +64,6 @@ export function loadConfig(
     // `__Host-` pins the cookie to this exact host over HTTPS (never shared across subdomains).
     cookieName: secure ? "__Host-ts_session" : "ts_session",
     secure,
+    clientIpHeader: ipHeader || undefined,
   };
 }

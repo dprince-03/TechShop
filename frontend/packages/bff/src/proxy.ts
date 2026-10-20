@@ -4,6 +4,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import type { BffConfig } from "./config";
+
+export { loadConfig } from "./config";
 import {
   cookieOptions,
   decodeSession,

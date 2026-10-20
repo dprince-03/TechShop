@@ -1,0 +1,10 @@
+{
+  "name": "@techshop/testing",
+  "version": "0.1.0",
+  "private": true,
+  "description": "End-to-end test kit for the Next.js apps: a cookie-keeping web client that loads pages and calls Server Actions over HTTP, as a browser would.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { forwardedFor } from "../src/client-ip";
 import { loadConfig } from "../src/config";
 import { seal, unseal } from "../src/crypto";
 import { safeReturnPath, signInPath } from "../src/paths";
@@ -139,4 +140,37 @@ test("return paths only allow same-site relative paths", () => {
   assert.equal(safeReturnPath("/orders?x=1"), "/orders?x=1");
   assert.equal(signInPath("/orders"), "/sign-in?next=%2Forders");
   assert.equal(signInPath("//evil.com"), "/sign-in");
+});
+
+test("client IP is forwarded only from the configured proxy header", () => {
+  const h = new Headers({
+    "x-real-ip": "203.0.113.7",
+    "x-forwarded-for": "6.6.6.6",
+  });
+  assert.deepEqual(
+    forwardedFor(h, cfg),
+    {},
+    "not configured → nothing forwarded",
+  );
+  const proxied = loadConfig("m", "market", {
+    NODE_ENV: "development",
+    API_URL: "http://api",
+    CLIENT_IP_HEADER: "X-Real-IP",
+  });
+  assert.deepEqual(forwardedFor(h, proxied), {
+    "X-Forwarded-For": "203.0.113.7",
+  });
+  assert.deepEqual(
+    forwardedFor(new Headers({ "x-real-ip": "<script>" }), proxied),
+    {},
+  );
+  assert.throws(
+    () =>
+      loadConfig("m", "market", {
+        NODE_ENV: "development",
+        API_URL: "http://api",
+        CLIENT_IP_HEADER: "bad header\n",
+      }),
+    /CLIENT_IP_HEADER/,
+  );
 });

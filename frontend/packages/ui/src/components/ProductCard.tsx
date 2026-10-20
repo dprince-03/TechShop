@@ -65,8 +65,13 @@ export function ProductCard({
         {product.stock === "low-stock" ? (
           <p className={styles.stock}>Only a few left</p>
         ) : null}
+        {product.stock === "out-of-stock" ? (
+          <p className={styles.stock}>Out of stock</p>
+        ) : null}
         <p className={styles.seller}>
-          {product.seller.type === "techshop" ? (
+          {(product.offerCount ?? 1) > 1 ? (
+            <>From {product.offerCount} sellers</>
+          ) : product.seller.type === "techshop" ? (
             <>
               <Icon name="verified" size={14} className={styles.verified} />
               Sold by TechShop

@@ -12,6 +12,12 @@ import {
   type WholesaleProduct,
 } from "@techshop/api-client";
 
+/** Sample products always know their category (API cards may not). */
+export type FixtureProduct = Product & { category: CategorySlug };
+export type FixtureWholesaleProduct = WholesaleProduct & {
+  category: CategorySlug;
+};
+
 // ---------- Sellers ----------
 
 export const techshop: Seller = {
@@ -132,7 +138,7 @@ export const categoryBySlug = Object.fromEntries(
 
 // ---------- Products ----------
 
-type P = Omit<Product, "slug" | "stock" | "condition"> &
+type P = Omit<FixtureProduct, "slug" | "stock" | "condition"> &
   Partial<Pick<Product, "stock" | "condition">>;
 
 const slugify = (s: string) =>
@@ -141,14 +147,14 @@ const slugify = (s: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
 
-const product = (p: P): Product => ({
+const product = (p: P): FixtureProduct => ({
   stock: "in-stock",
   condition: "new",
   ...p,
   slug: slugify(p.name),
 });
 
-export const products: Product[] = [
+export const products: FixtureProduct[] = [
   // Phones
   product({
     id: "p1",
@@ -559,10 +565,10 @@ export const cars: CarListing[] = [
 // ---------- Wholesale ----------
 
 const wholesale = (
-  p: Product,
+  p: FixtureProduct,
   moq: number,
   tiers: [number, number][],
-): WholesaleProduct => ({
+): FixtureWholesaleProduct => ({
   ...p,
   // Wholesale is TechShop's own stock.
   seller: techshop,
@@ -575,7 +581,7 @@ const wholesale = (
 
 const byId = (id: string) => products.find((p) => p.id === id)!;
 
-export const wholesaleProducts: WholesaleProduct[] = [
+export const wholesaleProducts: FixtureWholesaleProduct[] = [
   wholesale(byId("p3"), 5, [
     [5, 176_000],
     [20, 169_000],
@@ -810,7 +816,7 @@ export function queryProducts(query: ProductQuery): Product[] {
 }
 
 /** Other products from the same category, best rated first. */
-export const relatedProducts = (product: Product, limit = 8) =>
+export const relatedProducts = (product: FixtureProduct, limit = 8) =>
   products
     .filter((p) => p.category === product.category && p.id !== product.id)
     .sort((a, b) => (b.rating?.average ?? 0) - (a.rating?.average ?? 0))
@@ -823,7 +829,9 @@ const conditionNames = {
 } as const;
 
 /** Spec rows for the product page. Derived until the API returns full specifications. */
-export function productSpecs(p: Product): { label: string; value: string }[] {
+export function productSpecs(
+  p: FixtureProduct,
+): { label: string; value: string }[] {
   const category = categoryBySlug[p.category];
   const sub = p.subcategory
     ? getSubcategory(p.category, p.subcategory)?.name
@@ -861,7 +869,7 @@ export const deliveryEstimate = (p: Product) =>
 
 // ---------- Sample cart (interface preview only) ----------
 
-export type CartLine = { product: Product; quantity: number };
+export type CartLine = { product: FixtureProduct; quantity: number };
 
 export const sampleCart: CartLine[] = [
   { product: byId("p1"), quantity: 1 },

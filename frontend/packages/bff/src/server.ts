@@ -10,6 +10,7 @@ import {
 } from "@techshop/api-client";
 
 import { loadConfig, type Audience, type BffConfig } from "./config";
+import { forwardedFor } from "./client-ip";
 import { signInPath } from "./paths";
 import {
   cookieOptions,
@@ -34,6 +35,19 @@ export function createBff(app: string, audience: Audience) {
   /** Unauthenticated client for public reads (catalogue, content). */
   const publicApi = (): ApiClient =>
     createApiClient({ baseUrl: config().apiUrl });
+
+  /** `X-Forwarded-For` for calls the API limits per client (sign-in, tracking, checkout). */
+  async function clientHeaders(): Promise<Record<string, string>> {
+    return forwardedFor(await headers(), config());
+  }
+
+  /** Public client that tells the API who the shopper is (see `BffConfig.clientIpHeader`). */
+  async function clientApi(): Promise<ApiClient> {
+    return createApiClient({
+      baseUrl: config().apiUrl,
+      headers: await clientHeaders(),
+    });
+  }
 
   async function writeSession(s: Session) {
     (await cookies()).set(
@@ -84,6 +98,7 @@ export function createBff(app: string, audience: Audience) {
     return createApiClient({
       baseUrl: config().apiUrl,
       getToken: () => s?.accessToken,
+      headers: await clientHeaders(),
     });
   }
 
@@ -114,6 +129,7 @@ export function createBff(app: string, audience: Audience) {
   return {
     config,
     publicApi,
+    clientApi,
     api,
     getSession,
     requireSession,

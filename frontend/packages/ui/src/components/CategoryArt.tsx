@@ -22,13 +22,14 @@ export function CategoryArt({
   category,
   size = "md",
 }: {
-  category: CategorySlug;
+  /** Omitted when the category is unknown (e.g. mixed search results): a neutral box icon. */
+  category?: CategorySlug;
   size?: "sm" | "md" | "lg";
 }) {
   return (
     <span className={`${styles.art} ${styles[size]}`} aria-hidden="true">
       <Icon
-        name={art[category]}
+        name={category ? art[category] : "box"}
         size={size === "lg" ? 96 : size === "md" ? 72 : 36}
         strokeWidth={1.25}
       />
