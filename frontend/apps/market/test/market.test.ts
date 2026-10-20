@@ -442,3 +442,37 @@ describe("security", () => {
     assert.doesNotMatch(set!, /Domain=/i);
   });
 });
+
+describe("content from the CMS", () => {
+  test("legal page shows the outline, then the published text once staff publish it", async () => {
+    const { api, staffToken } = await import("@techshop/testing");
+    const before = textOf((await browser().get("/legal/cookies")).html);
+    const marker = `E2E cookie policy ${Date.now().toString(36)}`;
+    const editor = await staffToken("content_editor");
+    const saved = await api.put("/api/v1/staff/content/pages/{site}/{slug}", {
+      token: editor,
+      path: { site: "market", slug: "cookies" },
+      body: {
+        title: "Cookie policy",
+        blocks: [{ type: "paragraph", text: marker }],
+      },
+    });
+    // Before publishing, the public page still shows the outline (drafts never leak).
+    assert.doesNotMatch(
+      textOf((await browser().get("/legal/cookies")).html),
+      new RegExp(marker),
+    );
+    await api.post("/api/v1/staff/content/pages/{id}/publish", {
+      token: await staffToken("admin"),
+      path: { id: saved.id },
+    });
+    let after = "";
+    for (let i = 0; i < 20 && !after.includes(marker); i++) {
+      after = textOf((await browser().get("/legal/cookies")).html);
+      if (!after.includes(marker))
+        await new Promise((r) => setTimeout(r, 3500));
+    }
+    assert.match(after, new RegExp(marker));
+    assert.notEqual(before, after);
+  });
+});

@@ -7,7 +7,9 @@ import path from "node:path";
 
 // React's own argument encoding (what the browser sends), from the Next install.
 const require_ = createRequire(import.meta.url);
-const { encodeReply } = require_("next/dist/compiled/react-server-dom-turbopack/client.node") as {
+const { encodeReply } = require_(
+  "next/dist/compiled/react-server-dom-turbopack/client.node",
+) as {
   encodeReply: (value: unknown) => Promise<string | FormData>;
 };
 
@@ -142,7 +144,8 @@ export class WebClient {
       "x-real-ip": this.ip,
     };
     // Plain arguments go as text; FormData arguments as multipart (fetch sets the boundary).
-    if (typeof body === "string") headers["Content-Type"] = "text/plain;charset=UTF-8";
+    if (typeof body === "string")
+      headers["Content-Type"] = "text/plain;charset=UTF-8";
     const res = await fetch(this.baseUrl + (opts.url ?? page), {
       method: "POST",
       headers,
@@ -153,7 +156,12 @@ export class WebClient {
     const text = await res.text();
     const redirect =
       res.headers.get("x-action-redirect")?.split(";")[0] ?? undefined;
-    return { value: actionValue(text) as T, redirect, status: res.status, raw: text };
+    return {
+      value: actionValue(text) as T,
+      redirect,
+      status: res.status,
+      raw: text,
+    };
   }
 }
 
@@ -209,4 +217,14 @@ export function textOf(html: string): string {
 
 // API-side helpers (seed accounts, OTP codes from the dev message log, TOTP) shared with the
 // api-client contract tests.
-export { account, api, API_URL, customerToken, latestCode, peekCode, seed, staffToken, totp } from "../../../../shared/api-client/test/kit";
+export {
+  account,
+  api,
+  API_URL,
+  customerToken,
+  latestCode,
+  peekCode,
+  seed,
+  staffToken,
+  totp,
+} from "../../../../shared/api-client/test/kit";

@@ -44,21 +44,17 @@ export default async function ContentPage(props: PageProps<"/content">) {
   const editing = pages.find((p) => p.id === edit);
   const banners =
     tab === "banners"
-      ? ((await bff
-          .publicApi()
-          .get("/api/v1/content/banners", {
-            query: { site },
-            init: { cache: "no-store" },
-          })) ?? [])
+      ? ((await bff.publicApi().get("/api/v1/content/banners", {
+          query: { site },
+          init: { cache: "no-store" },
+        })) ?? [])
       : [];
   const help =
     tab === "help" && site !== "corporate"
-      ? ((await bff
-          .publicApi()
-          .get("/api/v1/content/help/{site}", {
-            path: { site },
-            init: { cache: "no-store" },
-          })) ?? [])
+      ? ((await bff.publicApi().get("/api/v1/content/help/{site}", {
+          path: { site },
+          init: { cache: "no-store" },
+        })) ?? [])
       : [];
 
   return (

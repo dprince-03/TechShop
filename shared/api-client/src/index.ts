@@ -8,6 +8,10 @@ export type { ApiResponse, CallOptions } from "./http/types";
 // Contract
 export type * from "./contract";
 
+// Content
+export { publishedPage } from "./content";
+export type { Site } from "./content";
+
 // Formatting
 export {
   discountPercent,

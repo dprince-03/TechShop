@@ -364,3 +364,12 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
   - **Found while testing:**
     - publish is refused for the page's last editor (backend separation of duties). The UI now hides the button and the error now shows the API's reason. My first test used one person for both, which was the wrong expectation.
     - an e2e run that ended halfway left lines on a pick list, so the next "release wave" had nothing to pick. The test now places its own paid order first, so the full path runs every time.
+- Wholesale, corporate and seller:
+  - **Legal pages in all four storefront apps** now show the CMS page once it's published, and the draft outline until then (`publishedPage` in `@techshop/api-client`; `LegalPageView` and `PublishedDocument` in `@techshop/ui`).
+  - **Wholesale** gets the session kit and proxy. Its notice now names what is sample (prices, quantity tiers, business accounts) and why (B2B is backend M6).
+  - **Corporate and seller:** the public API client is created per call, so `next build` never needs `API_URL`.
+  - **Seller Centre** stays sample: its backend is M4.
+  - **Verification:**
+    - market e2e adds a CMS test (**15/15** in total): the content editor saves the cookie policy; the public page still shows the outline (drafts don't leak); admin publishes; the market shows the published text;
+    - smoke checks: wholesale, corporate and seller routes answer 200/404 as expected (seller on port 3006 for testing, because 3003 is in use by another project on this machine);
+    - CI-equivalent run for `frontend/`: Prettier check, ESLint (7 packages), typecheck (7) and `next build` of all 5 apps with no env set all pass.
