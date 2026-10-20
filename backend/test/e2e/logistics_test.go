@@ -108,7 +108,7 @@ func TestWarehouseToDoorstep(t *testing.T) {
 	disp := staffLogin(t, "dispatcher")
 	b := get(t, "/api/v1/dispatch/board?status=unassigned", disp)
 	expect(t, b, 200, "board")
-	if !strings.Contains(string(b.Raw), jobID) || strings.Contains(string(b.Raw), "otpHash\":\"") {
+	if !strings.Contains(string(b.Raw), jobID) || strings.Contains(string(b.Raw), "otpHash") {
 		t.Fatalf("board: %s", truncate(string(b.Raw)))
 	}
 	_, _, _, _, riderID := account(t, "rider")
@@ -120,7 +120,12 @@ func TestWarehouseToDoorstep(t *testing.T) {
 	expectCode(t, post(t, "/api/v1/dispatch/jobs/"+jobID+"/assign", disp, map[string]any{"riderId": riderID}), 409, "rider_off_shift", "assign off shift")
 	expectCode(t, post(t, "/api/v1/rider/shift/start", rider, map[string]any{"locationConsent": false}), 422, "consent_required", "no consent")
 	expect(t, post(t, "/api/v1/rider/shift/start", rider, map[string]any{"locationConsent": true, "latitude": 6.6018, "longitude": 3.3515}), 201, "start shift")
-	expect(t, post(t, "/api/v1/dispatch/jobs/"+jobID+"/assign", disp, map[string]any{"riderId": riderID}), 200, "assign")
+	if a := post(t, "/api/v1/dispatch/jobs/"+jobID+"/assign", disp, map[string]any{"riderId": riderID}); true {
+		expect(t, a, 200, "assign")
+		if strings.Contains(string(a.Raw), "otpHash") || strings.Contains(string(a.Raw), "otpAttempts") {
+			t.Fatalf("assign response exposes delivery-code fields: %s", truncate(string(a.Raw)))
+		}
+	}
 	// Customers aren't riders; a non-rider gets 403 on rider routes.
 	expect(t, get(t, "/api/v1/rider/jobs", cust), 401, "customer token on rider app")
 	expectCode(t, post(t, "/api/v1/dispatch/jobs/"+jobID+"/assign", rider, map[string]any{"riderId": custID}), 403, "forbidden", "rider can't dispatch")

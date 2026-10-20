@@ -56,6 +56,63 @@ func riderJob(id uuid.UUID, kind, status string, number *string, recipient *stri
 	return j
 }
 
+// DispatchJob is a delivery job as dispatchers see it. It is built field by field from the
+// database row so the delivery code's hash and attempt counter can never be serialised.
+type DispatchJob struct {
+	ID                uuid.UUID       `json:"id"`
+	Kind              string          `json:"kind"`
+	FulfilmentID      *uuid.UUID      `json:"fulfilmentId"`
+	ReturnRequestID   *uuid.UUID      `json:"returnRequestId"`
+	RiderID           *uuid.UUID      `json:"riderId"`
+	ZoneID            uuid.UUID       `json:"zoneId"`
+	Status            string          `json:"status"`
+	PickupWarehouseID *uuid.UUID      `json:"pickupWarehouseId"`
+	PickupAddress     json.RawMessage `json:"pickupAddress"`
+	DropoffLatitude   *float64        `json:"dropoffLatitude"`
+	DropoffLongitude  *float64        `json:"dropoffLongitude"`
+	RouteSequence     *int16          `json:"routeSequence"`
+	WindowStart       *time.Time      `json:"windowStart"`
+	WindowEnd         *time.Time      `json:"windowEnd"`
+	Attempts          int16           `json:"attempts"`
+	AssignedBy        *uuid.UUID      `json:"assignedBy"`
+	AssignedAt        *time.Time      `json:"assignedAt"`
+	DeliveredAt       *time.Time      `json:"deliveredAt"`
+	RecipientName     *string         `json:"recipientName"`
+	OtpExpiresAt      *time.Time      `json:"otpExpiresAt"`
+	OtpVerifiedAt     *time.Time      `json:"otpVerifiedAt"`
+	ProofMethod       *string         `json:"proofMethod"`
+	ProofFileID       *uuid.UUID      `json:"proofFileId"`
+	CreatedAt         time.Time       `json:"createdAt"`
+	UpdatedAt         time.Time       `json:"updatedAt"`
+}
+
+func dispatchJob(j store.LogisticsDeliveryJob) DispatchJob {
+	return DispatchJob{ID: j.ID, Kind: j.Kind, FulfilmentID: j.FulfilmentID, ReturnRequestID: j.ReturnRequestID, RiderID: j.RiderID,
+		ZoneID: j.ZoneID, Status: j.Status, PickupWarehouseID: j.PickupWarehouseID, PickupAddress: j.PickupAddress,
+		DropoffLatitude: j.DropoffLatitude, DropoffLongitude: j.DropoffLongitude, RouteSequence: j.RouteSequence,
+		WindowStart: j.WindowStart, WindowEnd: j.WindowEnd, Attempts: j.Attempts, AssignedBy: j.AssignedBy, AssignedAt: j.AssignedAt,
+		DeliveredAt: j.DeliveredAt, RecipientName: j.RecipientName, OtpExpiresAt: j.OtpExpiresAt, OtpVerifiedAt: j.OtpVerifiedAt,
+		ProofMethod: j.ProofMethod, ProofFileID: j.ProofFileID, CreatedAt: j.CreatedAt, UpdatedAt: j.UpdatedAt}
+}
+
+// BoardJob is a board row: the job plus the names the board shows.
+type BoardJob struct {
+	DispatchJob
+	ZoneName       string  `json:"zoneName"`
+	OrderNumber    *string `json:"orderNumber"`
+	RiderFirstName *string `json:"riderFirstName"`
+}
+
+func boardJob(r store.LogisticsBoardRow) BoardJob {
+	return BoardJob{DispatchJob: dispatchJob(store.LogisticsDeliveryJob{ID: r.ID, Kind: r.Kind, FulfilmentID: r.FulfilmentID,
+		ReturnRequestID: r.ReturnRequestID, RiderID: r.RiderID, ZoneID: r.ZoneID, Status: r.Status, PickupWarehouseID: r.PickupWarehouseID,
+		PickupAddress: r.PickupAddress, DropoffLatitude: r.DropoffLatitude, DropoffLongitude: r.DropoffLongitude, RouteSequence: r.RouteSequence,
+		WindowStart: r.WindowStart, WindowEnd: r.WindowEnd, Attempts: r.Attempts, AssignedBy: r.AssignedBy, AssignedAt: r.AssignedAt,
+		DeliveredAt: r.DeliveredAt, RecipientName: r.RecipientName, OtpExpiresAt: r.OtpExpiresAt, OtpVerifiedAt: r.OtpVerifiedAt,
+		ProofMethod: r.ProofMethod, ProofFileID: r.ProofFileID, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt}),
+		ZoneName: r.ZoneName, OrderNumber: r.OrderNumber, RiderFirstName: r.RiderFirstName}
+}
+
 // JobDetail is the dispatcher's view of a job with its event trail.
 type JobDetail struct {
 	RiderJob
@@ -277,13 +334,13 @@ func (s *Service) Routes(r *kit.Routes) {
 		}) (*struct {
 			Body struct {
 				Counts store.LogisticsBoardCountsRow `json:"counts"`
-				Jobs   []store.LogisticsBoardRow     `json:"jobs"`
+				Jobs   []BoardJob                    `json:"jobs"`
 			}
 		}, error) {
 			out := &struct {
 				Body struct {
 					Counts store.LogisticsBoardCountsRow `json:"counts"`
-					Jobs   []store.LogisticsBoardRow     `json:"jobs"`
+					Jobs   []BoardJob                    `json:"jobs"`
 				}
 			}{}
 			p := store.LogisticsBoardParams{}
@@ -297,14 +354,15 @@ func (s *Service) Routes(r *kit.Routes) {
 			if out.Body.Counts, err = s.d.Q.LogisticsBoardCounts(ctx); err != nil {
 				return nil, err
 			}
-			out.Body.Jobs, err = s.d.Q.LogisticsBoard(ctx, p)
-			for i := range out.Body.Jobs {
-				out.Body.Jobs[i].OtpHash = nil // never leaves the server
+			rows, err := s.d.Q.LogisticsBoard(ctx, p)
+			if err != nil {
+				return nil, err
 			}
-			if out.Body.Jobs == nil {
-				out.Body.Jobs = []store.LogisticsBoardRow{}
+			out.Body.Jobs = make([]BoardJob, len(rows))
+			for i, r := range rows {
+				out.Body.Jobs[i] = boardJob(r)
 			}
-			return out, err
+			return out, nil
 		})
 	httpx.Register(g, disp(httpx.Op{ID: "dispatchJob", Method: http.MethodGet, Path: "/api/v1/dispatch/jobs/{id}", Perm: "dispatch.view", Summary: "Job with its event trail"}),
 		func(ctx context.Context, in *struct {
@@ -326,18 +384,16 @@ func (s *Service) Routes(r *kit.Routes) {
 				RiderID       uuid.UUID `json:"riderId"`
 				RouteSequence *int16    `json:"routeSequence,omitempty" minimum:"1"`
 			}
-		}) (*struct{ Body store.LogisticsDeliveryJob }, error) {
+		}) (*struct{ Body DispatchJob }, error) {
 			j, err := s.Assign(ctx, in.ID, in.Body.RiderID, httpx.MustPrincipal(ctx).UserID, in.Body.RouteSequence)
-			j.OtpHash = nil
-			return &struct{ Body store.LogisticsDeliveryJob }{j}, err
+			return &struct{ Body DispatchJob }{dispatchJob(j)}, err
 		})
 	httpx.Register(g, disp(httpx.Op{ID: "dispatchUnassign", Method: http.MethodPost, Path: "/api/v1/dispatch/jobs/{id}/unassign", Perm: "dispatch.assign", Summary: "Back to the board"}),
 		func(ctx context.Context, in *struct {
 			ID uuid.UUID `path:"id"`
-		}) (*struct{ Body store.LogisticsDeliveryJob }, error) {
+		}) (*struct{ Body DispatchJob }, error) {
 			j, err := s.Unassign(ctx, in.ID, httpx.MustPrincipal(ctx).UserID)
-			j.OtpHash = nil
-			return &struct{ Body store.LogisticsDeliveryJob }{j}, err
+			return &struct{ Body DispatchJob }{dispatchJob(j)}, err
 		})
 	httpx.Register(g, disp(httpx.Op{ID: "dispatchReturn", Method: http.MethodPost, Path: "/api/v1/dispatch/jobs/{id}/return", Perm: "dispatch.assign", Status: 204,
 		Summary: "Return a failed parcel to the hub"}),

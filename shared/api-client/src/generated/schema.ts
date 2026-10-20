@@ -3685,6 +3685,48 @@ export interface components {
        */
       sendAt?: string;
     };
+    BoardJob: {
+      /** Format: date-time */
+      assignedAt: string | null;
+      assignedBy: string;
+      /** Format: int32 */
+      attempts: number;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      deliveredAt: string | null;
+      /** Format: double */
+      dropoffLatitude: number | null;
+      /** Format: double */
+      dropoffLongitude: number | null;
+      fulfilmentId: string;
+      id: string;
+      kind: string;
+      orderNumber: string | null;
+      /** Format: date-time */
+      otpExpiresAt: string | null;
+      /** Format: date-time */
+      otpVerifiedAt: string | null;
+      pickupAddress: unknown;
+      pickupWarehouseId: string;
+      proofFileId: string;
+      proofMethod: string | null;
+      recipientName: string | null;
+      returnRequestId: string;
+      riderFirstName: string | null;
+      riderId: string;
+      /** Format: int32 */
+      routeSequence: number | null;
+      status: string;
+      /** Format: date-time */
+      updatedAt: string;
+      /** Format: date-time */
+      windowEnd: string | null;
+      /** Format: date-time */
+      windowStart: string | null;
+      zoneId: string;
+      zoneName: string;
+    };
     CampaignInput: {
       channels: string[] | null;
       exclusions: components["schemas"]["Exclusions"];
@@ -4186,7 +4228,7 @@ export interface components {
     };
     DispatchBoardResponse: {
       counts: components["schemas"]["LogisticsBoardCountsRow"];
-      jobs: components["schemas"]["LogisticsBoardRow"][] | null;
+      jobs: components["schemas"]["BoardJob"][] | null;
     };
     DispatchCreateRiderRequest: {
       homeWarehouseId: string;
@@ -4195,6 +4237,45 @@ export interface components {
       /** @enum {string} */
       vehicleType: "bike" | "car" | "van";
       zoneIds?: string[] | null;
+    };
+    DispatchJob: {
+      /** Format: date-time */
+      assignedAt: string | null;
+      assignedBy: string;
+      /** Format: int32 */
+      attempts: number;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      deliveredAt: string | null;
+      /** Format: double */
+      dropoffLatitude: number | null;
+      /** Format: double */
+      dropoffLongitude: number | null;
+      fulfilmentId: string;
+      id: string;
+      kind: string;
+      /** Format: date-time */
+      otpExpiresAt: string | null;
+      /** Format: date-time */
+      otpVerifiedAt: string | null;
+      pickupAddress: unknown;
+      pickupWarehouseId: string;
+      proofFileId: string;
+      proofMethod: string | null;
+      recipientName: string | null;
+      returnRequestId: string;
+      riderId: string;
+      /** Format: int32 */
+      routeSequence: number | null;
+      status: string;
+      /** Format: date-time */
+      updatedAt: string;
+      /** Format: date-time */
+      windowEnd: string | null;
+      /** Format: date-time */
+      windowStart: string | null;
+      zoneId: string;
     };
     DispatchReturnRequest: {
       note: string;
@@ -5012,51 +5093,6 @@ export interface components {
       /** Format: int32 */
       unassigned: number;
     };
-    LogisticsBoardRow: {
-      /** Format: date-time */
-      assignedAt: string | null;
-      assignedBy: string;
-      /** Format: int32 */
-      attempts: number;
-      /** Format: date-time */
-      createdAt: string;
-      /** Format: date-time */
-      deliveredAt: string | null;
-      /** Format: double */
-      dropoffLatitude: number | null;
-      /** Format: double */
-      dropoffLongitude: number | null;
-      fulfilmentId: string;
-      id: string;
-      kind: string;
-      orderNumber: string | null;
-      /** Format: int32 */
-      otpAttempts: number;
-      /** Format: date-time */
-      otpExpiresAt: string | null;
-      otpHash: string;
-      /** Format: date-time */
-      otpVerifiedAt: string | null;
-      pickupAddress: unknown;
-      pickupWarehouseId: string;
-      proofFileId: string;
-      proofMethod: string | null;
-      recipientName: string | null;
-      returnRequestId: string;
-      riderFirstName: string | null;
-      riderId: string;
-      /** Format: int32 */
-      routeSequence: number | null;
-      status: string;
-      /** Format: date-time */
-      updatedAt: string;
-      /** Format: date-time */
-      windowEnd: string | null;
-      /** Format: date-time */
-      windowStart: string | null;
-      zoneId: string;
-      zoneName: string;
-    };
     LogisticsDeliveryEvent: {
       /** Format: float */
       accuracyM: number | null;
@@ -5076,48 +5112,6 @@ export interface components {
       /** Format: date-time */
       occurredAt: string;
       reason: string | null;
-    };
-    LogisticsDeliveryJob: {
-      /** Format: date-time */
-      assignedAt: string | null;
-      assignedBy: string;
-      /** Format: int32 */
-      attempts: number;
-      /** Format: date-time */
-      createdAt: string;
-      /** Format: date-time */
-      deliveredAt: string | null;
-      /** Format: double */
-      dropoffLatitude: number | null;
-      /** Format: double */
-      dropoffLongitude: number | null;
-      fulfilmentId: string;
-      id: string;
-      kind: string;
-      /** Format: int32 */
-      otpAttempts: number;
-      /** Format: date-time */
-      otpExpiresAt: string | null;
-      otpHash: string;
-      /** Format: date-time */
-      otpVerifiedAt: string | null;
-      pickupAddress: unknown;
-      pickupWarehouseId: string;
-      proofFileId: string;
-      proofMethod: string | null;
-      recipientName: string | null;
-      returnRequestId: string;
-      riderId: string;
-      /** Format: int32 */
-      routeSequence: number | null;
-      status: string;
-      /** Format: date-time */
-      updatedAt: string;
-      /** Format: date-time */
-      windowEnd: string | null;
-      /** Format: date-time */
-      windowStart: string | null;
-      zoneId: string;
     };
     LogisticsDeliveryRate: {
       /** Format: int32 */
@@ -7975,7 +7969,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["LogisticsDeliveryJob"];
+          "application/json": components["schemas"]["DispatchJob"];
         };
       };
       /** @description Error */
@@ -8039,7 +8033,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["LogisticsDeliveryJob"];
+          "application/json": components["schemas"]["DispatchJob"];
         };
       };
       /** @description Error */
