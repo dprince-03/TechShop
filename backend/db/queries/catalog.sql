@@ -1,5 +1,5 @@
 -- Catalogue queries (docs/search-catalogue.md). Search itself is the documented dynamic
--- query in internal/catalog/search_query.go.
+-- query in internal/modules/catalog/search_query.go.
 
 -- name: CatalogListCategories :many
 select * from catalog.categories where is_active order by parent_id nulls first, position, name;

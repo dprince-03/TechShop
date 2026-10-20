@@ -9,9 +9,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dprince-03/techshop/backend/internal/auth"
-	"github.com/dprince-03/techshop/backend/internal/kit"
-	"github.com/dprince-03/techshop/backend/internal/rbac"
+	"github.com/dprince-03/techshop/backend/internal/platform/auth"
+	"github.com/dprince-03/techshop/backend/internal/platform/kit"
+	"github.com/dprince-03/techshop/backend/internal/platform/rbac"
 	"github.com/dprince-03/techshop/backend/internal/store"
 	"github.com/dprince-03/techshop/backend/pkg/crypto"
 )

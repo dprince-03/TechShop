@@ -8,8 +8,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"github.com/dprince-03/techshop/backend/internal/auth"
-	"github.com/dprince-03/techshop/backend/internal/kit"
+	"github.com/dprince-03/techshop/backend/internal/platform/auth"
+	"github.com/dprince-03/techshop/backend/internal/platform/kit"
 	"github.com/dprince-03/techshop/backend/internal/store"
 )
 

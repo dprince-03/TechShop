@@ -71,7 +71,7 @@ backend/
 
 ```mermaid
 flowchart TB
-  CMD[cmd/api · cmd/worker] --> APP[internal/app<br/>composition root]
+  CMD[cmd/api · cmd/worker] --> APP[internal/platform/app<br/>composition root]
   APP --> MOD[Domain modules<br/>orders · catalog · payments · …]
   APP --> ADP[Adapters<br/>paystack · monnify · opay · termii · expo · s3]
   MOD --> PLAT[Platform<br/>uow · outbox · auth · rbac · httpx · money]

@@ -1,6 +1,6 @@
 # Go / Gin Conventions
 
-> **TechShop:** the plan in `docs/backend.md` §1 takes precedence: modular monolith with `internal/<domain>` modules, a unit-of-work helper, outbox + River jobs, `cmd/{api,worker,migrate,seed,openapi}`, goose migrations in `db/migrations`, sqlc queries in `db/queries` generated into `internal/store` (never hand-edited), `log/slog` only, config via `internal/config`. Redis is allowed for caching and counters through `pkg/database/redis` (Postgres stays the source of truth).
+> **TechShop:** modular monolith. Features live in `internal/modules/<feature>/` (`routes.go`, `handler.go`, `dto.go`, `service.go`, `jobs.go`, `errors.go`, tests; a `repository.go` only where a module's queries or transactions are complex enough to earn it). App plumbing lives in `internal/platform/` (app, config, auth, rbac, httpx, middleware, uow, outbox, jobs …). Reusable non-TechShop code lives in `pkg/`. sqlc queries in `db/queries` generate into `internal/store` (never hand-edited); goose migrations in `db/migrations`; `cmd/{api,worker,migrate,seed,openapi}`; `log/slog` only; config via `internal/platform/config`. Redis may be added later as `pkg/database/redis` (Postgres stays the source of truth).
 
 ## Layout
 ```

@@ -8,9 +8,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/dprince-03/techshop/backend/internal/app"
-	"github.com/dprince-03/techshop/backend/internal/config"
-	"github.com/dprince-03/techshop/backend/internal/database"
+	"github.com/dprince-03/techshop/backend/internal/platform/app"
+	"github.com/dprince-03/techshop/backend/internal/platform/config"
+	"github.com/dprince-03/techshop/backend/internal/platform/database"
 	"github.com/dprince-03/techshop/backend/pkg/logging"
 )
 

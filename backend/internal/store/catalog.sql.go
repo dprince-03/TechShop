@@ -888,7 +888,7 @@ select id, parent_id, slug, name, description, kind, repurchase_days, position, 
 `
 
 // Catalogue queries (docs/search-catalogue.md). Search itself is the documented dynamic
-// query in internal/catalog/search_query.go.
+// query in internal/modules/catalog/search_query.go.
 func (q *Queries) CatalogListCategories(ctx context.Context) ([]CatalogCategory, error) {
 	rows, err := q.db.Query(ctx, catalogListCategories)
 	if err != nil {

@@ -8,8 +8,8 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/dprince-03/techshop/backend/internal/app"
-	"github.com/dprince-03/techshop/backend/internal/config"
+	"github.com/dprince-03/techshop/backend/internal/platform/app"
+	"github.com/dprince-03/techshop/backend/internal/platform/config"
 )
 
 func main() {
