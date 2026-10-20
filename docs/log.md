@@ -466,3 +466,10 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
     14. logistics: sign-out stayed on Profile → back to sign-in.
   - **After the fixes:** lint, typecheck, unit tests, `expo-doctor` 21/21 and both Android bundle exports pass. Fixes 1–5, 7, 9, 10, 11–14 were re-checked on the emulator. Fix 8 was not seen: location permission was already granted from the first run, and the card only shows before the first system prompt. Fix 6 is checked in code only.
   - **Notes:** the machine restarted mid-test (the emulator, test database and scratch scripts were rebuilt). While checking a payment, one status read went straight to the throwaway test database; everything else used the API.
+
+## 2026-10-20 — CI fix: generated API types check (PR #1)
+
+- **Failure:** CI job "Frontend (web apps)", step "Generated API types are up to date". `npm run api:types` writes raw openapi-typescript output (4-space indent); the committed `schema.ts` had been Prettier-formatted, so `git diff --exit-code` saw the whole file as changed.
+- **Check:** regenerated locally, then ran Prettier on it: no diff against the committed file, so the contract itself was in sync; only formatting differed.
+- **Fix:** `api:types` in `frontend/package.json` now runs Prettier on the generated file, so output is the same every run.
+- **Verification (local, same steps as the CI job):** generated-types check passes; api-client typecheck + unit tests 5/5; format:check, lint, typecheck, build pass.

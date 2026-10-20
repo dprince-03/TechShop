@@ -19,7 +19,7 @@
     "typecheck": "turbo run typecheck",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "api:types": "openapi-typescript ../backend/api/openapi.yaml -o ../shared/api-client/src/generated/schema.ts"
+    "api:types": "openapi-typescript ../backend/api/openapi.yaml -o ../shared/api-client/src/generated/schema.ts && prettier --write ../shared/api-client/src/generated/schema.ts"
   },
   "devDependencies": {
     "openapi-typescript": "7.13.0",
