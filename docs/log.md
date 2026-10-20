@@ -431,3 +431,9 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
   - **Added** `expo-web-browser` (`npx expo install`).
   - **`app/checkout.tsx`:** address choose or add, payment method, API quote, pay (price hash + idempotency key), provider page in the in-app browser, a payment status check, then the order page; bank transfers show the account in place. The cart's button now goes to checkout (or to sign-in for guests).
   - **Verification:** typecheck and ESLint clean; `expo-doctor` 21/21; Android bundle export (2.8 MB). The endpoints (preview, place, idempotent replay, stale-hash 409, fake payment, payment status) are covered by the commerce contract tests. Not run on a device.
+- Final regression run (06:49–06:54), on a freshly migrated and seeded stack with `next dev` for market and staff:
+  - contract tests **46/46**;
+  - market e2e **15/15**;
+  - staff e2e **13/13**;
+  - unit tests: api-client 5/5, bff 7/7, mobile queue 5/5, mobile session 4/4.
+  - All servers and containers started for testing were stopped afterwards. Ports 3000 and 3003 belong to other projects and were left alone.
