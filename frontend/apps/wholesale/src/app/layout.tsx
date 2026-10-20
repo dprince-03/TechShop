@@ -38,7 +38,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <a href="#main" className="skip-link">
           Skip to content
         </a>
-        <SampleDataNotice />
+        <SampleDataNotice>
+          Preview: wholesale prices, quantity tiers and business accounts are
+          sample data until B2B launches (backend M6).
+        </SampleDataNotice>
         <SiteHeader
           product="Wholesale"
           nav={[

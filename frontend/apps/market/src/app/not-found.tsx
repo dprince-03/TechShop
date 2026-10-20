@@ -1,11 +1,13 @@
 import Link from "next/link";
 
-import { categories } from "@techshop/fixtures";
 import { EmptyState } from "@techshop/ui/components";
+
+import { getCategories } from "@/features/catalogue/api";
 
 import styles from "./not-found.module.css";
 
-export default function NotFound() {
+export default async function NotFound() {
+  const categories = await getCategories();
   return (
     <main id="main" className="section">
       <div className="container container--narrow stack stack--lg">

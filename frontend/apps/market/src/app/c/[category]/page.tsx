@@ -1,75 +1,41 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 
-import type { CategorySlug } from "@techshop/api-client";
-import { categoryBySlug, cars, queryProducts } from "@techshop/fixtures";
-import { Breadcrumbs } from "@techshop/ui/components";
-
-import { CarCard } from "@/components/CarCard";
-import { ProductListing } from "@/components/ProductListing";
-import { SubcategoryNav } from "@/components/SubcategoryNav";
-import { parseQuery } from "@/lib/query";
-
-import styles from "./category.module.css";
-
-const getCategory = (slug: string) => categoryBySlug[slug as CategorySlug];
+import { getCategory } from "@/features/catalogue/api";
+import { CarsListing } from "@/features/cars/CarsListing";
+import { SubcategoryNav } from "@/features/catalogue/components/SubcategoryNav";
+import { ListingPage } from "@/features/catalogue/ListingPage";
+import { parseQuery } from "@/features/catalogue/query";
 
 export async function generateMetadata(
   props: PageProps<"/c/[category]">,
 ): Promise<Metadata> {
-  const { category } = await props.params;
-  const c = getCategory(category);
+  const c = await getCategory((await props.params).category);
   return c
     ? { title: `${c.name} | TechShop Market`, description: c.description }
     : {};
 }
 
 export default async function CategoryPage(props: PageProps<"/c/[category]">) {
-  const { category: slug } = await props.params;
-  const category = getCategory(slug);
+  await connection();
+  const category = await getCategory((await props.params).category);
   if (!category) notFound();
 
-  const crumbs = [{ label: "Home", href: "/" }, { label: category.name }];
-
   // Cars are listings with a viewing flow, not a product grid.
-  if (category.slug === "cars") {
-    return (
-      <main id="main" className="section section--page">
-        <div className="container container--wide stack stack--lg">
-          <div className="stack stack--sm">
-            <Breadcrumbs items={crumbs} />
-            <h1 className={styles.title}>Cars</h1>
-            <p className="text-muted measure">
-              {category.description} Book a viewing before you pay.
-            </p>
-          </div>
-          <p className="text-sm text-muted" role="status">
-            {cars.length} cars
-          </p>
-          <ul role="list" className={`grid ${styles.carGrid}`}>
-            {cars.map((car) => (
-              <li key={car.id}>
-                <CarCard car={car} />
-              </li>
-            ))}
-          </ul>
-        </div>
-      </main>
-    );
-  }
+  if (category.kind === "vehicle") return <CarsListing category={category} />;
 
-  const query = {
-    ...parseQuery(await props.searchParams),
-    category: category.slug,
-  };
   return (
-    <ProductListing
+    <ListingPage
       title={category.name}
       description={category.description}
-      breadcrumbs={crumbs}
+      breadcrumbs={[{ label: "Home", href: "/" }, { label: category.name }]}
       action={`/c/${category.slug}`}
-      query={query}
-      products={queryProducts(query)}
+      query={{
+        ...parseQuery(await props.searchParams),
+        category: category.slug,
+      }}
+      artCategory={category.slug}
       browse={<SubcategoryNav category={category} />}
     />
   );

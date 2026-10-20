@@ -2,7 +2,7 @@ COMPOSE := docker compose -f infra/docker/compose.yml
 
 .PHONY: install infra-up infra-down infra-logs db-up \
 	dev-api dev-web dev-corporate dev-market dev-wholesale dev-seller dev-staff \
-	dev-customer dev-logistics tokens \
+	dev-customer dev-logistics tokens api-types test-api-client \
 	migrate-up migrate-down migrate-status migrate-create sqlc check
 
 # ---------- Setup ----------
@@ -48,6 +48,14 @@ dev-logistics:
 tokens: ## Regenerate web CSS from shared/design-tokens
 	cd shared/design-tokens && node scripts/build-css.ts
 
+# ---------- API contract ----------
+
+api-types: ## Regenerate shared/api-client types from backend/api/openapi.yaml
+	cd frontend && npm run api:types
+
+test-api-client: ## Unit tests; contract tests need a seeded local API: API_URL=… SEED_FILE=… npm run test:contract
+	cd shared/api-client && ../../frontend/node_modules/.bin/tsc -p . && npm test
+
 # ---------- Database ----------
 
 migrate-up migrate-down migrate-status sqlc:
@@ -60,6 +68,8 @@ migrate-create: ## Usage: make migrate-create name=create_users
 
 check:
 	cd shared/design-tokens && node scripts/build-css.ts --check
+	cd frontend && npm run api:types && git diff --exit-code -- ../shared/api-client/src/generated
+	$(MAKE) test-api-client
 	cd backend && test -z "$$(gofmt -l .)" && go vet ./... && go test ./... && go build -o /dev/null ./cmd/api
 	cd frontend && npm run format:check && npm run lint && npm run typecheck && npm run build
-	cd mobile && CI=1 npm run lint && npm run typecheck
+	cd mobile && CI=1 npm run lint && npm run typecheck && npm test

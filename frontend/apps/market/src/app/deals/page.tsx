@@ -1,43 +1,24 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 
-import { queryProducts } from "@techshop/fixtures";
-import { Breadcrumbs, Countdown, ProductCard } from "@techshop/ui/components";
-
-import styles from "../curated.module.css";
+import { ListingPage } from "@/features/catalogue/ListingPage";
+import { parseQuery } from "@/features/catalogue/query";
 
 export const metadata: Metadata = {
-  title: "Today’s deals | TechShop Market",
-  description:
-    "Discounted phones, laptops, gaming and more — prices end at midnight.",
+  title: "Deals | TechShop Market",
+  description: "Discounted phones, laptops, gaming and more.",
 };
 
-export default function DealsPage() {
-  const deals = queryProducts({ sort: "discount" }).filter(
-    (p) => p.compareAtPrice,
-  );
+export default async function DealsPage(props: PageProps<"/deals">) {
+  await connection();
   return (
-    <main id="main" className="section section--page">
-      <div className="container container--wide stack stack--lg">
-        <div className={styles.head}>
-          <div className="stack stack--sm">
-            <Breadcrumbs
-              items={[{ label: "Home", href: "/" }, { label: "Deals" }]}
-            />
-            <h1 className={styles.title}>Today’s deals</h1>
-            <p className="text-muted">
-              Biggest discounts first. Deal prices end at midnight (WAT).
-            </p>
-          </div>
-          <Countdown label="Ends in" />
-        </div>
-        <ul role="list" className="grid grid--catalog">
-          {deals.map((p) => (
-            <li key={p.id}>
-              <ProductCard product={p} href={`/p/${p.slug}`} />
-            </li>
-          ))}
-        </ul>
-      </div>
-    </main>
+    <ListingPage
+      kind="deals"
+      title="Deals"
+      description="Products with a lower price right now, biggest discounts first."
+      breadcrumbs={[{ label: "Home", href: "/" }, { label: "Deals" }]}
+      action="/deals"
+      query={parseQuery(await props.searchParams)}
+    />
   );
 }

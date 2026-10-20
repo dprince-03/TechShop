@@ -13,11 +13,11 @@ Start the services with `make infra-up` from the repo root, then run the apps (`
 
 | URL | App | Dev port |
 | --- | --- | --- |
-| http://techshop.localhost | Company site (corporate) | 3005 |
-| http://market.techshop.localhost | Customer marketplace | 3001 |
-| http://wholesale.techshop.localhost | Wholesale & retail | 3002 |
-| http://seller.techshop.localhost | Seller centre | 3003 |
-| http://staff.techshop.localhost | Staff portal | 3004 |
+| http://techshop.localhost | Company site (corporate) | 4101 |
+| http://market.techshop.localhost | Customer marketplace | 4102 |
+| http://wholesale.techshop.localhost | Wholesale & retail | 4103 |
+| http://seller.techshop.localhost | Seller centre | 4104 |
+| http://staff.techshop.localhost | Staff portal | 4105 |
 | http://api.techshop.localhost | Go API | 8080 |
 
 Each app is also reachable directly at `http://localhost:<port>`. If port 80 is taken, set `NGINX_PORT` (e.g. `NGINX_PORT=8000 make infra-up`) and add `:8000` to the URLs.
@@ -33,8 +33,8 @@ A web app's port appears in three places. Change all three:
 Find every reference with `grep -rn "<old port>" --exclude-dir=node_modules --exclude-dir=docs .`
 
 Other ports:
-- **Go API:** `PORT` in `backend/.env`. Also update the `api.techshop.localhost` block in nginx, and `API_URL` / `NEXT_PUBLIC_API_URL` in each `frontend/apps/*/.env.local` and `EXPO_PUBLIC_API_URL` in each `mobile/apps/*/.env.local`.
+- **Go API:** `PORT` in `backend/.env`. Also update the `api.techshop.localhost` block in nginx, and `API_URL` in each `frontend/apps/*/.env.local` (only server code calls the API) and `EXPO_PUBLIC_API_URL` in each `mobile/apps/*/.env.local`.
 - **Postgres:** `POSTGRES_PORT=5433 make infra-up`. Then change the port in `DATABASE_URL` in `backend/.env`.
 - **nginx:** `NGINX_PORT=8000 make infra-up`. Then add `:8000` to the local hostnames.
 
-Taken on this machine: **3000** is used by AdGuard, so no app may use it.
+TechShop's web apps use their own block, **4101–4105**, away from common defaults (3000 is used by AdGuard on this machine, and other projects use the 3000s). Don't use 6000 or 6665–6669: browsers block them as unsafe ports.

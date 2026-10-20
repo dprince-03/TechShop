@@ -306,3 +306,170 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
   - **Recommender:** added `RECS_DATABASE_URL` to `recommendation/` (`.env.example`, settings), the psycopg driver to `pyproject.toml` (declared, not installed), and rewrote `test_no_db_access.py` (it now blocks Go's database instead of every database).
   - **Not built yet:** the Go pull job and the recommender's results API.
 - No-Redis rule dropped (2026-10-06): decision #30 recorded; docs, skills and the `pkg/database` doc comment updated. No code or infrastructure changed.
+
+### 2026-10-20
+
+- Typed API client (shared/api-client):
+  - **Local stack for testing:** throwaway Postgres (tmpfs, no host port), migrate and seed in containers on a private network; only the API is published on `127.0.0.1:8080`. Dev secrets are generated per run in the scratchpad and never committed. The committed spec matched a fresh `go run ./cmd/openapi` (189 paths).
+  - **Added:** `openapi-typescript@7.13.0` (dev), `npm run api:types`, `make api-types`, `make test-api-client`, a CI step that fails on stale types.
+  - **Layout:** `src/http/` (client, errors, request typing), `src/generated/` (contract), `src/contract.ts` (`Schema<"…">` alias), `src/format/` (money, phone), `src/domain/` (UI view models). Removed the old untyped client and `HealthResponse`.
+  - **Verification:**
+    - unit tests 5/5 (path and query building, problem+json → `ApiError`, headers and body, network failure);
+    - type-level checks: missing path, unknown path, missing body and missing required query are all compile errors;
+    - contract tests against the live seeded API: **15/15** — categories, category products, search (sort, cursor paging, forged cursor 422), suggest, product detail (buy box, 404 code), deals, best sellers, brands, states (37), delivery estimate (Lagos covered, Kano not), help list and article, banners, unpublished page 404;
+    - `tsc` clean for the package; `npm run typecheck` passes for all five web apps.
+  - **Backend observations (not changed; backend is off-limits during frontend work):** product detail returns `category` as `{"Slug","Name"}` (a Go struct without JSON tags); no CMS pages or banners are seeded, so legal and help pages keep their written placeholder content when the API returns 404.
+- Web session kit (`frontend/packages/bff`):
+  - **Files:** `crypto.ts` (seal/unseal), `config.ts` (env + secret rules), `session.ts` (session shape, refresh outcome), `proxy.ts` (refresh in proxy), `server.ts` (`createBff`: `getSession`, `requireSession`, `api`, `publicApi`, `signIn`, `signOut`; `assertSameOrigin`), `paths.ts` (safe `?next=`).
+  - **Verification:** unit tests 6/6 (round-trip, tamper and wrong-key rejection, randomised sealing, production secret refusal, expiry and refresh skew, 401 → revoked vs 5xx/network → unavailable, open-redirect payloads). `tsc` clean.
+  - **Identity contract tests** against the live API: **12/12** — OTP sign-in, wrong code refused, new-phone sign-up (`needs_profile` → complete → `/me`), phone validation 422, generic 401 for a wrong password and for an unknown user, refresh rotation, logout revokes refresh, `/me` needs a token, sessions list, profile update, addresses CRUD with cross-user 404, saved toggle, notifications. Running total: **27/27**.
+  - **Observed:** a refresh returns a new `sessionId` (the API issues a new session row per rotation in the same family). The BFF stores whatever the API returns, so nothing depends on it staying stable.
+- Market (`frontend/apps/market`) wired to the API:
+  - **Moved** components into `features/*`; removed `lib/api.ts` and `lib/env.ts` (replaced by `lib/bff.ts` and `proxy.ts`).
+  - **Pages now live:** home, category, sub-category, search (filters: brand facet, condition, seller type, price, in stock; sort; cursor pages; did-you-mean), deals, best sellers, product (buy box per variant, all offers, specs, accessories, related), cart, sign-in, account, saved, checkout, payment return, orders, order detail, guest tracking, delivery checker, help articles. 404s are real.
+  - **Still sample:** cars (backend M7), and the written help topics and legal outlines (business text not yet written).
+  - **Verification (live stack, `next dev`):**
+    - typecheck, ESLint and `next build` (no env set; all routes dynamic) pass;
+    - market end-to-end tests **14/14**:
+      - pages show API products and prices;
+      - guest cart add, quantity change (invalid quantity refused) and remove;
+      - checkout redirects a guest to sign-in;
+      - password sign-in merges the guest cart;
+      - profile update; address validation errors, then save;
+      - checkout quote, bad coupon refused, order placed, redirected to the fake Paystack page, paid, order page shows "Payment confirmed" and "Card (Paystack): Paid";
+      - guest tracking finds the order with the right phone and refuses a wrong one;
+      - another customer gets 404 on the order;
+      - sign-out revokes the session and `/account` then asks to sign in;
+      - new-number OTP → profile → signed in; wrong password refused with a generic message;
+      - `?next=//evil.example` lands on `/`;
+      - a cross-site `Origin` can't run an action;
+      - a tampered cookie is ignored;
+      - the session cookie is `HttpOnly`, `SameSite=Lax`, `Path=/` and has no `Domain`.
+  - **Test kit fixes found on the way:** the Flight response's action value is the row that row 0's `a` points to, and dev debug rows share IDs. Fixed in `@techshop/testing`.
+  - **Mistake caught:** a scripted edit to `bff/src/server.ts` silently didn't apply (an earlier Prettier run had changed the text). The e2e test found it (`clientApi is not a function`). The typecheck is now re-run after every scripted edit.
+- Staff portal part 1 (`frontend/apps/staff`):
+  - **Live:** sign-in (password + TOTP/recovery), dashboard (role-filtered live figures), orders list (status tabs, search, paging) and detail (lines, payments with re-verify, history, cancel with reason), finance (overview with provider health, refunds approve/reject with step-up, reconciliation resolve/escalate, trial balance, journals, period close), catalogue (search, moderation decisions, seller suggestions, reindex, create product + listing), account (devices with remote sign-out, permissions), notifications, global search (orders, products, people by permission).
+  - **Preview pages:** modules for M4–M7 show sample data with a notice naming the milestone.
+  - **Contract tests:** staff endpoints **8/8** — TOTP second step and wrong code; customer token refused; `/me` permissions; all 36 list endpoints 200 for admin; per-role 403s; masked phone on staff orders; refund requester can't approve, manager can; step-up rejects a wrong code. While writing them: 8 assumed list paths turned out to be POST-only or to need `warehouseId`. Corrected from the spec, not guessed.
+  - **Staff e2e:** **8/8** — sign-in redirect keeps the return path; wrong password and wrong code refused with no cookie set; admin sees live dashboard, orders, order detail and all finance tabs (trial balance balanced); support agent's sidebar hides finance and `/finance` is refused; sign-out ends the session; catalogue tabs; product validation errors; product + listing created and found by search; global search; preview module notice; 404 for unknown modules; support agent can't open the create form.
+  - **Test kit:** actions behind route groups are found by matching worker names without `(group)` segments. Seeded TOTP codes used by an earlier run are retried on the next 30-second step.
+- Staff portal part 2:
+  - **Modules:** dispatch, warehouse (+ pick list and manifest pages), inventory, marketing, content, search tuning, admin and HR, all wired to the API.
+  - **Verification:** typecheck and ESLint pass; staff e2e **13/13**:
+    - all 23 module pages render for admin with live data (Lagos zone, `WELCOME10` coupon visible);
+    - full warehouse flow: a fresh paid order → serialised unit received with a valid IMEI → wave released → list claimed → every line scanned → parcel packed with a label;
+    - a marketing exec sees no Approve button; a support agent is refused admin and HR;
+    - the content editor saves a page, admin publishes it, and the public API serves it;
+    - add a search synonym.
+  - **Found while testing:**
+    - publish is refused for the page's last editor (backend separation of duties). The UI now hides the button and the error now shows the API's reason. My first test used one person for both, which was the wrong expectation.
+    - an e2e run that ended halfway left lines on a pick list, so the next "release wave" had nothing to pick. The test now places its own paid order first, so the full path runs every time.
+- Wholesale, corporate and seller:
+  - **Legal pages in all four storefront apps** now show the CMS page once it's published, and the draft outline until then (`publishedPage` in `@techshop/api-client`; `LegalPageView` and `PublishedDocument` in `@techshop/ui`).
+  - **Wholesale** gets the session kit and proxy. Its notice now names what is sample (prices, quantity tiers, business accounts) and why (B2B is backend M6).
+  - **Corporate and seller:** the public API client is created per call, so `next build` never needs `API_URL`.
+  - **Seller Centre** stays sample: its backend is M4.
+  - **Verification:**
+    - market e2e adds a CMS test (**15/15** in total): the content editor saves the cookie policy; the public page still shows the outline (drafts don't leak); admin publishes; the market shows the published text;
+    - smoke checks: wholesale, corporate and seller routes answer 200/404 as expected (seller on port 3006 for testing, because 3003 is in use by another project on this machine);
+    - CI-equivalent run for `frontend/`: Prettier check, ESLint (7 packages), typecheck (7) and `next build` of all 5 apps with no env set all pass.
+- Logistics app (`mobile/apps/logistics`), first version (stopped early when the session's usage limit was reached):
+  - **Added** with `npx expo install`: expo-secure-store, expo-location, expo-camera, expo-crypto, expo-sqlite; camera and location permission strings in `app.json`.
+  - **Built:**
+    - phone OTP sign-in (logistics audience, per-install device ID that dispatch approves); refresh token in secure storage, access token in memory; one shared refresh; one retry on 401;
+    - Today: shift start/end with location consent, foreground location every 60 s, jobs grouped pickup / deliver / done, cached for offline;
+    - job screen: label scan (QR/Code 128) or typed label, start delivery, delivery code, couldn't-deliver reasons;
+    - offline queue in SQLite with backoff, conflicts kept for the rider;
+    - sync screen; profile with sign-out that clears local job data.
+  - **Verification:**
+    - rider contract tests **2/2**: a full delivery through the typed client, plus a customer refused on rider routes. The contract suite is **45/45** in total;
+    - app unit tests **9/9** (queue and session);
+    - `tsc` and ESLint clean.
+  - **Not done:**
+    - running it on a device or emulator;
+    - `expo-doctor` and an Android bundle export;
+    - background location;
+    - photo proof;
+    - the dispatcher view;
+    - the customer app.
+- Logistics app verification (continued, 06:32):
+  - **`expo-doctor`:** 5 Expo packages in the customer app were a patch version behind SDK 57 (from the original scaffold). Aligned them with `npx expo install --fix`; both apps now pass **21/21**.
+  - **Android bundle:** `npx expo export --platform android` builds the logistics app (3 MB Hermes bundle), so the app and the shared API client compile through Metro. Not yet run on a device or emulator.
+  - **CI and `make check`:** the mobile job now runs the unit tests (`npm test` across workspaces; logistics 9/9). Mobile lint and typecheck pass.
+- Mobile shared UI + customer app slice:
+  - **Moved** `apps/logistics/src/components/ui.tsx` → `packages/ui/src/index.tsx`. Both apps' `theme/` now re-export tokens and `useColors` from it.
+  - **Customer app:** `lib/api.ts`, `features/catalogue` (`useLoad`, `ProductList`, `ProductRow` with prices read out in full: "₦X, was ₦Y, Z% off"), and screens `index`, `search`, `c/[slug]`, `p/[slug]`.
+  - **Verification:**
+    - mobile lint, typecheck and unit tests (9/9) pass across all workspaces;
+    - `expo-doctor` **21/21** for every workspace;
+    - Android bundle export succeeds for both apps (customer 2.7 MB, logistics 3 MB);
+    - the endpoints the customer screens use are covered by the catalogue contract tests (15/15);
+    - not run on a device or emulator.
+- Customer app sign-in + shared mobile session:
+  - **Moved** the session class to `mobile/packages/auth` (`@techshop/mobile-auth`, renamed `MobileSession`) with its tests. Logistics now imports it.
+  - **Added** expo-secure-store and expo-crypto to the customer app (`npx expo install`).
+  - **Customer app:** `SessionProvider` (phone code; a new number goes to the profile step, then is signed in; restore on launch; sign-out), plus sign-in (modal) and account screens. The home screen shows Sign in or Account.
+  - **Verification:**
+    - new contract test for the `customer_app` audience (new number → profile → `/me` → refresh rotation → session listed → logout);
+    - full contract suite **46/46** on a freshly seeded stack;
+    - mobile lint, typecheck and tests (queue 5/5, session 4/4) pass;
+    - `expo-doctor` 21/21 for all four workspaces;
+    - Android bundles export (customer 2.7 MB, logistics 3 MB);
+    - not run on a device or emulator.
+- Customer app cart (06:43):
+  - **`CartProvider`:** the account's cart when signed in; a guest cart keyed by `X-Cart-Token` (token kept in secure storage), merged into the account on sign-in.
+  - **Screens:** add to cart from each product offer (the best offer is the primary button); a cart screen with quantity −/+, remove, and API totals and problems. Checkout is clearly marked "coming soon in the app".
+  - **Verification:**
+    - typecheck and ESLint pass;
+    - `expo-doctor` 21/21 for all workspaces;
+    - Android bundle export (2.8 MB);
+    - mobile tests pass;
+    - the cart endpoints, including guest token and merge, are covered by the commerce contract tests (8/8);
+    - not run on a device.
+- Customer app orders (06:45): order list and order detail (parcels by seller, totals, history; awaiting-payment note), and guest tracking (order number + checkout phone) linked from home and account. Typecheck, ESLint, `expo-doctor` 21/21 and the Android bundle export pass. The endpoints are covered by the commerce contract tests. Not run on a device.
+- Customer app checkout (06:48):
+  - **Added** `expo-web-browser` (`npx expo install`).
+  - **`app/checkout.tsx`:** address choose or add, payment method, API quote, pay (price hash + idempotency key), provider page in the in-app browser, a payment status check, then the order page; bank transfers show the account in place. The cart's button now goes to checkout (or to sign-in for guests).
+  - **Verification:** typecheck and ESLint clean; `expo-doctor` 21/21; Android bundle export (2.8 MB). The endpoints (preview, place, idempotent replay, stale-hash 409, fake payment, payment status) are covered by the commerce contract tests. Not run on a device.
+- Final regression run (06:49–06:54), on a freshly migrated and seeded stack with `next dev` for market and staff:
+  - contract tests **46/46**;
+  - market e2e **15/15**;
+  - staff e2e **13/13**;
+  - unit tests: api-client 5/5, bff 7/7, mobile queue 5/5, mobile session 4/4.
+  - All servers and containers started for testing were stopped afterwards. Ports 3000 and 3003 belong to other projects and were left alone.
+- Dev ports 3001–3005 → 4101–4105:
+  - **Updated** 13 files: app scripts, e2e defaults, nginx, three READMEs, `backend/.env.example` and `internal/config/config.go`; also the project-domain note.
+  - **Verification:**
+    - no old port references remain;
+    - backend `gofmt`/`go vet`/config tests pass and the API builds;
+    - `nginx -t` passes on the new config;
+    - market and staff started with their own `npm run dev` on 4102 and 4105: market e2e **15/15**, staff e2e **13/13**.
+  - Servers and the test stack were stopped afterwards.
+- Mobile apps tested on the Android emulator (Pixel 8 AVD, Android 17, Expo Go 57; API reached via `adb reverse` because the apps' `.env.local` points at `localhost:8080`):
+  - **Customer journey, passing:** browse → category → product → add to cart as a guest → quantity change → sign up by phone code (new number → profile) → guest cart merged → checkout with a new address (state matched from the API list) → API quote (VAT ₦0 on a marketplace item, as designed) → provider page in the in-app browser → order placed → payment confirmed → order list and detail.
+  - **Rider journey, passing:** sign in by phone code → the phone registers for approval → shift refused until dispatch approves → approved → shift started → assigned job appears (first name and address only, no phone) → wrong label refused → pickup by label → offline "start delivery" queued → survives an app restart offline ("1 waiting to sync") → synced on reconnect → wrong delivery code refused → delivered. The customer app then shows the order as Delivered. End shift; sign-out revokes the session (logout 204).
+  - **Stale login after a backend reset:** both apps sign out cleanly.
+  - **14 issues found and fixed:**
+    1. customer: "Cars" category shown though cars aren't sold in the app → vehicle categories hidden;
+    2. both apps: double top gap under navigation headers → `Screen underHeader`;
+    3. customer: sign-in from the cart didn't return to the cart → returns to the previous screen;
+    4. customer: order screen couldn't refresh → pull-to-refresh (`Screen onRefresh`);
+    5. customer: stale "checkout coming soon" text;
+    6. both: buttons could keep a stale "busy" state for screen readers → explicit booleans;
+    7. logistics: "Back to today" crashed with no history (`GO_BACK not handled`) → back or replace;
+    8. logistics: no in-app location disclosure before the OS prompt (a Google Play requirement) → a disclosure card before the first request;
+    9. logistics: shift start waited ~25 s for a GPS fix → 8 s limit, then the last known position (now ~4 s);
+    10. logistics: the phone was never registered, so dispatch could never approve a new rider → registered at sign-in and again when a shift is refused;
+    11. logistics: Today didn't refresh after a pickup;
+    12. logistics: Today didn't show the "waiting to sync" count (11 and 12: reload on focus);
+    13. logistics: the job screen said "not in your list" while still loading → spinner;
+    14. logistics: sign-out stayed on Profile → back to sign-in.
+  - **After the fixes:** lint, typecheck, unit tests, `expo-doctor` 21/21 and both Android bundle exports pass. Fixes 1–5, 7, 9, 10, 11–14 were re-checked on the emulator. Fix 8 was not seen: location permission was already granted from the first run, and the card only shows before the first system prompt. Fix 6 is checked in code only.
+  - **Notes:** the machine restarted mid-test (the emulator, test database and scratch scripts were rebuilt). While checking a payment, one status read went straight to the throwaway test database; everything else used the API.
+
+## 2026-10-20 — CI fix: generated API types check (PR #1)
+
+- **Failure:** CI job "Frontend (web apps)", step "Generated API types are up to date". `npm run api:types` writes raw openapi-typescript output (4-space indent); the committed `schema.ts` had been Prettier-formatted, so `git diff --exit-code` saw the whole file as changed.
+- **Check:** regenerated locally, then ran Prettier on it: no diff against the committed file, so the contract itself was in sync; only formatting differed.
+- **Fix:** `api:types` in `frontend/package.json` now runs Prettier on the generated file, so output is the same every run.
+- **Verification (local, same steps as the CI job):** generated-types check passes; api-client typecheck + unit tests 5/5; format:check, lint, typecheck, build pass.

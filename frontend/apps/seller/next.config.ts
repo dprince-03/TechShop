@@ -10,7 +10,9 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   transpilePackages: [
     "@techshop/api-client",
+    "@techshop/bff",
     "@techshop/design-tokens",
+    "@techshop/fixtures",
     "@techshop/ui",
   ],
   turbopack: { root: repoRoot },

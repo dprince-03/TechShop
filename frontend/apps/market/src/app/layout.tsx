@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
-import { SampleDataNotice } from "@techshop/ui/components";
 import "@techshop/ui/styles.css";
 
-import { MarketFooter } from "@/components/MarketFooter";
-import { MarketHeader } from "@/components/MarketHeader";
+import { getCart, itemCount } from "@/features/cart/server";
+import { MarketFooter } from "@/features/shell/MarketFooter";
+import { MarketHeader } from "@/features/shell/MarketHeader";
+import { bff } from "@/lib/bff";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,7 +24,8 @@ export const metadata: Metadata = {
     "Shop phones, laptops, gaming, smart home and more from TechShop and trusted sellers.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const [session, cart] = await Promise.all([bff.getSession(), getCart()]);
   return (
     <html
       lang="en-NG"
@@ -34,8 +36,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <a href="#main" className="skip-link">
           Skip to content
         </a>
-        <SampleDataNotice />
-        <MarketHeader />
+        <MarketHeader signedIn={Boolean(session)} cartCount={itemCount(cart)} />
         {children}
         <MarketFooter />
       </body>

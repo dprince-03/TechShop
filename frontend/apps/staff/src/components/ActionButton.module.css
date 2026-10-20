@@ -1,0 +1,23 @@
+.wrap {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.stepUp {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.ok {
+  font-size: var(--text-xs);
+  color: var(--color-success);
+}
+
+.error {
+  font-size: var(--text-xs);
+  color: var(--color-danger);
+}

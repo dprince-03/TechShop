@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import type { Tone } from "@/lib/moduleData";
+import type { Tone } from "./Status";
 
 import styles from "./DataTable.module.css";
 

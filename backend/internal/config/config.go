@@ -35,7 +35,7 @@ type Config struct {
 	DBStatementTimeout time.Duration `env:"DB_STATEMENT_TIMEOUT" envDefault:"15s"`
 
 	// HTTP
-	CORSAllowedOrigins []string      `env:"CORS_ALLOWED_ORIGINS" envSeparator:"," envDefault:"http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:3004,http://localhost:3005,http://techshop.localhost,http://market.techshop.localhost,http://wholesale.techshop.localhost,http://seller.techshop.localhost,http://staff.techshop.localhost"`
+	CORSAllowedOrigins []string      `env:"CORS_ALLOWED_ORIGINS" envSeparator:"," envDefault:"http://localhost:4102,http://localhost:4103,http://localhost:4104,http://localhost:4105,http://localhost:4101,http://techshop.localhost,http://market.techshop.localhost,http://wholesale.techshop.localhost,http://seller.techshop.localhost,http://staff.techshop.localhost"`
 	ReadTimeout        time.Duration `env:"HTTP_READ_TIMEOUT" envDefault:"10s"`
 	WriteTimeout       time.Duration `env:"HTTP_WRITE_TIMEOUT" envDefault:"15s"`
 	ShutdownTimeout    time.Duration `env:"HTTP_SHUTDOWN_TIMEOUT" envDefault:"10s"`
@@ -65,7 +65,7 @@ type Config struct {
 	MonnifyContractCode       string        `env:"MONNIFY_CONTRACT_CODE"`
 	OPayMerchantID            string        `env:"OPAY_MERCHANT_ID"`
 	OPaySecretKey             string        `env:"OPAY_SECRET_KEY"`
-	PaymentCallbackURL        string        `env:"PAYMENT_CALLBACK_URL" envDefault:"http://localhost:3001/checkout/return"`
+	PaymentCallbackURL        string        `env:"PAYMENT_CALLBACK_URL" envDefault:"http://localhost:4102/checkout/return"`
 	OrderPaymentTTL           time.Duration `env:"ORDER_PAYMENT_TTL" envDefault:"30m"`
 	TransferAccountTTL        time.Duration `env:"TRANSFER_ACCOUNT_TTL" envDefault:"30m"`
 	ReturnWindowDays          int           `env:"RETURN_WINDOW_DAYS" envDefault:"7"`

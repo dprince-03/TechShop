@@ -95,6 +95,11 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - run: npm ci
+      - name: Generated API types are up to date
+        run: npm run api:types && git diff --exit-code -- ../shared/api-client/src/generated
+      - name: API client (typecheck + unit tests)
+        working-directory: shared/api-client
+        run: ../../frontend/node_modules/.bin/tsc -p . && npm test
       - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck
@@ -121,5 +126,7 @@ jobs:
         env:
           CI: "1"
       - run: npm run typecheck
+      - name: Unit tests (offline queue, rider session)
+        run: npm test
       - name: Expo doctor
         run: npm run doctor

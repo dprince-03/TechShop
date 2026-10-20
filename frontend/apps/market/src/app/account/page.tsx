@@ -1,128 +1,75 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { connection } from "next/server";
 
-import { PageHeader, PreviewForm } from "@techshop/ui/components";
+import { PageHeader } from "@techshop/ui/components";
+
+import { AddressBook } from "@/features/account/components/AddressBook";
+import { ProfileForm } from "@/features/account/components/ProfileForm";
+import { Sessions } from "@/features/account/components/Sessions";
+import { loadAccount } from "@/features/account/server";
+import { signOut } from "@/features/auth/actions";
+import { getStates } from "@/features/catalogue/api";
+import { bff } from "@/lib/bff";
 
 import styles from "./account.module.css";
 
 export const metadata: Metadata = {
-  title: "Sign in | TechShop Market",
+  title: "Your account | TechShop Market",
   robots: { index: false },
 };
 
-export default function AccountPage() {
+export default async function AccountPage() {
+  await connection();
+  await bff.requireSession("/account");
+  const [{ me, addresses, sessions }, states] = await Promise.all([
+    loadAccount(),
+    getStates(),
+  ]);
   return (
     <main id="main" className="section section--page">
-      <div className="container">
+      <div className="container stack stack--lg">
         <PageHeader
-          title="Sign in or create an account"
-          lead="Track orders, save items and check out faster. Guest checkout is also available."
+          title={`Hello, ${me.firstName}`}
+          lead="Your details, delivery addresses and signed-in devices."
           breadcrumbs={[{ label: "Home", href: "/" }, { label: "Account" }]}
+          actions={
+            <div className="cluster">
+              <Link href="/orders" className="btn btn--secondary">
+                Your orders
+              </Link>
+              <Link href="/saved" className="btn btn--secondary">
+                Saved items
+              </Link>
+              <form action={signOut}>
+                <button className="btn btn--ghost">Sign out</button>
+              </form>
+            </div>
+          }
         />
         <div className={styles.columns}>
-          <section aria-labelledby="signin-title" className="card card--roomy">
-            <h2 id="signin-title" className={styles.title}>
-              Sign in
+          <section aria-labelledby="profile-title" className="card card--roomy">
+            <h2 id="profile-title" className={styles.title}>
+              Profile
             </h2>
-            <PreviewForm
-              id="signin"
-              groups={[
-                {
-                  fields: [
-                    {
-                      name: "email",
-                      label: "Email address",
-                      type: "email",
-                      required: true,
-                      autoComplete: "email",
-                    },
-                    {
-                      name: "password",
-                      label: "Password",
-                      type: "password",
-                      required: true,
-                      autoComplete: "current-password",
-                    },
-                  ],
-                },
-              ]}
-              submitLabel="Sign in"
-              successTitle="Details accepted"
-              successMessage="In the live store you’d now be signed in."
-              note="Forgot your password? Password reset arrives with real accounts."
-            />
+            <ProfileForm me={me} />
           </section>
           <section
-            aria-labelledby="register-title"
+            aria-labelledby="addresses-title"
             className="card card--roomy"
           >
-            <h2 id="register-title" className={styles.title}>
-              Create an account
+            <h2 id="addresses-title" className={styles.title}>
+              Delivery addresses
             </h2>
-            <PreviewForm
-              id="register"
-              groups={[
-                {
-                  fields: [
-                    {
-                      name: "firstName",
-                      label: "First name",
-                      required: true,
-                      autoComplete: "given-name",
-                      half: true,
-                    },
-                    {
-                      name: "lastName",
-                      label: "Last name",
-                      required: true,
-                      autoComplete: "family-name",
-                      half: true,
-                    },
-                    {
-                      name: "email",
-                      label: "Email address",
-                      type: "email",
-                      required: true,
-                      autoComplete: "email",
-                    },
-                    {
-                      name: "phone",
-                      label: "Mobile number",
-                      type: "tel",
-                      required: true,
-                      autoComplete: "tel",
-                      placeholder: "0803 123 4567",
-                      hint: "For delivery updates. We never share it with sellers’ marketing.",
-                    },
-                    {
-                      name: "password",
-                      label: "Password",
-                      type: "password",
-                      required: true,
-                      autoComplete: "new-password",
-                      minLength: 8,
-                      hint: "At least 8 characters.",
-                    },
-                    {
-                      name: "terms",
-                      label: "I agree to the Terms of use and Privacy policy",
-                      type: "checkbox",
-                      required: true,
-                    },
-                    {
-                      name: "news",
-                      label:
-                        "Send me deals and new arrivals by email (you can unsubscribe any time)",
-                      type: "checkbox",
-                    },
-                  ],
-                },
-              ]}
-              submitLabel="Create account"
-              successTitle="Account details accepted"
-              successMessage="In the live store we’d now send a verification code to your phone."
-            />
+            <AddressBook addresses={addresses} states={states} />
           </section>
         </div>
+        <section aria-labelledby="devices-title" className="card card--roomy">
+          <h2 id="devices-title" className={styles.title}>
+            Signed-in devices
+          </h2>
+          <Sessions sessions={sessions} />
+        </section>
       </div>
     </main>
   );

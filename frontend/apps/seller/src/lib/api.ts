@@ -2,7 +2,12 @@ import "server-only";
 
 import { createApiClient } from "@techshop/api-client";
 
-import { env } from "./env";
-
-// Server-side client for the Go API. Use in Server Components, Route Handlers, and Server Actions.
-export const api = createApiClient({ baseUrl: env.API_URL });
+/**
+ * Server-side client for the Go API's public endpoints. Created per call so `next build` never
+ * needs API_URL (pages that read content render per request).
+ */
+export function api() {
+  const baseUrl = process.env.API_URL;
+  if (!baseUrl) throw new Error("API_URL is required");
+  return createApiClient({ baseUrl });
+}

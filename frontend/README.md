@@ -4,11 +4,11 @@ Five Next.js apps sharing one design system, managed with npm workspaces and Tur
 
 | App              | Port | Purpose                                             |
 | ---------------- | ---- | --------------------------------------------------- |
-| `apps/corporate` | 3005 | Company main site                                   |
-| `apps/market`    | 3001 | Multi-vendor customer marketplace                   |
-| `apps/wholesale` | 3002 | TechShop's own stock: retail and bulk/trade buying  |
-| `apps/seller`    | 3003 | Seller centre for marketplace vendors (not indexed) |
-| `apps/staff`     | 3004 | Staff portal with role-based sections (not indexed) |
+| `apps/corporate` | 4101 | Company main site                                   |
+| `apps/market`    | 4102 | Multi-vendor customer marketplace                   |
+| `apps/wholesale` | 4103 | TechShop's own stock: retail and bulk/trade buying  |
+| `apps/seller`    | 4104 | Seller centre for marketplace vendors (not indexed) |
+| `apps/staff`     | 4105 | Staff portal with role-based sections (not indexed) |
 
 | Package                   | Purpose                                                      |
 | ------------------------- | ------------------------------------------------------------ |

@@ -18,3 +18,6 @@ export { PageHeader } from "./PageHeader";
 export { PreviewForm, type FormField, type FormGroup } from "./PreviewForm";
 export { Prose } from "./Prose";
 export { NavDisclosure } from "./NavDisclosure";
+export { ContentBlocks } from "./ContentBlocks";
+export { PublishedDocument } from "./PublishedDocument";
+export { LegalPageView } from "./LegalPageView";

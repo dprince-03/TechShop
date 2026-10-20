@@ -1,13 +1,8 @@
-import { tokens, type ColorScheme } from "@techshop/design-tokens";
+import { tokens, useColors } from "@techshop/mobile-ui";
 import { DarkTheme, DefaultTheme } from "expo-router";
 import { useColorScheme } from "react-native";
 
-export { tokens };
-
-/** Current colour scheme's tokens (light/dark follows the OS setting). */
-export function useColors(): ColorScheme {
-  return useColorScheme() === "dark" ? tokens.color.dark : tokens.color.light;
-}
+export { tokens, useColors };
 
 /** React Navigation theme built from the shared design tokens. */
 export function useNavigationTheme(): typeof DefaultTheme {

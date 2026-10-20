@@ -480,3 +480,127 @@ The owner flagged that the backend ignored their folders and lumped each feature
 ## 2026-10-06 — Recommender database confirmed: Postgres
 
 The owner asked whether MongoDB suits ML better. Answer: training data lives in files (Parquet), the database only holds tabular results and model bookkeeping, and Postgres covers flexibility (`jsonb`) and vectors (`pgvector`). The owner kept Postgres (decision #29 stands).
+
+## 2026-10-20 — Complete frontend build, then mobile (overnight session)
+
+The owner asked for the complete frontend, then mobile, built feature by feature, each endpoint tested before moving on, pushed to GitHub one piece at a time, with no co-author lines. Work starts 01:30 and stops at 07:30 even if unfinished. The owner said to skip any rule that requires asking for permission and to research instead of guessing.
+
+**Plan (in order):**
+1. **Typed API client** in `shared/api-client`, generated from `backend/api/openapi.yaml` (the pipeline in `backend.md` §2.1).
+2. **Web foundation:** a shared BFF session kit (encrypted `httpOnly` cookie, refresh, sign-out) as `identity-access.md` §5.1 describes.
+3. **Market** wired to the API feature by feature: catalogue → sign-in → cart → checkout and payment → orders and tracking → account.
+4. **Staff portal:** sign-in (password + TOTP), then orders, catalogue, finance, marketing, dispatch, warehouse, inventory, content, admin.
+5. **Wholesale, corporate, seller:** wire what the backend already serves. B2B (M6) and seller (M4) endpoints don't exist yet, so those screens keep clearly labelled sample data.
+6. **Mobile:** the logistics app first (its backend, M3, is complete), then the customer app.
+
+**Decisions:**
+- **Branch, not `main`:** work goes to `feat/frontend-integration` and is pushed commit by commit. `main` stays reviewable and a bad commit never lands there directly.
+- **Generated types, hand-written client:** `openapi-typescript@7.13.0` (dev dependency in `frontend/`) generates `shared/api-client/src/generated/schema.ts`. The runtime client is ~150 lines written here instead of adding `openapi-fetch`. *Why:* `shared/` sits outside both install roots, so a runtime dependency there would not resolve from `frontend/node_modules` or `mobile/node_modules` without a third install root. Types-only generation avoids that and adds no shipped code.
+- **Client shape:** `api.get(path, { path, query, body, token, idempotencyKey, init })` returns the success body; `api.request.*` also returns status and headers. Errors are `ApiError` carrying the problem+json `code`, field errors and `X-Request-Id`. Required path, query and body parameters are compile-time errors when missing.
+- **Tests without new tools:** Node's built-in test runner (`node --test`, native TypeScript stripping). Unit tests run in CI; contract tests call a real seeded local API (`test/contract/`), because CI has no running API.
+- **CI:** the frontend job fails if the generated types are stale.
+- **Known audit findings (not fixed):** 5 "high" `npm audit` findings, all in ESLint's `braces`/`micromatch` chain under `eslint-config-next`. They existed before this work, are dev-only and are never shipped. They clear when `eslint-config-next` updates.
+
+## 2026-10-20 — Web session kit (`@techshop/bff`)
+
+Implements `identity-access.md` §5.1 as a shared package in `frontend/packages/bff`, used by all five web apps.
+
+- **Cookie:** one per app, `__Host-ts_session` over HTTPS (`ts_session` on plain-HTTP localhost, where the `__Host-` prefix can't be used). `HttpOnly`, `SameSite=Lax`, `Path=/`, no `Domain`, lifetime = refresh-token expiry. The value is AES-256-GCM sealed (Web Crypto, no dependency) and holds the session and user IDs plus both tokens.
+- **Refresh lives in `proxy.ts`:** Next 16 Server Components can read cookies but not set them (checked in the bundled Next docs), and the API rotates the refresh token on every use. A page that refreshed without saving the new token would make the next request reuse the old one, and the API would revoke the session family. So each app's `proxy.ts` refreshes when the access token is within 60 s of expiry, sets the new cookie, and forwards it to the same render. Server Functions can also refresh (`getSession({ refresh: true })`), because they can write cookies.
+- **Failure handling:** a 4xx from `/auth/refresh` signs the user out (cookie cleared). A 5xx or network error keeps the cookie, so an API blip doesn't sign everyone out.
+- **The browser never calls the API.** `NEXT_PUBLIC_API_URL` was removed from every `.env.example` (no code used it). Server code calls the API with `Authorization: Bearer`.
+- **CSRF:** Server Actions check Origin themselves. Custom Route Handlers that change state call `assertSameOrigin()` (`Sec-Fetch-Site`, then `Origin` vs `Host`).
+- **Open redirects:** `?next=` accepts only plain relative paths (`//x`, `/\x`, `https:x` and control characters are rejected).
+- **Secrets:** `SESSION_SECRET` (≥ 32 chars, no placeholder words) is required when `NODE_ENV=production`, which includes local `next start`. `next dev` uses a fixed, clearly named development-only key, so proxy and render agree without setup.
+
+## 2026-10-20 — Market wired to the API
+
+**Layout (owner rule: group by feature, reusables in one place):**
+- `apps/market/src/app/` holds routes only. Each page is a thin server component.
+- `apps/market/src/features/<feature>/` holds `api.ts`/`server.ts` (server-only loaders), `actions.ts` (Server Actions), `components/` and the mappers. Features: `catalogue`, `product`, `cart`, `auth`, `checkout`, `orders`, `account`, `saved`, `help`, `cars`, `shell`.
+- Reusables live in `frontend/packages/`: `ui` (components and CSS primitives), `bff` (session, sign-in flow, client IP), `testing` (e2e kit), `fixtures` (sample data, still used for cars).
+
+**Decisions:**
+- **Every data page renders per request** (`await connection()`). The layout already reads the session cookie, and builds must not need a running API (CI has none). The category tree is cached for 5 minutes; listings and cart are `no-store`.
+- **Graceful degradation:** if the API is down, the header still renders with no category row, listings show a "we can't load products" state with a retry link, and the home page drops its empty shelves.
+- **Cards from search results:** the API's `ProductSummary` has no category or image, so cards take their placeholder art from the listing's category (a neutral box elsewhere). They show "Sold by TechShop" only when TechShop is among the sellers and "From N sellers" when there are several. Nothing is guessed.
+- **Guest cart:** the API's `X-Cart-Token` is kept in an `httpOnly` cookie (`ts_cart`, 30 days) and merged into the customer's cart on sign-in.
+- **Sign-in is phone-first** (OTP; the same code signs up a new number), with email and password as the alternative. The account page has profile, addresses (state from the API list) and signed-in devices with remote sign-out.
+- **Checkout:** the address, coupon and payment method are re-priced by `/checkout/preview`. The order is placed with the quote's `priceHash` and one idempotency key per attempt (a new key after a price change). On `409 price_changed` the new total is shown and nothing is charged. Card and wallet payments redirect to the provider's page (only HTTPS, or the local API's `/dev/pay/` page in development); bank transfers show the one-time account in place. `/checkout/return?order=` sends the customer to the order page.
+- **Orders:** signed-in customers see their orders and order pages (pay again, cancel while unpaid, parcels, history). Guests track with order number and checkout phone, posted by a Server Action so the phone never appears in a URL.
+- **Honesty fixes:** removed the "deals end at midnight" countdown (no real deadline backs it) and the hard-coded "Deliver to Lagos". The delivery page is now a live fee checker. Cars are the only sample data left on the market, and every car view says so.
+- **Client IP:** found while testing. The API rate-limits OTP and tracking per IP, but every BFF call came from the Next server's IP, so in production all shoppers would share one limit. The BFF now forwards the proxy-set `X-Real-IP` as `X-Forwarded-For`, only when `CLIENT_IP_HEADER` is configured (secure default).
+  - **Needed at deployment (not a code change):** set `CLIENT_IP_HEADER=x-real-ip` on each web app, and list the web servers' addresses in the API's `TRUSTED_PROXIES`.
+
+## 2026-10-20 — Staff portal on the API (part 1: foundation, orders, finance, catalogue)
+
+- **Route group `(portal)`:** every page except `/sign-in` sits in it. The group layout and each page call `requireStaff(permission)` themselves. Next renders layouts and pages in parallel (seen in testing: a page ran before the layout's redirect), so a layout check alone is not a guard. The API enforces every permission regardless.
+- **Sign-in:** work email + password, then the authenticator code or a recovery code (shared `createAuthFlow`). The MFA token stays in the sealed flow cookie.
+- **Sidebar shows only modules the person may open** (permissions come from `/me`). Modules whose backend isn't built (M4–M7) are marked "Preview" and say so in a sample-data notice naming the milestone.
+- **Step-up:** any action the API answers with `step_up_required` shows an authenticator-code prompt in place, calls `/auth/mfa/step-up` (the BFF swaps in the fresh tokens) and retries the action (`components/ActionButton`).
+- **Staff building blocks** (`apps/staff/src/components`): `Table` (typed rows), `Tabs` (link tabs), `Figures`, `Status` (dot + words), `PageHead`, `ActionButton`; `lib/actions.ts` turns API refusals into plain messages.
+- **Catalogue:** no staff product-list endpoint exists, so the product tab uses the catalogue's search index. The create form makes the product, its first variant and (optionally) TechShop's own listing. If the listing call fails, the product still exists as a draft and the message says so.
+- **Backend issues found (not changed):**
+  - `GET /dispatch/board` returns each job's `otpHash` (the hashed delivery code) to dispatch staff. The UI never shows it, but it should be removed from the response.
+  - Staff catalogue has create/update endpoints but no list.
+
+## 2026-10-20 — Staff portal part 2 (operations, growth, organisation)
+
+- **Live modules added:**
+  - dispatch (board with live counts, assign/unassign/return, riders suspend/reinstate, phone approvals, zones and rate bands);
+  - warehouse (release a wave, pick lists with claim and scan, IMEI/serial for serialised devices, pack by weight, manifests and signed hand-over);
+  - inventory (stock by warehouse, adjustments with reason, receiving serialised units, movements);
+  - marketing (promotions end/cancel, coupons, campaigns submit → approve → pause/resume/cancel, audiences, journeys);
+  - content (pages, help articles, banners);
+  - search tuning (insights, zero-result searches, catalogue gaps, synonyms);
+  - admin (staff roles grant/revoke, roles, people search, audit log, sign-in events, authenticator reset);
+  - HR (staff list, invite, exit).
+- **Content is edited as plain text** and stored as JSON blocks: blank lines separate paragraphs, `## ` starts a heading, `- ` starts a list item. No HTML can be stored or injected.
+- **Separation of duties shows in the UI as well as the API:**
+  - a page's last editor sees "Someone else must publish your edit" instead of a Publish button;
+  - nobody edits their own roles or exits themselves;
+  - campaign approval stays with `marketing.approve` holders, who need step-up.
+- **Error messages prefer the API's own explanation** ("Someone other than the last editor must publish.") over a generic "no permission".
+- **Receiving devices:** 15-digit codes are IMEIs (the API checks the Luhn digit); anything else is a serial number.
+
+## 2026-10-20 — Mobile: shared UI package and the customer app's first slice
+
+- **`mobile/packages/ui` (`@techshop/mobile-ui`):** the logistics building blocks (Screen, Title, Body, Button, Field, Notice, Card, `useColors`) moved here, so both apps share one set (`docs/mobile.md` §2). Controls stay 52 px in both apps: the customer minimum is 44 px, and larger targets are fine. The navigation theme stays per app, because it needs expo-router.
+- **Root mobile scripts** run lint, typecheck and test with `--if-present`, so a package without a script doesn't fail the workspace run.
+- **Customer app, first slice (browse only, no new packages):** home (search, categories, deals), search (did-you-mean), category and product (every offer, warranty, delivery fee, specs).
+  - Buying says plainly "coming soon in the app; order on the website". There's no dead or fake button.
+  - Lists use `FlatList` for now; FlashList (in the plan) can replace it when the dependency is added.
+- **Next for the customer app:** phone sign-in (reuse the rider `session.ts` once it moves to a shared mobile package), cart, checkout with an `expo-web-browser` payment hand-off, orders and tracking.
+
+## 2026-10-20 — Customer app checkout
+
+- **Payment hand-off as planned (`docs/mobile.md` §1):** the API returns the provider's checkout URL; the app opens it with `expo-web-browser` (added). Card details never touch the app. On return, the app checks `/me/payments/{id}` for about 15 s, then opens the order page. The webhook is what marks the order paid. Bank transfers show the one-time account in place.
+- **Same safety as the web:** the order is placed with the quote's price hash and one idempotency key per attempt (a new key after a price change). On `409 price_changed`, the new total is shown and nothing is charged.
+- **Addresses:** checkout picks a saved address or adds one (the state is typed and matched against the API's list, with suggestions). Full address management on the account screen comes later.
+- **Device testing note:** in development, the fake provider's page is served by the API at `APP_BASE_URL`. For an Android emulator, run the API with `APP_BASE_URL=http://10.0.2.2:8080` so the in-app browser can reach it.
+
+## 2026-10-20 — Web dev ports moved to 4101–4105
+
+**Owner decision:** corporate **4101**, market **4102**, wholesale **4103**, seller **4104**, staff **4105**. API stays on 8080.
+
+**Why:** other projects on the owner's machine use the 3000s (AdGuard on 3000, another app on 3003, which clashed with the seller app). A dedicated block avoids clashes. 6000 was considered and rejected: browsers block it (and 6665–6669) as unsafe ports.
+
+**Changed:**
+- each app's `dev`/`start` scripts;
+- the e2e test defaults;
+- the nginx routes;
+- the READMEs;
+- the backend defaults for `CORS_ALLOWED_ORIGINS` and `PAYMENT_CALLBACK_URL` (now `http://localhost:4102/checkout/return`) in `internal/config` and `.env.example`. These backend config changes were approved by the owner.
+
+**Supersedes** the ports in "Multi-app monorepo restructure" and "Corporate dev port moved to 3005".
+
+**Owner action:** a local `backend/.env` that sets `CORS_ALLOWED_ORIGINS` or `PAYMENT_CALLBACK_URL` with the old ports needs the new ones. Claude doesn't read or edit `.env` files.
+
+## 2026-10-20 — Claude Code project settings made valid again
+
+The owner had commented out the `ask` and `deny` lists in `.claude/settings.json` with `//`. JSON doesn't allow comments, so Claude Code ignored the whole file, including `allow`. Owner decision:
+- keep `allow`;
+- drop `ask`;
+- keep a short `deny` for irreversible actions and the `.claude/CLAUDE.md` "never" rules: `.env` read/edit/write, force-push, `reset --hard`, `clean -f`, `branch -D`, `rm -rf`, migration rollbacks, Docker volume deletion, `psql … DROP`, `ssh`/`scp`/`sftp`/`rsync` to remotes.
+
+`git add` and `git commit` are no longer denied, so commits can be made when asked. Deny rules are enforced by Claude Code itself; Claude can't override them.
