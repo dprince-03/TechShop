@@ -2,7 +2,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 
-import { Body, Button, Field } from "@/components/ui";
+import { Body, Button, Field } from "@techshop/mobile-ui";
 import { tokens } from "@/theme";
 
 /** Scans the parcel label (QR or Code 128), with typing as the fallback when the camera can't. */

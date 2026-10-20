@@ -2,7 +2,7 @@ import { Redirect, useRouter } from "expo-router";
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { Body, Button, Card, Notice, Title } from "@/components/ui";
+import { Body, Button, Card, Notice, Title } from "@techshop/mobile-ui";
 import { useSession } from "@/features/auth/SessionProvider";
 import { groupJobs, useJobs, type Job } from "@/features/jobs/useJobs";
 import { useShift } from "@/features/shift/useShift";

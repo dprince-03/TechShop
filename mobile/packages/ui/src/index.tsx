@@ -1,10 +1,17 @@
-// The logistics app's building blocks, all on the shared design tokens. Riders work outdoors,
-// often with gloves: controls are 52 px (tokens.control.lg) with strong contrast.
+// Building blocks shared by the TechShop mobile apps, all on the shared design tokens.
+// Controls are 52 px (tokens.control.lg): riders work outdoors, often with gloves, and the
+// customer app keeps the same large targets (above the 44 px minimum).
+import { tokens, type ColorScheme } from "@techshop/design-tokens";
 import type { ReactNode } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextInputProps } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, useColorScheme, View, type TextInputProps } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { tokens, useColors } from "@/theme";
+export { tokens };
+
+/** Current colour scheme's tokens (light/dark follows the OS setting). */
+export function useColors(): ColorScheme {
+  return useColorScheme() === "dark" ? tokens.color.dark : tokens.color.light;
+}
 
 const RIDER_TARGET = tokens.control.lg;
 

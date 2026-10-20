@@ -1,31 +1,51 @@
-import { StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import { useState } from "react";
+import { Pressable, Text, View } from "react-native";
 
-import { tokens, useColors } from "@/theme";
+import { Button, Field, tokens, useColors } from "@techshop/mobile-ui";
 
+import { ProductList } from "@/features/catalogue/ProductList";
+import { useLoad } from "@/features/catalogue/useLoad";
+import { api } from "@/lib/api";
+
+/** Home: search, top-level categories, then today's deals (biggest discounts first). */
 export default function Home() {
-  const colors = useColors();
+  const router = useRouter();
+  const c = useColors();
+  const [q, setQ] = useState("");
+  const cats = useLoad(async () => ((await api.get("/api/v1/categories")) ?? []).filter((x) => !x.parentId && x.isActive), "categories");
+  const deals = useLoad(() => api.get("/api/v1/deals", { query: { limit: 20, sort: "discount" } }), "deals");
 
   return (
-    <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]}>
-      <View style={styles.content}>
-        <Text style={[styles.title, { color: colors.text }]}>{APP_TITLE}</Text>
-      </View>
-    </SafeAreaView>
+    <ProductList
+      items={deals.data?.items ?? []}
+      loading={deals.loading}
+      error={deals.error ?? cats.error}
+      onRefresh={() => {
+        void cats.reload();
+        void deals.reload();
+      }}
+      empty="No deals right now."
+      header={
+        <View style={{ gap: tokens.space[3] }}>
+          <Field label="Search" value={q} onChangeText={setQ} placeholder="Phones, laptops, consoles…" returnKeyType="search" onSubmitEditing={() => q.trim() && router.push({ pathname: "/search", params: { q: q.trim() } })} />
+          <Button label="Search" variant="primary" disabled={!q.trim()} onPress={() => router.push({ pathname: "/search", params: { q: q.trim() } })} />
+          <Text accessibilityRole="header" style={{ color: c.text, fontSize: tokens.fontSize.xl, fontWeight: "600" }}>Shop by category</Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: tokens.space[2] }}>
+            {(cats.data ?? []).map((cat) => (
+              <Pressable
+                key={cat.id}
+                accessibilityRole="button"
+                onPress={() => router.push({ pathname: "/c/[slug]", params: { slug: cat.slug, name: cat.name } })}
+                style={{ minHeight: tokens.control.md, paddingHorizontal: tokens.space[4], justifyContent: "center", borderRadius: tokens.radius.pill, borderWidth: 1, borderColor: c.borderStrong }}
+              >
+                <Text style={{ color: c.text, fontSize: tokens.fontSize.base }}>{cat.name}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <Text accessibilityRole="header" style={{ color: c.text, fontSize: tokens.fontSize.xl, fontWeight: "600" }}>Deals</Text>
+        </View>
+      }
+    />
   );
 }
-
-const APP_TITLE = "TechShop";
-
-const titleSize = tokens.fontSize["4xl"].min;
-
-const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  content: { padding: tokens.space[4] },
-  title: {
-    fontSize: titleSize,
-    fontWeight: "600",
-    letterSpacing: tokens.tracking.tight * titleSize,
-    lineHeight: titleSize * tokens.leading.tight,
-  },
-});

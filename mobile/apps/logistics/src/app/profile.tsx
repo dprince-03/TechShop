@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { Body, Button, Card, Screen, Title } from "@/components/ui";
+import { Body, Button, Card, Screen, Title } from "@techshop/mobile-ui";
 import { useSession } from "@/features/auth/SessionProvider";
 import { clearJobCache } from "@/features/jobs/useJobs";
 import { deviceId } from "@/lib/storage";

@@ -1,4 +1,4 @@
-import { Body, Button, Card, Notice, Screen, Title } from "@/components/ui";
+import { Body, Button, Card, Notice, Screen, Title } from "@techshop/mobile-ui";
 import { useSync } from "@/features/sync/useSync";
 
 const KIND: Record<string, string> = { picked_up: "Picked up", en_route: "On the way", attempt_failed: "Couldn’t deliver", delivered: "Delivered", note: "Note" };

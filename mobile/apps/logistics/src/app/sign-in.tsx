@@ -1,7 +1,7 @@
 import { Redirect } from "expo-router";
 import { useState } from "react";
 
-import { Body, Button, Field, Notice, Screen, Title } from "@/components/ui";
+import { Body, Button, Field, Notice, Screen, Title } from "@techshop/mobile-ui";
 import { useSession } from "@/features/auth/SessionProvider";
 
 /** Phone → 6-digit code. Riders never type passwords; the phone is approved once by dispatch. */

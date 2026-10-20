@@ -562,3 +562,12 @@ Implements `identity-access.md` §5.1 as a shared package in `frontend/packages/
   - campaign approval stays with `marketing.approve` holders, who need step-up.
 - **Error messages prefer the API's own explanation** ("Someone other than the last editor must publish.") over a generic "no permission".
 - **Receiving devices:** 15-digit codes are IMEIs (the API checks the Luhn digit); anything else is a serial number.
+
+## 2026-10-20 — Mobile: shared UI package and the customer app's first slice
+
+- **`mobile/packages/ui` (`@techshop/mobile-ui`):** the logistics building blocks (Screen, Title, Body, Button, Field, Notice, Card, `useColors`) moved here, so both apps share one set (`docs/mobile.md` §2). Controls stay 52 px in both apps: the customer minimum is 44 px, and larger targets are fine. The navigation theme stays per app, because it needs expo-router.
+- **Root mobile scripts** run lint, typecheck and test with `--if-present`, so a package without a script doesn't fail the workspace run.
+- **Customer app, first slice (browse only, no new packages):** home (search, categories, deals), search (did-you-mean), category and product (every offer, warranty, delivery fee, specs).
+  - Buying says plainly "coming soon in the app; order on the website". There's no dead or fake button.
+  - Lists use `FlatList` for now; FlashList (in the plan) can replace it when the dependency is added.
+- **Next for the customer app:** phone sign-in (reuse the rider `session.ts` once it moves to a shared mobile package), cart, checkout with an `expo-web-browser` payment hand-off, orders and tracking.

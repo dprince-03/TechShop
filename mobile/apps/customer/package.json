@@ -13,6 +13,7 @@
   "dependencies": {
     "@techshop/api-client": "file:../../../shared/api-client",
     "@techshop/design-tokens": "file:../../../shared/design-tokens",
+    "@techshop/mobile-ui": "0.1.0",
     "expo": "~57.0.30",
     "expo-constants": "~57.0.20",
     "expo-linking": "~57.0.13",

@@ -4,13 +4,14 @@
   "private": true,
   "packageManager": "npm@11.15.0",
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "packages/*"
   ],
   "scripts": {
     "customer": "npm run start --workspace=@techshop/mobile-customer",
     "logistics": "npm run start --workspace=@techshop/mobile-logistics",
-    "lint": "npm run lint --workspaces",
-    "typecheck": "npm run typecheck --workspaces",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
     "doctor": "npm exec --workspaces -- expo-doctor",
     "test": "npm run test --workspaces --if-present"
   },

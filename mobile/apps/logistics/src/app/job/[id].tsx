@@ -5,7 +5,7 @@ import { Linking, Platform, Pressable, StyleSheet, Text, View } from "react-nati
 
 import type { Schema } from "@techshop/api-client";
 
-import { Body, Button, Card, Field, Notice, Screen, Title } from "@/components/ui";
+import { Body, Button, Card, Field, Notice, Screen, Title } from "@techshop/mobile-ui";
 import { useSession } from "@/features/auth/SessionProvider";
 import { performAction, type ActionInput } from "@/features/jobs/actions";
 import { LabelScanner } from "@/features/jobs/LabelScanner";

@@ -396,3 +396,12 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
   - **`expo-doctor`:** 5 Expo packages in the customer app were a patch version behind SDK 57 (from the original scaffold). Aligned them with `npx expo install --fix`; both apps now pass **21/21**.
   - **Android bundle:** `npx expo export --platform android` builds the logistics app (3 MB Hermes bundle), so the app and the shared API client compile through Metro. Not yet run on a device or emulator.
   - **CI and `make check`:** the mobile job now runs the unit tests (`npm test` across workspaces; logistics 9/9). Mobile lint and typecheck pass.
+- Mobile shared UI + customer app slice:
+  - **Moved** `apps/logistics/src/components/ui.tsx` → `packages/ui/src/index.tsx`. Both apps' `theme/` now re-export tokens and `useColors` from it.
+  - **Customer app:** `lib/api.ts`, `features/catalogue` (`useLoad`, `ProductList`, `ProductRow` with prices read out in full: "₦X, was ₦Y, Z% off"), and screens `index`, `search`, `c/[slug]`, `p/[slug]`.
+  - **Verification:**
+    - mobile lint, typecheck and unit tests (9/9) pass across all workspaces;
+    - `expo-doctor` **21/21** for every workspace;
+    - Android bundle export succeeds for both apps (customer 2.7 MB, logistics 3 MB);
+    - the endpoints the customer screens use are covered by the catalogue contract tests (15/15);
+    - not run on a device or emulator.
