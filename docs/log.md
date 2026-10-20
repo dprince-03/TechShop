@@ -487,3 +487,9 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
 - **Proof nothing changed:** a line-multiset check per split file (every original line present once, nothing added); `go build`, `go vet`, unit tests pass; regenerated `openapi.yaml` is byte-identical; full e2e suite passes.
 - **Docs updated:** root `CLAUDE.md` config paths, `infra/README.md`, `docs/backend.md` diagram, `docs/messaging-marketing.md` template path, coding-conventions Go note (old "takes precedence" note replaced by the new layout).
 - **E2E note:** `TestUnpaidOrderExpires` needs `WORKER_IN_PROCESS=true` and `ORDER_PAYMENT_TTL=100s` on the test stack; without them it times out (test-setup gap, not a code bug). With them: pass.
+
+## 2026-10-21 — Database docs added (owner request)
+
+- New in `docs/database/`: `DATA-MODEL.md`, `SCHEMA.md`, `MIGRATIONS.md`, `RLS-POLICIES.md`, `SEED-DATA.md`. Short, linking to the existing `erd.md`, `states.md`, `access.md` instead of duplicating them.
+- Facts checked against the code: 205 tables in 22 schemas + `river` (counted from migrations); token audiences from `platform/auth/tokens.go`; CI runs migrations up only; seed roles from the seed output; vendors and warehouses from `seed/commerce.go`.
+- `RLS-POLICIES.md` states the truth: **no RLS today**; access is enforced in the API. It flags a real gap (one DB user owns everything, against rule 01 §6) and recommends a role split, then RLS on seller-scoped tables. Owner decision needed.
