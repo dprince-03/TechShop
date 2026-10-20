@@ -1,5 +1,5 @@
-// Rider session (docs/identity-access.md §5.2): the refresh token lives in secure storage, the
-// access token only in memory. Pure TypeScript; storage and fetch are injected for testing.
+// Mobile session for both apps (docs/identity-access.md §5.2): the refresh token lives in secure
+// storage, the access token only in memory. Pure TypeScript; storage and fetch are injected.
 import { ApiError, createApiClient, type ApiClient, type Schema } from "@techshop/api-client";
 
 export interface TokenStore {
@@ -15,7 +15,7 @@ export type SessionEvents = {
   onSignedOut?: () => void;
 };
 
-export class RiderSession {
+export class MobileSession {
   private access: { token: string; expiresAt: number } | null = null;
   private refreshing: Promise<boolean> | null = null;
   readonly api: ApiClient;

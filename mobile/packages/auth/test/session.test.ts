@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { RiderSession, type TokenStore } from "../src/features/auth/session";
+import { MobileSession, type TokenStore } from "../src/session";
 
 const memory = (initial: string | null = null): TokenStore & { value: string | null } => {
   const s = {
@@ -39,7 +39,7 @@ test("restores from the stored refresh token and sends the new access token", as
     seen.push(new Headers(init?.headers).get("authorization") ?? "");
     return json(200, []);
   };
-  const s = new RiderSession("http://api", store, fetchImpl);
+  const s = new MobileSession("http://api", store, fetchImpl);
   await s.api.get("/api/v1/rider/jobs");
   assert.deepEqual(seen, ["Bearer a1"]);
   assert.equal(store.value, "r1", "rotated refresh token stored");
@@ -55,7 +55,7 @@ test("concurrent calls share one refresh (rotation must not race)", async () => 
     }
     return json(200, []);
   };
-  const s = new RiderSession("http://api", memory("r0"), fetchImpl);
+  const s = new MobileSession("http://api", memory("r0"), fetchImpl);
   await Promise.all([s.api.get("/api/v1/rider/jobs"), s.api.get("/api/v1/rider/jobs"), s.api.get("/api/v1/rider/jobs")]);
   assert.equal(refreshes, 1);
 });
@@ -67,7 +67,7 @@ test("a 401 refreshes once and retries", async () => {
     calls += 1;
     return calls === 1 ? json(401, { code: "unauthenticated" }) : json(200, []);
   };
-  const s = new RiderSession("http://api", memory("r1"), fetchImpl);
+  const s = new MobileSession("http://api", memory("r1"), fetchImpl);
   await s.accept(pair(1));
   await s.api.get("/api/v1/rider/jobs");
   assert.equal(calls, 2);
@@ -75,13 +75,13 @@ test("a 401 refreshes once and retries", async () => {
 
 test("a refused refresh signs out; a network error keeps the token", async () => {
   let signedOut = false;
-  const refused = new RiderSession("http://api", memory("r0"), async () => json(401, { code: "refresh_reuse_detected" }), { onSignedOut: () => (signedOut = true) });
+  const refused = new MobileSession("http://api", memory("r0"), async () => json(401, { code: "refresh_reuse_detected" }), { onSignedOut: () => (signedOut = true) });
   assert.equal(await refused.refresh(), false);
   assert.equal(signedOut, true);
   assert.equal(await refused.hasSession(), false);
 
   const store = memory("r0");
-  const offline = new RiderSession("http://api", store, async () => Promise.reject(new TypeError("network")));
+  const offline = new MobileSession("http://api", store, async () => Promise.reject(new TypeError("network")));
   assert.equal(await offline.refresh(), false);
   assert.equal(store.value, "r0");
 });

@@ -405,3 +405,14 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
     - Android bundle export succeeds for both apps (customer 2.7 MB, logistics 3 MB);
     - the endpoints the customer screens use are covered by the catalogue contract tests (15/15);
     - not run on a device or emulator.
+- Customer app sign-in + shared mobile session:
+  - **Moved** the session class to `mobile/packages/auth` (`@techshop/mobile-auth`, renamed `MobileSession`) with its tests. Logistics now imports it.
+  - **Added** expo-secure-store and expo-crypto to the customer app (`npx expo install`).
+  - **Customer app:** `SessionProvider` (phone code; a new number goes to the profile step, then is signed in; restore on launch; sign-out), plus sign-in (modal) and account screens. The home screen shows Sign in or Account.
+  - **Verification:**
+    - new contract test for the `customer_app` audience (new number → profile → `/me` → refresh rotation → session listed → logout);
+    - full contract suite **46/46** on a freshly seeded stack;
+    - mobile lint, typecheck and tests (queue 5/5, session 4/4) pass;
+    - `expo-doctor` 21/21 for all four workspaces;
+    - Android bundles export (customer 2.7 MB, logistics 3 MB);
+    - not run on a device or emulator.

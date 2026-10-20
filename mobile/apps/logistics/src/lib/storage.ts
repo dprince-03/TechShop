@@ -2,7 +2,7 @@ import * as Crypto from "expo-crypto";
 import * as SecureStore from "expo-secure-store";
 import Storage from "expo-sqlite/kv-store";
 
-import type { TokenStore } from "@/features/auth/session";
+import type { TokenStore } from "@techshop/mobile-auth";
 import type { QueuedEvent, QueueStore } from "@/features/sync/queue";
 
 const REFRESH_KEY = "ts.refreshToken";

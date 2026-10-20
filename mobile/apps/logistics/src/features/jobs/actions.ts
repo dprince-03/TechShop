@@ -1,6 +1,6 @@
 import { ApiError, type Schema } from "@techshop/api-client";
 
-import type { RiderSession } from "@/features/auth/session";
+import type { MobileSession } from "@techshop/mobile-auth";
 import { enqueue } from "@/features/sync/queue";
 import { newEventId, queueStore } from "@/lib/storage";
 
@@ -27,7 +27,7 @@ const refusal: Record<string, string> = {
  * Sends one action. Online: straight to the API, so the rider sees a wrong label or code at once.
  * No signal: queued with a client event ID (applied exactly once when it syncs).
  */
-export async function performAction(session: RiderSession, jobId: string, input: ActionInput, position?: { latitude: number; longitude: number; accuracyM?: number }): Promise<ActionOutcome> {
+export async function performAction(session: MobileSession, jobId: string, input: ActionInput, position?: { latitude: number; longitude: number; accuracyM?: number }): Promise<ActionOutcome> {
   const event: Action = { ...input, ...position, jobId, clientEventId: newEventId(), occurredAt: new Date().toISOString() };
   try {
     await session.api.post("/api/v1/rider/jobs/{id}/actions", { path: { id: jobId }, body: event });

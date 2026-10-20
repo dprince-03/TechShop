@@ -1,0 +1,14 @@
+{
+  "name": "@techshop/mobile-auth",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Session handling shared by the TechShop mobile apps: rotating refresh token in secure storage, access token in memory.",
+  "main": "src/session.ts",
+  "types": "src/session.ts",
+  "dependencies": {
+    "@techshop/api-client": "file:../../../shared/api-client"
+  },
+  "scripts": {
+    "test": "node --import ../../../shared/api-client/test/register.mjs --test 'test/*.test.ts'"
+  }
+}

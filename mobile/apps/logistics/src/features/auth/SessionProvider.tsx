@@ -6,7 +6,7 @@ import { ApiError, createApiClient, normaliseNigerianPhone, type Schema } from "
 import { env } from "@/lib/env";
 import { clearLocalData, deviceId, secureTokenStore } from "@/lib/storage";
 
-import { RiderSession } from "./session";
+import { MobileSession } from "@techshop/mobile-auth";
 
 type Me = Schema<"Me">;
 type Status = "restoring" | "signed-out" | "signed-in";
@@ -14,7 +14,7 @@ type Status = "restoring" | "signed-out" | "signed-in";
 type SessionContext = {
   status: Status;
   me: Me | null;
-  session: RiderSession;
+  session: MobileSession;
   /** Step 1: send a code. Returns an error message, or null. */
   requestCode: (phone: string) => Promise<string | null>;
   /** Step 2: check the code and sign in. Returns an error message, or null. */
@@ -41,7 +41,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const session = useMemo(
     () =>
-      new RiderSession(env.apiUrl, secureTokenStore, undefined, {
+      new MobileSession(env.apiUrl, secureTokenStore, undefined, {
         onSignedOut: () => {
           setMe(null);
           setStatus("signed-out");
