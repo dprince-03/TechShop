@@ -1,0 +1,30 @@
+{
+  "name": "@techshop/bff",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Backend-for-frontend kit shared by the Next.js apps: encrypted session cookie, token refresh, server-side API client, CSRF checks. Server-only.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./proxy": "./src/proxy.ts",
+    "./crypto": "./src/crypto.ts"
+  },
+  "dependencies": {
+    "@techshop/api-client": "file:../../../shared/api-client",
+    "server-only": "^0.0.1"
+  },
+  "scripts": {
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import ../../../shared/api-client/test/register.mjs --test 'test/*.test.ts'"
+  },
+  "peerDependencies": {
+    "next": "^16"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.8",
+    "next": "16.3.8",
+    "typescript": "^5"
+  }
+}

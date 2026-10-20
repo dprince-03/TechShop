@@ -7,7 +7,8 @@ registerHooks({
     try {
       return next(specifier, context);
     } catch (err) {
-      if (err?.code !== "ERR_MODULE_NOT_FOUND" || !/^\.{1,2}\//.test(specifier)) throw err;
+      if (err?.code !== "ERR_MODULE_NOT_FOUND" || !/^\.{1,2}\//.test(specifier))
+        throw err;
       for (const suffix of [".ts", "/index.ts"]) {
         try {
           return next(specifier + suffix, context);

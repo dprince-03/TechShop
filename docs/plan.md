@@ -500,3 +500,15 @@ The owner asked for the complete frontend, then mobile, built feature by feature
 - **Tests without new tools:** Node's built-in test runner (`node --test`, native TypeScript stripping). Unit tests run in CI; contract tests call a real seeded local API (`test/contract/`), because CI has no running API.
 - **CI:** the frontend job fails if the generated types are stale.
 - **Known audit findings (not fixed):** 5 "high" `npm audit` findings, all in ESLint's `braces`/`micromatch` chain under `eslint-config-next`. They existed before this work, are dev-only and are never shipped. They clear when `eslint-config-next` updates.
+
+## 2026-10-20 — Web session kit (`@techshop/bff`)
+
+Implements `identity-access.md` §5.1 as a shared package in `frontend/packages/bff`, used by all five web apps.
+
+- **Cookie:** one per app, `__Host-ts_session` over HTTPS (`ts_session` on plain-HTTP localhost, where the `__Host-` prefix can't be used). `HttpOnly`, `SameSite=Lax`, `Path=/`, no `Domain`, lifetime = refresh-token expiry. The value is AES-256-GCM sealed (Web Crypto, no dependency) and holds the session and user IDs plus both tokens.
+- **Refresh lives in `proxy.ts`:** Next 16 Server Components can read cookies but not set them (checked in the bundled Next docs), and the API rotates the refresh token on every use. A page that refreshed without saving the new token would make the next request reuse the old one, and the API would revoke the session family. So each app's `proxy.ts` refreshes when the access token is within 60 s of expiry, sets the new cookie, and forwards it to the same render. Server Functions can also refresh (`getSession({ refresh: true })`), because they can write cookies.
+- **Failure handling:** a 4xx from `/auth/refresh` signs the user out (cookie cleared). A 5xx or network error keeps the cookie, so an API blip doesn't sign everyone out.
+- **The browser never calls the API.** `NEXT_PUBLIC_API_URL` was removed from every `.env.example` (no code used it). Server code calls the API with `Authorization: Bearer`.
+- **CSRF:** Server Actions check Origin themselves. Custom Route Handlers that change state call `assertSameOrigin()` (`Sec-Fetch-Site`, then `Origin` vs `Host`).
+- **Open redirects:** `?next=` accepts only plain relative paths (`//x`, `/\x`, `https:x` and control characters are rejected).
+- **Secrets:** `SESSION_SECRET` (≥ 32 chars, no placeholder words) is required when `NODE_ENV=production`, which includes local `next start`. `next dev` uses a fixed, clearly named development-only key, so proxy and render agree without setup.

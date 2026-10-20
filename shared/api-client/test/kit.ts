@@ -8,7 +8,14 @@ import { createApiClient } from "../src/index";
 
 export const API_URL = process.env.API_URL ?? "http://127.0.0.1:8080";
 
-type SeedAccount = { role: string; userId: string; email: string; phone?: string; password: string; totpSecret?: string };
+type SeedAccount = {
+  role: string;
+  userId: string;
+  email: string;
+  phone?: string;
+  password: string;
+  totpSecret?: string;
+};
 type Seed = { accounts: SeedAccount[]; extra: Record<string, string> };
 
 let seedCache: Seed | undefined;
@@ -31,19 +38,32 @@ export const api = createApiClient({ baseUrl: API_URL });
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+async function newestCode(to: string, about = ""): Promise<string> {
+  const res = await fetch(
+    `${API_URL}/dev/messages?to=${encodeURIComponent(to)}`,
+  );
+  const rows = (await res.json()) as { payload?: { body?: string } }[] | null;
+  for (const row of rows ?? []) {
+    const body = row.payload?.body ?? "";
+    if (!body || (about && !body.includes(about))) continue;
+    return body.match(/\b(\d{6})\b/)?.[1] ?? "";
+  }
+  return "";
+}
+
+/** The newest code already sent to `to` ("" if none), so a test can wait for a fresh one. */
+export const peekCode = (to: string, about = "") => newestCode(to, about);
+
 /** Newest 6-digit code sent to `to` via the dev message log, waiting for one other than `notBefore`. */
-export async function latestCode(to: string, notBefore = "", about = ""): Promise<string> {
+export async function latestCode(
+  to: string,
+  notBefore = "",
+  about = "",
+): Promise<string> {
   const deadline = Date.now() + 20_000;
   while (Date.now() < deadline) {
-    const res = await fetch(`${API_URL}/dev/messages?to=${encodeURIComponent(to)}`);
-    const rows = (await res.json()) as { payload?: { body?: string } }[] | null;
-    for (const row of rows ?? []) {
-      const body = row.payload?.body ?? "";
-      if (!body || (about && !body.includes(about))) continue;
-      const m = body.match(/\b(\d{6})\b/);
-      if (m && m[1] !== notBefore) return m[1];
-      break;
-    }
+    const code = await newestCode(to, about);
+    if (code && code !== notBefore) return code;
     await sleep(300);
   }
   throw new Error(`no code delivered to ${to}`);
@@ -53,7 +73,8 @@ export async function latestCode(to: string, notBefore = "", about = ""): Promis
 export function totp(secret: string, at = Date.now()): string {
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
   let bits = "";
-  for (const ch of secret.replace(/=+$/, "").toUpperCase()) bits += alphabet.indexOf(ch).toString(2).padStart(5, "0");
+  for (const ch of secret.replace(/=+$/, "").toUpperCase())
+    bits += alphabet.indexOf(ch).toString(2).padStart(5, "0");
   const key = Buffer.from(bits.match(/.{8}/g)!.map((b) => parseInt(b, 2)));
   const counter = Buffer.alloc(8);
   counter.writeBigUInt64BE(BigInt(Math.floor(at / 1000 / 30)));
@@ -69,7 +90,8 @@ export async function customerToken(role = "customer"): Promise<string> {
   const r = await api.post("/api/v1/auth/password", {
     body: { identifier: a.email, password: a.password, audience: "market" },
   });
-  if (r.status !== "signed_in" || !r.tokens) throw new Error(`customer ${role} not signed in: ${r.status}`);
+  if (r.status !== "signed_in" || !r.tokens)
+    throw new Error(`customer ${role} not signed in: ${r.status}`);
   return r.tokens.accessToken;
 }
 
@@ -83,10 +105,15 @@ export async function staffToken(role = "admin"): Promise<string> {
   const r = await api.post("/api/v1/auth/password", {
     body: { identifier: a.email, password: a.password, audience: "staff" },
   });
-  if (r.status !== "mfa_required" || !r.mfaToken) throw new Error(`staff ${role}: expected mfa_required, got ${r.status}`);
+  if (r.status !== "mfa_required" || !r.mfaToken)
+    throw new Error(`staff ${role}: expected mfa_required, got ${r.status}`);
   try {
     const t = await api.post("/api/v1/auth/mfa/totp", {
-      body: { mfaToken: r.mfaToken, code: totp(a.totpSecret!), audience: "staff" },
+      body: {
+        mfaToken: r.mfaToken,
+        code: totp(a.totpSecret!),
+        audience: "staff",
+      },
     });
     staffCache.set(role, { token: t.accessToken, at: Date.now() });
     return t.accessToken;

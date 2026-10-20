@@ -9,7 +9,10 @@ export type PathsFor<M extends HttpMethod> = {
   [P in keyof paths]: NonNullable<paths[P][M]> extends never ? never : P;
 }[keyof paths];
 
-export type Operation<P extends keyof paths, M extends HttpMethod> = NonNullable<paths[P][M]>;
+export type Operation<
+  P extends keyof paths,
+  M extends HttpMethod,
+> = NonNullable<paths[P][M]>;
 
 type Params<O> = O extends { parameters: infer X } ? X : never;
 type Field<T, K extends string> = K extends keyof T ? NonNullable<T[K]> : never;
@@ -19,13 +22,17 @@ type QueryOf<O> = Field<Params<O>, "query">;
 type HeaderOf<O> = Field<Params<O>, "header">;
 
 // Required `requestBody` → `body` is required; optional → optional; none → not allowed.
-type BodyOption<O> = O extends { requestBody: { content: { "application/json": infer B } } }
+type BodyOption<O> = O extends {
+  requestBody: { content: { "application/json": infer B } };
+}
   ? { body: B }
   : O extends { requestBody?: { content: { "application/json": infer B } } }
     ? { body?: B }
     : { body?: never };
 
-type PathOption<O> = [PathOf<O>] extends [never] ? { path?: never } : { path: PathOf<O> };
+type PathOption<O> = [PathOf<O>] extends [never]
+  ? { path?: never }
+  : { path: PathOf<O> };
 // A query with any required parameter is a required `query` option.
 type QueryOption<O> = [QueryOf<O>] extends [never]
   ? { query?: never }
@@ -47,12 +54,21 @@ export type CallOptions = {
   init?: RequestInit;
 };
 
-export type RequestOptions<O> = PathOption<O> & QueryOption<O> & HeaderOption<O> & BodyOption<O> & CallOptions;
+export type RequestOptions<O> = PathOption<O> &
+  QueryOption<O> &
+  HeaderOption<O> &
+  BodyOption<O> &
+  CallOptions;
 
 /** Options become a required argument only when the operation needs a path or body. */
-export type OptionsArg<O> = object extends RequestOptions<O> ? [options?: RequestOptions<O>] : [options: RequestOptions<O>];
+export type OptionsArg<O> =
+  object extends RequestOptions<O>
+    ? [options?: RequestOptions<O>]
+    : [options: RequestOptions<O>];
 
-type JsonOf<R> = R extends { content: { "application/json": infer J } } ? J : undefined;
+type JsonOf<R> = R extends { content: { "application/json": infer J } }
+  ? J
+  : undefined;
 
 /** The JSON body of the operation's success response (200, 201 or 204). */
 export type SuccessBody<O> = O extends { responses: infer R }

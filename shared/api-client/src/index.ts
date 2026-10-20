@@ -9,7 +9,12 @@ export type { ApiResponse, CallOptions } from "./http/types";
 export type * from "./contract";
 
 // Formatting
-export { discountPercent, formatKobo, formatMoney, naira } from "./format/money";
+export {
+  discountPercent,
+  formatKobo,
+  formatMoney,
+  naira,
+} from "./format/money";
 export { normaliseNigerianPhone } from "./format/phone";
 
 // UI view models

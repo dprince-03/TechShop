@@ -16,10 +16,13 @@ export class ApiError extends Error {
   readonly requestId?: string;
 
   constructor(status: number, problem: Partial<Problem>, requestId?: string) {
-    super(problem.detail || problem.title || `Request failed with status ${status}`);
+    super(
+      problem.detail || problem.title || `Request failed with status ${status}`,
+    );
     this.name = "ApiError";
     this.status = status;
-    this.code = problem.code || (status >= 500 ? "server_error" : "request_failed");
+    this.code =
+      problem.code || (status >= 500 ? "server_error" : "request_failed");
     this.detail = problem.detail;
     this.fieldErrors = problem.errors ?? [];
     this.requestId = requestId;
@@ -27,7 +30,12 @@ export class ApiError extends Error {
 
   /** True when the request never reached the API or the API is down. */
   get isUnavailable(): boolean {
-    return this.status === 0 || this.status === 502 || this.status === 503 || this.status === 504;
+    return (
+      this.status === 0 ||
+      this.status === 502 ||
+      this.status === 503 ||
+      this.status === 504
+    );
   }
 }
 
@@ -35,7 +43,10 @@ export const isApiError = (e: unknown): e is ApiError => e instanceof ApiError;
 
 /** Network failures (DNS, refused connection, abort) are reported as status 0. */
 export function networkError(cause: unknown): ApiError {
-  const err = new ApiError(0, { code: "network_error", detail: "Could not reach the TechShop API." });
+  const err = new ApiError(0, {
+    code: "network_error",
+    detail: "Could not reach the TechShop API.",
+  });
   (err as { cause?: unknown }).cause = cause;
   return err;
 }
