@@ -126,5 +126,7 @@ jobs:
         env:
           CI: "1"
       - run: npm run typecheck
+      - name: Unit tests (offline queue, rider session)
+        run: npm test
       - name: Expo doctor
         run: npm run doctor

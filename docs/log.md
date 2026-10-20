@@ -392,3 +392,7 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
     - photo proof;
     - the dispatcher view;
     - the customer app.
+- Logistics app verification (continued, 06:32):
+  - **`expo-doctor`:** 5 Expo packages in the customer app were a patch version behind SDK 57 (from the original scaffold). Aligned them with `npx expo install --fix`; both apps now pass **21/21**.
+  - **Android bundle:** `npx expo export --platform android` builds the logistics app (3 MB Hermes bundle), so the app and the shared API client compile through Metro. Not yet run on a device or emulator.
+  - **CI and `make check`:** the mobile job now runs the unit tests (`npm test` across workspaces; logistics 9/9). Mobile lint and typecheck pass.

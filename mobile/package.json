@@ -11,7 +11,8 @@
     "logistics": "npm run start --workspace=@techshop/mobile-logistics",
     "lint": "npm run lint --workspaces",
     "typecheck": "npm run typecheck --workspaces",
-    "doctor": "npm exec --workspaces -- expo-doctor"
+    "doctor": "npm exec --workspaces -- expo-doctor",
+    "test": "npm run test --workspaces --if-present"
   },
   "overrides": {
     "react": "19.2.3",

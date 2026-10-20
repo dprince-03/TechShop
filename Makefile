@@ -72,4 +72,4 @@ check:
 	$(MAKE) test-api-client
 	cd backend && test -z "$$(gofmt -l .)" && go vet ./... && go test ./... && go build -o /dev/null ./cmd/api
 	cd frontend && npm run format:check && npm run lint && npm run typecheck && npm run build
-	cd mobile && CI=1 npm run lint && npm run typecheck
+	cd mobile && CI=1 npm run lint && npm run typecheck && npm test
