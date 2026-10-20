@@ -531,3 +531,15 @@ Implements `identity-access.md` §5.1 as a shared package in `frontend/packages/
 - **Honesty fixes:** removed the "deals end at midnight" countdown (no real deadline backs it) and the hard-coded "Deliver to Lagos". The delivery page is now a live fee checker. Cars are the only sample data left on the market, and every car view says so.
 - **Client IP:** found while testing. The API rate-limits OTP and tracking per IP, but every BFF call came from the Next server's IP, so in production all shoppers would share one limit. The BFF now forwards the proxy-set `X-Real-IP` as `X-Forwarded-For`, only when `CLIENT_IP_HEADER` is configured (secure default).
   - **Needed at deployment (not a code change):** set `CLIENT_IP_HEADER=x-real-ip` on each web app, and list the web servers' addresses in the API's `TRUSTED_PROXIES`.
+
+## 2026-10-20 — Staff portal on the API (part 1: foundation, orders, finance, catalogue)
+
+- **Route group `(portal)`:** every page except `/sign-in` sits in it. The group layout and each page call `requireStaff(permission)` themselves. Next renders layouts and pages in parallel (seen in testing: a page ran before the layout's redirect), so a layout check alone is not a guard. The API enforces every permission regardless.
+- **Sign-in:** work email + password, then the authenticator code or a recovery code (shared `createAuthFlow`). The MFA token stays in the sealed flow cookie.
+- **Sidebar shows only modules the person may open** (permissions come from `/me`). Modules whose backend isn't built (M4–M7) are marked "Preview" and say so in a sample-data notice naming the milestone.
+- **Step-up:** any action the API answers with `step_up_required` shows an authenticator-code prompt in place, calls `/auth/mfa/step-up` (the BFF swaps in the fresh tokens) and retries the action (`components/ActionButton`).
+- **Staff building blocks** (`apps/staff/src/components`): `Table` (typed rows), `Tabs` (link tabs), `Figures`, `Status` (dot + words), `PageHead`, `ActionButton`; `lib/actions.ts` turns API refusals into plain messages.
+- **Catalogue:** no staff product-list endpoint exists, so the product tab uses the catalogue's search index. The create form makes the product, its first variant and (optionally) TechShop's own listing. If the listing call fails, the product still exists as a draft and the message says so.
+- **Backend issues found (not changed):**
+  - `GET /dispatch/board` returns each job's `otpHash` (the hashed delivery code) to dispatch staff. The UI never shows it, but it should be removed from the response.
+  - Staff catalogue has create/update endpoints but no list.

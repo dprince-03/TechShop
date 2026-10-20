@@ -107,12 +107,13 @@ export class WebClient {
       ),
     ) as { node: Record<string, ManifestEntry> };
     const worker = `app${page === "/" ? "" : page}/page`;
+    // Route groups ("(portal)") are in the worker names but not in URLs.
+    const ungrouped = (w: string) => w.replace(/\/\([^/]+\)/g, "");
     const match = Object.entries(manifest.node).find(
       ([, v]) =>
         v.exportedName === exportedName &&
         (!file || v.filename?.endsWith(file)) &&
-        v.workers &&
-        worker in v.workers,
+        Object.keys(v.workers ?? {}).some((w) => ungrouped(w) === worker),
     );
     if (!match)
       throw new Error(

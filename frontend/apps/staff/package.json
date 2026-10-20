@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start --port 3004",
     "lint": "eslint",
-    "typecheck": "next typegen && tsc --noEmit"
+    "typecheck": "next typegen && tsc --noEmit",
+    "test:e2e": "node --import ../../../shared/api-client/test/register.mjs --test --test-concurrency=1 'test/*.test.ts'"
   },
   "dependencies": {
     "@techshop/api-client": "file:../../../shared/api-client",
@@ -21,6 +22,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@techshop/testing": "0.1.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

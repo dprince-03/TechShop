@@ -1,0 +1,14 @@
+.figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--space-4);
+}
+
+.figure {
+  --card-gap: var(--space-1);
+}
+
+.value {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-semibold);
+}

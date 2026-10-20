@@ -32,36 +32,46 @@ function withCookie(
   return parts.join("; ");
 }
 
-export function createSessionProxy(cfg: BffConfig) {
+type ProxyOptions = {
+  /** Extra request headers for the render, e.g. the current path for sign-in redirects. */
+  requestHeaders?: (request: NextRequest) => Record<string, string>;
+};
+
+export function createSessionProxy(cfg: BffConfig, opts: ProxyOptions = {}) {
   return async function sessionProxy(
     request: NextRequest,
   ): Promise<NextResponse> {
+    const extra = opts.requestHeaders?.(request) ?? {};
+    // `undefined` keeps the cookie as is; null drops it; a string replaces it.
+    const next = (sealed?: string | null) => {
+      const headers =
+        sealed === undefined
+          ? new Headers(request.headers)
+          : forward(request, cfg, sealed);
+      for (const [k, v] of Object.entries(extra)) headers.set(k, v);
+      return NextResponse.next({ request: { headers } });
+    };
+
     const raw = request.cookies.get(cfg.cookieName)?.value;
-    if (!raw) return NextResponse.next();
+    if (!raw) return next();
 
     const session = await decodeSession(raw, cfg);
     if (!session) {
-      const res = NextResponse.next({
-        request: { headers: forward(request, cfg, null) },
-      });
+      const res = next(null);
       res.cookies.delete(cfg.cookieName);
       return res;
     }
-    if (!needsRefresh(session)) return NextResponse.next();
+    if (!needsRefresh(session)) return next();
 
     const outcome = await refreshSession(cfg, session);
-    if (outcome.kind === "unavailable") return NextResponse.next();
+    if (outcome.kind === "unavailable") return next();
     if (outcome.kind === "revoked") {
-      const res = NextResponse.next({
-        request: { headers: forward(request, cfg, null) },
-      });
+      const res = next(null);
       res.cookies.delete(cfg.cookieName);
       return res;
     }
     const sealed = await encodeSession(outcome.session, cfg);
-    const res = NextResponse.next({
-      request: { headers: forward(request, cfg, sealed) },
-    });
+    const res = next(sealed);
     res.cookies.set(
       cfg.cookieName,
       sealed,

@@ -107,6 +107,25 @@ export function createBff(app: string, audience: Audience) {
     await writeSession(sessionFromTokens(tokens));
   }
 
+  /**
+   * Confirms an authenticator code for sensitive actions (approvals, adjustments). The API
+   * answers with a fresh token pair whose auth time satisfies its step-up window.
+   */
+  async function stepUp(code: string): Promise<boolean> {
+    const s = await getSession({ refresh: true });
+    if (!s || !/^\d{6}$/.test(code.trim())) return false;
+    try {
+      const t = await createApiClient({ baseUrl: config().apiUrl }).post(
+        "/api/v1/auth/mfa/step-up",
+        { token: s.accessToken, body: { code: code.trim() } },
+      );
+      await writeSession(sessionFromTokens(t));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   /** Revokes the session at the API, then drops the cookie, even if the API call fails. */
   async function signOut() {
     const s = await getSession();
@@ -135,6 +154,7 @@ export function createBff(app: string, audience: Audience) {
     requireSession,
     signIn,
     signOut,
+    stepUp,
   };
 }
 
