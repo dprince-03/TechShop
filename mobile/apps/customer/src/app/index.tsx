@@ -7,6 +7,7 @@ import { Button, Field, tokens, useColors } from "@techshop/mobile-ui";
 import { ProductList } from "@/features/catalogue/ProductList";
 import { useLoad } from "@/features/catalogue/useLoad";
 import { useSession } from "@/features/auth/SessionProvider";
+import { useCart } from "@/features/cart/CartProvider";
 import { api } from "@/lib/api";
 
 /** Home: search, top-level categories, then today's deals (biggest discounts first). */
@@ -15,6 +16,7 @@ export default function Home() {
   const c = useColors();
   const [q, setQ] = useState("");
   const { status, me } = useSession();
+  const { count } = useCart();
   const cats = useLoad(async () => ((await api.get("/api/v1/categories")) ?? []).filter((x) => !x.parentId && x.isActive), "categories");
   const deals = useLoad(() => api.get("/api/v1/deals", { query: { limit: 20, sort: "discount" } }), "deals");
 
@@ -34,6 +36,7 @@ export default function Home() {
             label={status === "signed-in" ? `Account${me ? ` · ${me.firstName}` : ""}` : "Sign in"}
             onPress={() => router.push(status === "signed-in" ? "/account" : "/sign-in")}
           />
+          <Button label={count ? `Cart · ${count} item${count === 1 ? "" : "s"}` : "Cart"} onPress={() => router.push("/cart")} />
           <Field label="Search" value={q} onChangeText={setQ} placeholder="Phones, laptops, consoles…" returnKeyType="search" onSubmitEditing={() => q.trim() && router.push({ pathname: "/search", params: { q: q.trim() } })} />
           <Button label="Search" variant="primary" disabled={!q.trim()} onPress={() => router.push({ pathname: "/search", params: { q: q.trim() } })} />
           <Text accessibilityRole="header" style={{ color: c.text, fontSize: tokens.fontSize.xl, fontWeight: "600" }}>Shop by category</Text>

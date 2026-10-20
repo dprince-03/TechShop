@@ -21,3 +21,12 @@ export async function deviceId(): Promise<string> {
   await SecureStore.setItemAsync(DEVICE_KEY, id);
   return id;
 }
+
+const CART_KEY = "ts.customer.cartToken";
+
+/** The guest cart's token (the API issues it on the first add; merged into the account on sign-in). */
+export const cartTokenStore = {
+  get: () => SecureStore.getItemAsync(CART_KEY),
+  set: (v: string) => SecureStore.setItemAsync(CART_KEY, v),
+  clear: () => SecureStore.deleteItemAsync(CART_KEY),
+};

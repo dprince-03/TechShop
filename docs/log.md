@@ -416,3 +416,13 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
     - `expo-doctor` 21/21 for all four workspaces;
     - Android bundles export (customer 2.7 MB, logistics 3 MB);
     - not run on a device or emulator.
+- Customer app cart (06:43):
+  - **`CartProvider`:** the account's cart when signed in; a guest cart keyed by `X-Cart-Token` (token kept in secure storage), merged into the account on sign-in.
+  - **Screens:** add to cart from each product offer (the best offer is the primary button); a cart screen with quantity −/+, remove, and API totals and problems. Checkout is clearly marked "coming soon in the app".
+  - **Verification:**
+    - typecheck and ESLint pass;
+    - `expo-doctor` 21/21 for all workspaces;
+    - Android bundle export (2.8 MB);
+    - mobile tests pass;
+    - the cart endpoints, including guest token and merge, are covered by the commerce contract tests (8/8);
+    - not run on a device.
