@@ -50,9 +50,10 @@ export async function runStaffAction(
         if (name) errors[name] = f.message ?? "Check this field.";
       }
       const message =
-        CODE_MESSAGES[e.code] ??
-        (e.status === 403 ? CODE_MESSAGES.forbidden : undefined) ??
+        // The API's own explanation beats a generic one ("Someone other than the last editor…").
+        (e.code !== "forbidden" ? CODE_MESSAGES[e.code] : undefined) ??
         (e.status < 500 && e.detail ? e.detail : undefined) ??
+        (e.status === 403 ? CODE_MESSAGES.forbidden : undefined) ??
         "Something went wrong. Please try again.";
       return {
         ok: false,

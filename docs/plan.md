@@ -543,3 +543,22 @@ Implements `identity-access.md` §5.1 as a shared package in `frontend/packages/
 - **Backend issues found (not changed):**
   - `GET /dispatch/board` returns each job's `otpHash` (the hashed delivery code) to dispatch staff. The UI never shows it, but it should be removed from the response.
   - Staff catalogue has create/update endpoints but no list.
+
+## 2026-10-20 — Staff portal part 2 (operations, growth, organisation)
+
+- **Live modules added:**
+  - dispatch (board with live counts, assign/unassign/return, riders suspend/reinstate, phone approvals, zones and rate bands);
+  - warehouse (release a wave, pick lists with claim and scan, IMEI/serial for serialised devices, pack by weight, manifests and signed hand-over);
+  - inventory (stock by warehouse, adjustments with reason, receiving serialised units, movements);
+  - marketing (promotions end/cancel, coupons, campaigns submit → approve → pause/resume/cancel, audiences, journeys);
+  - content (pages, help articles, banners);
+  - search tuning (insights, zero-result searches, catalogue gaps, synonyms);
+  - admin (staff roles grant/revoke, roles, people search, audit log, sign-in events, authenticator reset);
+  - HR (staff list, invite, exit).
+- **Content is edited as plain text** and stored as JSON blocks: blank lines separate paragraphs, `## ` starts a heading, `- ` starts a list item. No HTML can be stored or injected.
+- **Separation of duties shows in the UI as well as the API:**
+  - a page's last editor sees "Someone else must publish your edit" instead of a Publish button;
+  - nobody edits their own roles or exits themselves;
+  - campaign approval stays with `marketing.approve` holders, who need step-up.
+- **Error messages prefer the API's own explanation** ("Someone other than the last editor must publish.") over a generic "no permission".
+- **Receiving devices:** 15-digit codes are IMEIs (the API checks the Luhn digit); anything else is a serial number.

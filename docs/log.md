@@ -353,3 +353,14 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
   - **Contract tests:** staff endpoints **8/8** — TOTP second step and wrong code; customer token refused; `/me` permissions; all 36 list endpoints 200 for admin; per-role 403s; masked phone on staff orders; refund requester can't approve, manager can; step-up rejects a wrong code. While writing them: 8 assumed list paths turned out to be POST-only or to need `warehouseId`. Corrected from the spec, not guessed.
   - **Staff e2e:** **8/8** — sign-in redirect keeps the return path; wrong password and wrong code refused with no cookie set; admin sees live dashboard, orders, order detail and all finance tabs (trial balance balanced); support agent's sidebar hides finance and `/finance` is refused; sign-out ends the session; catalogue tabs; product validation errors; product + listing created and found by search; global search; preview module notice; 404 for unknown modules; support agent can't open the create form.
   - **Test kit:** actions behind route groups are found by matching worker names without `(group)` segments. Seeded TOTP codes used by an earlier run are retried on the next 30-second step.
+- Staff portal part 2:
+  - **Modules:** dispatch, warehouse (+ pick list and manifest pages), inventory, marketing, content, search tuning, admin and HR, all wired to the API.
+  - **Verification:** typecheck and ESLint pass; staff e2e **13/13**:
+    - all 23 module pages render for admin with live data (Lagos zone, `WELCOME10` coupon visible);
+    - full warehouse flow: a fresh paid order → serialised unit received with a valid IMEI → wave released → list claimed → every line scanned → parcel packed with a label;
+    - a marketing exec sees no Approve button; a support agent is refused admin and HR;
+    - the content editor saves a page, admin publishes it, and the public API serves it;
+    - add a search synonym.
+  - **Found while testing:**
+    - publish is refused for the page's last editor (backend separation of duties). The UI now hides the button and the error now shows the API's reason. My first test used one person for both, which was the wrong expectation.
+    - an e2e run that ended halfway left lines on a pick list, so the next "release wave" had nothing to pick. The test now places its own paid order first, so the full path runs every time.
