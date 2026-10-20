@@ -115,3 +115,40 @@
 .specRow dt {
   color: var(--color-text-muted);
 }
+
+/* ---------- Offers table ---------- */
+.tableWrap {
+  overflow-x: auto;
+  border: var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.table th,
+.table td {
+  padding: var(--space-3) var(--space-4);
+  text-align: start;
+  white-space: nowrap;
+}
+
+.table thead th {
+  background: var(--color-surface);
+  font-weight: var(--weight-semibold);
+}
+
+.table tbody tr + tr td {
+  border-top: var(--border);
+}
+
+.table .num {
+  text-align: end;
+}
+
+.table td :global(.badge) {
+  margin-inline-start: var(--space-2);
+}

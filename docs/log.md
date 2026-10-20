@@ -324,3 +324,26 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
   - **Verification:** unit tests 6/6 (round-trip, tamper and wrong-key rejection, randomised sealing, production secret refusal, expiry and refresh skew, 401 → revoked vs 5xx/network → unavailable, open-redirect payloads). `tsc` clean.
   - **Identity contract tests** against the live API: **12/12** — OTP sign-in, wrong code refused, new-phone sign-up (`needs_profile` → complete → `/me`), phone validation 422, generic 401 for a wrong password and for an unknown user, refresh rotation, logout revokes refresh, `/me` needs a token, sessions list, profile update, addresses CRUD with cross-user 404, saved toggle, notifications. Running total: **27/27**.
   - **Observed:** a refresh returns a new `sessionId` (the API issues a new session row per rotation in the same family). The BFF stores whatever the API returns, so nothing depends on it staying stable.
+- Market (`frontend/apps/market`) wired to the API:
+  - **Moved** components into `features/*`; removed `lib/api.ts` and `lib/env.ts` (replaced by `lib/bff.ts` and `proxy.ts`).
+  - **Pages now live:** home, category, sub-category, search (filters: brand facet, condition, seller type, price, in stock; sort; cursor pages; did-you-mean), deals, best sellers, product (buy box per variant, all offers, specs, accessories, related), cart, sign-in, account, saved, checkout, payment return, orders, order detail, guest tracking, delivery checker, help articles. 404s are real.
+  - **Still sample:** cars (backend M7), and the written help topics and legal outlines (business text not yet written).
+  - **Verification (live stack, `next dev`):**
+    - typecheck, ESLint and `next build` (no env set; all routes dynamic) pass;
+    - market end-to-end tests **14/14**:
+      - pages show API products and prices;
+      - guest cart add, quantity change (invalid quantity refused) and remove;
+      - checkout redirects a guest to sign-in;
+      - password sign-in merges the guest cart;
+      - profile update; address validation errors, then save;
+      - checkout quote, bad coupon refused, order placed, redirected to the fake Paystack page, paid, order page shows "Payment confirmed" and "Card (Paystack): Paid";
+      - guest tracking finds the order with the right phone and refuses a wrong one;
+      - another customer gets 404 on the order;
+      - sign-out revokes the session and `/account` then asks to sign in;
+      - new-number OTP → profile → signed in; wrong password refused with a generic message;
+      - `?next=//evil.example` lands on `/`;
+      - a cross-site `Origin` can't run an action;
+      - a tampered cookie is ignored;
+      - the session cookie is `HttpOnly`, `SameSite=Lax`, `Path=/` and has no `Domain`.
+  - **Test kit fixes found on the way:** the Flight response's action value is the row that row 0's `a` points to, and dev debug rows share IDs. Fixed in `@techshop/testing`.
+  - **Mistake caught:** a scripted edit to `bff/src/server.ts` silently didn't apply (an earlier Prettier run had changed the text). The e2e test found it (`clientApi is not a function`). The typecheck is now re-run after every scripted edit.

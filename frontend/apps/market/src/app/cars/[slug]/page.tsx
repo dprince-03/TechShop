@@ -3,10 +3,18 @@ import { notFound } from "next/navigation";
 
 import { formatMoney } from "@techshop/api-client";
 import { cars, getCar } from "@techshop/fixtures";
-import { Breadcrumbs, CategoryArt, Icon } from "@techshop/ui/components";
+import {
+  Breadcrumbs,
+  CategoryArt,
+  Icon,
+  SampleDataNotice,
+} from "@techshop/ui/components";
 
-import { carConditionLabel, formatMileage } from "@/components/CarCard";
-import { ViewingForm } from "@/components/ViewingForm";
+import {
+  carConditionLabel,
+  formatMileage,
+} from "@/features/cars/components/CarCard";
+import { ViewingForm } from "@/features/cars/components/ViewingForm";
 
 import styles from "./car.module.css";
 
@@ -57,6 +65,10 @@ export default async function CarPage(props: PageProps<"/cars/[slug]">) {
   return (
     <main id="main" className="section section--page">
       <div className="container container--wide stack stack--lg">
+        <SampleDataNotice>
+          Preview: this car listing is sample data until the cars service is
+          live.
+        </SampleDataNotice>
         <Breadcrumbs
           items={[
             { label: "Home", href: "/" },

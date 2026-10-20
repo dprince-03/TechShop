@@ -1,6 +1,6 @@
 "use client";
 
-import type { SortKey } from "@techshop/fixtures";
+import type { Sort } from "../query";
 
 import styles from "./ProductListing.module.css";
 
@@ -9,8 +9,8 @@ export function SortSelect({
   value,
   options,
 }: {
-  value: SortKey;
-  options: { value: SortKey; label: string }[];
+  value: Sort;
+  options: { value: Sort; label: string }[];
 }) {
   return (
     <div className={styles.sort}>

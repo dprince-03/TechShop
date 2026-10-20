@@ -512,3 +512,22 @@ Implements `identity-access.md` §5.1 as a shared package in `frontend/packages/
 - **CSRF:** Server Actions check Origin themselves. Custom Route Handlers that change state call `assertSameOrigin()` (`Sec-Fetch-Site`, then `Origin` vs `Host`).
 - **Open redirects:** `?next=` accepts only plain relative paths (`//x`, `/\x`, `https:x` and control characters are rejected).
 - **Secrets:** `SESSION_SECRET` (≥ 32 chars, no placeholder words) is required when `NODE_ENV=production`, which includes local `next start`. `next dev` uses a fixed, clearly named development-only key, so proxy and render agree without setup.
+
+## 2026-10-20 — Market wired to the API
+
+**Layout (owner rule: group by feature, reusables in one place):**
+- `apps/market/src/app/` holds routes only. Each page is a thin server component.
+- `apps/market/src/features/<feature>/` holds `api.ts`/`server.ts` (server-only loaders), `actions.ts` (Server Actions), `components/` and the mappers. Features: `catalogue`, `product`, `cart`, `auth`, `checkout`, `orders`, `account`, `saved`, `help`, `cars`, `shell`.
+- Reusables live in `frontend/packages/`: `ui` (components and CSS primitives), `bff` (session, sign-in flow, client IP), `testing` (e2e kit), `fixtures` (sample data, still used for cars).
+
+**Decisions:**
+- **Every data page renders per request** (`await connection()`). The layout already reads the session cookie, and builds must not need a running API (CI has none). The category tree is cached for 5 minutes; listings and cart are `no-store`.
+- **Graceful degradation:** if the API is down, the header still renders with no category row, listings show a "we can't load products" state with a retry link, and the home page drops its empty shelves.
+- **Cards from search results:** the API's `ProductSummary` has no category or image, so cards take their placeholder art from the listing's category (a neutral box elsewhere). They show "Sold by TechShop" only when TechShop is among the sellers and "From N sellers" when there are several. Nothing is guessed.
+- **Guest cart:** the API's `X-Cart-Token` is kept in an `httpOnly` cookie (`ts_cart`, 30 days) and merged into the customer's cart on sign-in.
+- **Sign-in is phone-first** (OTP; the same code signs up a new number), with email and password as the alternative. The account page has profile, addresses (state from the API list) and signed-in devices with remote sign-out.
+- **Checkout:** the address, coupon and payment method are re-priced by `/checkout/preview`. The order is placed with the quote's `priceHash` and one idempotency key per attempt (a new key after a price change). On `409 price_changed` the new total is shown and nothing is charged. Card and wallet payments redirect to the provider's page (only HTTPS, or the local API's `/dev/pay/` page in development); bank transfers show the one-time account in place. `/checkout/return?order=` sends the customer to the order page.
+- **Orders:** signed-in customers see their orders and order pages (pay again, cancel while unpaid, parcels, history). Guests track with order number and checkout phone, posted by a Server Action so the phone never appears in a URL.
+- **Honesty fixes:** removed the "deals end at midnight" countdown (no real deadline backs it) and the hard-coded "Deliver to Lagos". The delivery page is now a live fee checker. Cars are the only sample data left on the market, and every car view says so.
+- **Client IP:** found while testing. The API rate-limits OTP and tracking per IP, but every BFF call came from the Next server's IP, so in production all shoppers would share one limit. The BFF now forwards the proxy-set `X-Real-IP` as `X-Forwarded-For`, only when `CLIENT_IP_HEADER` is configured (secure default).
+  - **Needed at deployment (not a code change):** set `CLIENT_IP_HEADER=x-real-ip` on each web app, and list the web servers' addresses in the API's `TRUSTED_PROXIES`.

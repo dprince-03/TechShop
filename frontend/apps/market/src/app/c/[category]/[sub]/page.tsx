@@ -1,59 +1,44 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 
-import type { CategorySlug } from "@techshop/api-client";
-import {
-  categoryBySlug,
-  getSubcategory,
-  queryProducts,
-} from "@techshop/fixtures";
+import { getCategory } from "@/features/catalogue/api";
+import { SubcategoryNav } from "@/features/catalogue/components/SubcategoryNav";
+import { ListingPage } from "@/features/catalogue/ListingPage";
+import { parseQuery } from "@/features/catalogue/query";
 
-import { ProductListing } from "@/components/ProductListing";
-import { SubcategoryNav } from "@/components/SubcategoryNav";
-import { parseQuery } from "@/lib/query";
-
-const resolve = (categorySlug: string, subSlug: string) => {
-  const category = categoryBySlug[categorySlug as CategorySlug];
-  const sub = category ? getSubcategory(category.slug, subSlug) : undefined;
+async function resolve(params: Promise<{ category: string; sub: string }>) {
+  const { category: c, sub: s } = await params;
+  const category = await getCategory(c);
+  const sub = category?.subcategories.find((x) => x.slug === s);
   return category && sub ? { category, sub } : undefined;
-};
+}
 
 export async function generateMetadata(
   props: PageProps<"/c/[category]/[sub]">,
 ): Promise<Metadata> {
-  const { category, sub } = await props.params;
-  const r = resolve(category, sub);
-  return r
-    ? {
-        title: `${r.sub.name} ${r.category.name.toLowerCase()} | TechShop Market`,
-      }
-    : {};
+  const r = await resolve(props.params);
+  return r ? { title: `${r.sub.name} | TechShop Market` } : {};
 }
 
 export default async function SubcategoryPage(
   props: PageProps<"/c/[category]/[sub]">,
 ) {
-  const params = await props.params;
-  const r = resolve(params.category, params.sub);
-  if (!r || r.category.slug === "cars") notFound();
+  await connection();
+  const r = await resolve(props.params);
+  if (!r || r.category.kind === "vehicle") notFound();
   const { category, sub } = r;
-
-  const query = {
-    ...parseQuery(await props.searchParams),
-    category: category.slug,
-    subcategory: sub.slug,
-  };
   return (
-    <ProductListing
-      title={`${sub.name} ${category.name.toLowerCase()}`}
+    <ListingPage
+      title={sub.name}
       breadcrumbs={[
         { label: "Home", href: "/" },
         { label: category.name, href: `/c/${category.slug}` },
         { label: sub.name },
       ]}
       action={`/c/${category.slug}/${sub.slug}`}
-      query={query}
-      products={queryProducts(query)}
+      query={{ ...parseQuery(await props.searchParams), category: sub.apiSlug }}
+      artCategory={category.slug}
       browse={<SubcategoryNav category={category} current={sub.slug} />}
     />
   );

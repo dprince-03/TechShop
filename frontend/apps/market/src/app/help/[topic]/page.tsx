@@ -9,7 +9,7 @@ import {
   Prose,
 } from "@techshop/ui/components";
 
-import { getHelpTopic, helpTopics } from "@/lib/help";
+import { getHelpTopic, helpTopics } from "@/features/help/content";
 
 import styles from "../help.module.css";
 

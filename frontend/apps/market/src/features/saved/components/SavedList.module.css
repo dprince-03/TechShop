@@ -1,0 +1,23 @@
+.list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.item {
+  display: grid;
+  grid-template-columns: 4rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.thumb {
+  --frame-radius: var(--radius-md);
+}
+
+.name {
+  font-weight: var(--weight-semibold);
+}
+
+.name:hover {
+  text-decoration: underline;
+}

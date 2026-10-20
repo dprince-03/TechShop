@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import type { Category } from "@techshop/api-client";
+import type { MarketCategory } from "../mappers";
 
 import styles from "./ProductListing.module.css";
 
@@ -9,7 +9,7 @@ export function SubcategoryNav({
   category,
   current,
 }: {
-  category: Category;
+  category: MarketCategory;
   current?: string;
 }) {
   return (

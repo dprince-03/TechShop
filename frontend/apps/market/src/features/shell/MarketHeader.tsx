@@ -1,12 +1,13 @@
 import Link from "next/link";
 
-import { categories } from "@techshop/fixtures";
-import { Icon, Logo } from "@techshop/ui/components";
+import { Icon, Logo, type IconName } from "@techshop/ui/components";
 import { sites } from "@techshop/ui/sites";
+
+import { getCategories } from "@/features/catalogue/api";
 
 import styles from "./MarketHeader.module.css";
 
-const categoryIcon = {
+const categoryIcon: Record<string, IconName> = {
   phones: "phone",
   laptops: "laptop",
   accessories: "headphones",
@@ -15,17 +16,24 @@ const categoryIcon = {
   office: "printer",
   workstations: "monitor",
   cars: "car",
-} as const;
+};
+
+type Props = {
+  signedIn: boolean;
+  /** Total quantity in the cart (0 when empty or unknown). */
+  cartCount: number;
+};
 
 /** Search-first marketplace header: utility bar, logo + search + account/cart, category row. */
-export function MarketHeader() {
+export async function MarketHeader({ signedIn, cartCount }: Props) {
+  const categories = await getCategories();
   return (
     <>
       <div className={styles.utility}>
         <div className={`container ${styles.utilityInner}`}>
           <Link href="/delivery" className={styles.utilityLink}>
-            <Icon name="pin" size={16} />
-            Deliver to <strong>Lagos</strong>
+            <Icon name="truck" size={16} />
+            Delivery & fees
           </Link>
           <ul role="list" className={styles.utilityLinks}>
             <li>
@@ -97,9 +105,14 @@ export function MarketHeader() {
             </form>
 
             <nav aria-label="Account" className={styles.account}>
-              <Link href="/account" className={styles.action}>
+              <Link
+                href={signedIn ? "/account" : "/sign-in"}
+                className={styles.action}
+              >
                 <Icon name="user" />
-                <span className={styles.actionLabel}>Sign in</span>
+                <span className={styles.actionLabel}>
+                  {signedIn ? "Account" : "Sign in"}
+                </span>
               </Link>
               <Link href="/saved" className={`${styles.action} hide-mobile`}>
                 <Icon name="heart" />
@@ -108,10 +121,19 @@ export function MarketHeader() {
               <Link
                 href="/cart"
                 className={styles.action}
-                aria-label="Cart, empty"
+                aria-label={
+                  cartCount
+                    ? `Cart, ${cartCount} item${cartCount === 1 ? "" : "s"}`
+                    : "Cart, empty"
+                }
               >
                 <Icon name="cart" />
                 <span className={styles.actionLabel}>Cart</span>
+                {cartCount ? (
+                  <span className={styles.count} aria-hidden="true">
+                    {cartCount > 99 ? "99+" : cartCount}
+                  </span>
+                ) : null}
               </Link>
             </nav>
           </div>
@@ -131,7 +153,7 @@ export function MarketHeader() {
             {categories.map((c) => (
               <li key={c.slug}>
                 <Link href={`/c/${c.slug}`} className={styles.category}>
-                  <Icon name={categoryIcon[c.slug]} size={18} />
+                  <Icon name={categoryIcon[c.slug] ?? "grid"} size={18} />
                   {c.name}
                 </Link>
               </li>

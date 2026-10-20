@@ -1,8 +1,7 @@
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 
-import type { Product } from "@techshop/api-client";
-import { categories, type ProductQuery, sortOptions } from "@techshop/fixtures";
+import type { Product, Schema } from "@techshop/api-client";
 import {
   Breadcrumbs,
   EmptyState,
@@ -10,7 +9,15 @@ import {
   type Crumb,
 } from "@techshop/ui/components";
 
-import { activeFilterCount } from "@/lib/query";
+import type { MarketCategory } from "../mappers";
+import {
+  activeFilterCount,
+  conditionOptions,
+  listingHref,
+  sellerOptions,
+  sortOptions,
+  type ListingQuery,
+} from "../query";
 
 import { FiltersPanel } from "./FiltersPanel";
 import styles from "./ProductListing.module.css";
@@ -22,27 +29,22 @@ type Props = {
   breadcrumbs: Crumb[];
   /** URL the filter form submits to (the current page path). */
   action: string;
-  query: ProductQuery;
+  query: ListingQuery;
   products: Product[];
+  total: number;
+  /** Brand facet from the API (value = brand slug). */
+  brands?: Schema<"Facet">[];
+  nextCursor?: string;
   /** Extra navigation above the filters, e.g. subcategory links. */
   browse?: ReactNode;
-  /** Show the category filter (search results only). */
-  showCategoryFilter?: boolean;
+  /** Category options for the search page's category filter. */
+  categories?: MarketCategory[];
+  /** Shown above the grid, e.g. "Showing results for …". */
+  notice?: ReactNode;
 };
 
-const conditions = [
-  { value: "new", label: "New" },
-  { value: "uk-used", label: "UK-used" },
-  { value: "refurbished", label: "Refurbished" },
-] as const;
-
-const sellers = [
-  { value: "techshop", label: "Sold by TechShop" },
-  { value: "vendor", label: "Marketplace sellers" },
-] as const;
-
 /**
- * Listing template: filters (GET form → URL params), sort, result count, product grid.
+ * Listing template: filters (GET form → URL params), sort, result count, product grid, next page.
  * Works without JavaScript; JS only adds auto-submit on sort and the mobile filter toggle.
  */
 export function ProductListing({
@@ -52,10 +54,17 @@ export function ProductListing({
   action,
   query,
   products,
+  total,
+  brands = [],
+  nextCursor,
   browse,
-  showCategoryFilter,
+  categories,
+  notice,
 }: Props) {
   const active = activeFilterCount(query);
+  const clearHref = query.q
+    ? `${action}?q=${encodeURIComponent(query.q)}`
+    : action;
   return (
     <main id="main" className="section section--page">
       <div className="container container--wide stack stack--lg">
@@ -89,7 +98,7 @@ export function ProductListing({
                 <input type="hidden" name="q" value={query.q} />
               ) : null}
 
-              {showCategoryFilter ? (
+              {categories?.length ? (
                 <fieldset className={styles.group}>
                   <legend className={styles.legend}>Category</legend>
                   <select
@@ -100,7 +109,7 @@ export function ProductListing({
                   >
                     <option value="">All categories</option>
                     {categories
-                      .filter((c) => c.slug !== "cars")
+                      .filter((c) => c.kind !== "vehicle")
                       .map((c) => (
                         <option key={c.slug} value={c.slug}>
                           {c.name}
@@ -110,15 +119,33 @@ export function ProductListing({
                 </fieldset>
               ) : null}
 
+              {brands.length ? (
+                <fieldset className={styles.group}>
+                  <legend className={styles.legend}>Brand</legend>
+                  {brands.map((b) => (
+                    <label key={b.value} className={styles.option}>
+                      <input
+                        type="checkbox"
+                        name="brand"
+                        value={b.value}
+                        defaultChecked={query.brands.includes(b.value)}
+                      />
+                      {b.label}
+                      <span className="text-xs text-subtle">({b.count})</span>
+                    </label>
+                  ))}
+                </fieldset>
+              ) : null}
+
               <fieldset className={styles.group}>
                 <legend className={styles.legend}>Condition</legend>
-                {conditions.map((c) => (
+                {conditionOptions.map((c) => (
                   <label key={c.value} className={styles.option}>
                     <input
                       type="checkbox"
                       name="condition"
                       value={c.value}
-                      defaultChecked={query.condition?.includes(c.value)}
+                      defaultChecked={query.conditions.includes(c.value)}
                     />
                     {c.label}
                   </label>
@@ -127,13 +154,22 @@ export function ProductListing({
 
               <fieldset className={styles.group}>
                 <legend className={styles.legend}>Seller</legend>
-                {sellers.map((s) => (
+                <label className={styles.option}>
+                  <input
+                    type="radio"
+                    name="seller"
+                    value=""
+                    defaultChecked={!query.sellerType}
+                  />
+                  All sellers
+                </label>
+                {sellerOptions.map((s) => (
                   <label key={s.value} className={styles.option}>
                     <input
-                      type="checkbox"
+                      type="radio"
                       name="seller"
                       value={s.value}
-                      defaultChecked={query.seller?.includes(s.value)}
+                      defaultChecked={query.sellerType === s.value}
                     />
                     {s.label}
                   </label>
@@ -168,19 +204,22 @@ export function ProductListing({
                 </div>
               </fieldset>
 
+              <label className={styles.option}>
+                <input
+                  type="checkbox"
+                  name="inStock"
+                  value="1"
+                  defaultChecked={query.inStock}
+                />
+                In stock only
+              </label>
+
               <div className={styles.filterActions}>
                 <button type="submit" className="btn btn--inverse btn--block">
                   Apply filters
                 </button>
                 {active > 0 ? (
-                  <Link
-                    href={
-                      query.q
-                        ? `${action}?q=${encodeURIComponent(query.q)}`
-                        : action
-                    }
-                    className="btn btn--ghost btn--block"
-                  >
+                  <Link href={clearHref} className="btn btn--ghost btn--block">
                     Clear all
                   </Link>
                 ) : null}
@@ -191,15 +230,12 @@ export function ProductListing({
           <div className="stack">
             <div className={styles.toolbar}>
               <p className="text-sm text-muted" role="status">
-                {products.length === 1
-                  ? "1 product"
-                  : `${products.length} products`}
+                {total === 1 ? "1 product" : `${total} products`}
               </p>
-              <SortSelect
-                value={query.sort ?? "relevance"}
-                options={sortOptions}
-              />
+              <SortSelect value={query.sort} options={sortOptions} />
             </div>
+
+            {notice}
 
             {products.length ? (
               <ul
@@ -217,7 +253,7 @@ export function ProductListing({
                 icon="search"
                 title="No products match"
                 action={
-                  <Link href={action} className="btn btn--secondary">
+                  <Link href={clearHref} className="btn btn--secondary">
                     Clear filters
                   </Link>
                 }
@@ -226,6 +262,27 @@ export function ProductListing({
                 for something more general.
               </EmptyState>
             )}
+
+            {nextCursor || query.cursor ? (
+              <nav aria-label="Pages" className="cluster cluster--between">
+                {query.cursor ? (
+                  <Link href={listingHref(action, query)} className="link">
+                    Back to first page
+                  </Link>
+                ) : (
+                  <span />
+                )}
+                {nextCursor ? (
+                  <Link
+                    href={listingHref(action, query, nextCursor)}
+                    className="btn btn--secondary"
+                    rel="next"
+                  >
+                    Next page
+                  </Link>
+                ) : null}
+              </nav>
+            ) : null}
           </div>
         </form>
       </div>

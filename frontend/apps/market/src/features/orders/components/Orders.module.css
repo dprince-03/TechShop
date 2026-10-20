@@ -1,0 +1,146 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.h2 {
+  font-size: var(--text-xl);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-2) var(--space-4);
+  padding-block: var(--space-4);
+}
+
+.row + .row {
+  border-top: var(--border);
+}
+
+.number {
+  font-weight: var(--weight-semibold);
+}
+
+.number:hover {
+  text-decoration: underline;
+}
+
+.parcels {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-inline-start: var(--space-5);
+  border-inline-start: 2px solid var(--color-border);
+  font-size: var(--text-sm);
+}
+
+.timeline li {
+  display: flex;
+  flex-direction: column;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
+
+/* Status dot: colour plus text, never colour alone. */
+.status::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--radius-pill);
+  background: var(--dot, var(--color-text-subtle));
+}
+
+.success {
+  --dot: var(--color-success);
+}
+
+.warning {
+  --dot: var(--color-warning);
+}
+
+.danger {
+  --dot: var(--color-danger);
+}
+
+.layout {
+  display: grid;
+  gap: var(--space-5);
+}
+
+@media (min-width: 64rem) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr) 22rem;
+    align-items: start;
+  }
+}
+
+.lines {
+  display: flex;
+  flex-direction: column;
+}
+
+.line {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-block: var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.line + .line {
+  border-top: var(--border);
+}
+
+.totals {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.totals div {
+  display: flex;
+  justify-content: space-between;
+}
+
+.totals dd {
+  font-variant-numeric: tabular-nums;
+}
+
+.grand {
+  padding-top: var(--space-2);
+  border-top: var(--border);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+}
+
+.payRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.payRow :global(.field) {
+  flex: 1 1 12rem;
+}

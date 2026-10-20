@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 
-import { sampleCart } from "@techshop/fixtures";
 import { Breadcrumbs } from "@techshop/ui/components";
 
-import { CartView } from "@/components/CartView";
+import { CartView } from "@/features/cart/components/CartView";
+import { getCart } from "@/features/cart/server";
+import { bff } from "@/lib/bff";
 
 import styles from "../curated.module.css";
 
@@ -12,7 +14,9 @@ export const metadata: Metadata = {
   robots: { index: false },
 };
 
-export default function CartPage() {
+export default async function CartPage() {
+  await connection();
+  const [cart, session] = await Promise.all([getCart(), bff.getSession()]);
   return (
     <main id="main" className="section section--page">
       <div className="container stack stack--lg">
@@ -21,11 +25,8 @@ export default function CartPage() {
             items={[{ label: "Home", href: "/" }, { label: "Cart" }]}
           />
           <h1 className={styles.title}>Your cart</h1>
-          <p className="text-sm text-muted">
-            Preview with sample items — changes aren’t saved.
-          </p>
         </div>
-        <CartView initial={sampleCart} />
+        <CartView cart={cart} signedIn={Boolean(session)} />
       </div>
     </main>
   );

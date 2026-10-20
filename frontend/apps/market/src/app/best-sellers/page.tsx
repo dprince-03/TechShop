@@ -1,39 +1,26 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 
-import { queryProducts } from "@techshop/fixtures";
-import { Breadcrumbs, ProductCard } from "@techshop/ui/components";
-
-import styles from "../curated.module.css";
+import { ListingPage } from "@/features/catalogue/ListingPage";
+import { parseQuery } from "@/features/catalogue/query";
 
 export const metadata: Metadata = {
   title: "Best sellers | TechShop Market",
-  description: "The most popular tech on TechShop, ranked by customer ratings.",
+  description: "The most popular tech on TechShop.",
 };
 
-export default function BestSellersPage() {
-  const ranked = queryProducts({ sort: "rating" }).filter(
-    (p) => (p.rating?.count ?? 0) >= 50,
-  );
+export default async function BestSellersPage(
+  props: PageProps<"/best-sellers">,
+) {
+  await connection();
   return (
-    <main id="main" className="section section--page">
-      <div className="container container--wide stack stack--lg">
-        <div className="stack stack--sm">
-          <Breadcrumbs
-            items={[{ label: "Home", href: "/" }, { label: "Best sellers" }]}
-          />
-          <h1 className={styles.title}>Best sellers</h1>
-          <p className="text-muted">
-            Top-rated products with at least 50 reviews.
-          </p>
-        </div>
-        <ol role="list" className="grid grid--catalog">
-          {ranked.map((p) => (
-            <li key={p.id}>
-              <ProductCard product={p} href={`/p/${p.slug}`} />
-            </li>
-          ))}
-        </ol>
-      </div>
-    </main>
+    <ListingPage
+      kind="best-sellers"
+      title="Best sellers"
+      description="Ranked by recent sales."
+      breadcrumbs={[{ label: "Home", href: "/" }, { label: "Best sellers" }]}
+      action="/best-sellers"
+      query={parseQuery(await props.searchParams)}
+    />
   );
 }

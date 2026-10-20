@@ -1,24 +1,21 @@
 import Link from "next/link";
+import { connection } from "next/server";
 
-import type { CategorySlug } from "@techshop/api-client";
-import {
-  bestSellers,
-  cars,
-  categories,
-  categoryBySlug,
-  deals,
-  productsByCategory,
-} from "@techshop/fixtures";
+import type { Product } from "@techshop/api-client";
+import { cars } from "@techshop/fixtures";
 import {
   CategoryArt,
-  Countdown,
   Icon,
   ProductCard,
+  SampleDataNotice,
   SectionHeader,
 } from "@techshop/ui/components";
 import { sites } from "@techshop/ui/sites";
 
-import { CarCard } from "@/components/CarCard";
+import { CarCard } from "@/features/cars/components/CarCard";
+import { getCategories, listProducts } from "@/features/catalogue/api";
+import { artFor, toCard } from "@/features/catalogue/mappers";
+import type { ListingQuery } from "@/features/catalogue/query";
 
 import styles from "./page.module.css";
 
@@ -47,18 +44,46 @@ const trust = [
   },
 ] as const;
 
-/** Category shelves shown on the homepage, in order. */
-const shelves: { slug: CategorySlug; surface?: boolean }[] = [
-  { slug: "phones" },
-  { slug: "laptops", surface: true },
-  { slug: "gaming" },
-  { slug: "accessories", surface: true },
-  { slug: "smart-home" },
-  { slug: "office", surface: true },
-  { slug: "workstations" },
-];
+const SHELF_SIZE = 10;
 
-export default function Home() {
+const shelfQuery = (category?: string): ListingQuery => ({
+  category,
+  brands: [],
+  conditions: [],
+  inStock: true,
+  sort: "best_selling",
+  limit: SHELF_SIZE,
+});
+
+/** One page of cards, or an empty shelf when the API is unavailable (the page still renders). */
+async function cards(
+  kind: "search" | "deals" | "best-sellers",
+  q: ListingQuery,
+  art?: string,
+): Promise<Product[]> {
+  try {
+    const r = await listProducts(q, kind);
+    return (r.items ?? []).map((p) => toCard(p, art));
+  } catch {
+    return [];
+  }
+}
+
+export default async function Home() {
+  await connection();
+  const categories = await getCategories();
+  const productCategories = categories.filter((c) => c.kind !== "vehicle");
+  const [deals, bestSellers, ...shelfItems] = await Promise.all([
+    cards("deals", { ...shelfQuery(), sort: "discount" }),
+    cards("best-sellers", shelfQuery()),
+    ...productCategories.map((c) =>
+      cards("search", shelfQuery(c.slug), c.slug),
+    ),
+  ]);
+  const shelves = productCategories
+    .map((category, i) => ({ category, items: shelfItems[i] }))
+    .filter((s) => s.items.length > 0);
+  const promoCategories = productCategories.slice(1, 3);
   return (
     <main id="main">
       {/* ---------- Hero ---------- */}
@@ -87,18 +112,14 @@ export default function Home() {
           </div>
 
           <div className={styles.heroSide}>
-            {(["laptops", "gaming"] as const).map((slug) => (
-              <Link key={slug} href={`/c/${slug}`} className={styles.promo}>
+            {promoCategories.map((c) => (
+              <Link key={c.slug} href={`/c/${c.slug}`} className={styles.promo}>
                 <div className={styles.promoText}>
-                  <p className="eyebrow">
-                    {slug === "laptops" ? "Work & play" : "Level up"}
-                  </p>
-                  <p className={styles.promoTitle}>
-                    {categoryBySlug[slug].name}
-                  </p>
+                  <p className="eyebrow">Shop by category</p>
+                  <p className={styles.promoTitle}>{c.name}</p>
                   <span className="link link--arrow text-sm">Shop now</span>
                 </div>
-                <CategoryArt category={slug} size="sm" />
+                <CategoryArt category={artFor(c.slug)} size="sm" />
               </Link>
             ))}
           </div>
@@ -128,7 +149,7 @@ export default function Home() {
             {categories.map((c) => (
               <li key={c.slug}>
                 <Link href={`/c/${c.slug}`} className={styles.categoryTile}>
-                  <CategoryArt category={c.slug} size="sm" />
+                  <CategoryArt category={artFor(c.slug)} size="sm" />
                   <span className={styles.categoryName}>{c.name}</span>
                 </Link>
               </li>
@@ -137,44 +158,44 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ---------- Flash deals ---------- */}
-      <section
-        className="section section--surface"
-        aria-labelledby="deals-title"
-      >
-        <div className="container container--wide">
-          <SectionHeader
-            id="deals-title"
-            title="Today’s deals"
-            aside={<Countdown label="Ends in" />}
-            action={{ label: "See all deals", href: "/deals" }}
-          />
-          <ul role="list" className="scroller">
-            {deals.map((p) => (
-              <li key={p.id}>
-                <ProductCard product={p} href={productHref(p.slug)} />
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
+      {/* ---------- Deals ---------- */}
+      {deals.length ? (
+        <section
+          className="section section--surface"
+          aria-labelledby="deals-title"
+        >
+          <div className="container container--wide">
+            <SectionHeader
+              id="deals-title"
+              title="Deals"
+              action={{ label: "See all deals", href: "/deals" }}
+            />
+            <ul role="list" className="scroller">
+              {deals.map((p) => (
+                <li key={p.id}>
+                  <ProductCard product={p} href={productHref(p.slug)} />
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      ) : null}
 
       {/* ---------- Category shelves ---------- */}
-      {shelves.map(({ slug, surface }) => {
-        const category = categoryBySlug[slug];
-        const items = productsByCategory(slug);
+      {shelves.map(({ category, items }, i) => {
+        const slug = category.slug;
         const titleId = `shelf-${slug}`;
         return (
           <section
             key={slug}
-            className={`section ${surface ? "section--surface" : ""}`}
+            className={`section ${i % 2 ? "section--surface" : ""}`}
             aria-labelledby={titleId}
           >
             <div className="container container--wide">
               <SectionHeader
                 id={titleId}
                 title={category.name}
-                description={category.description}
+                description={category.description || undefined}
                 action={{
                   label: `Shop all ${category.name.toLowerCase()}`,
                   href: `/c/${slug}`,
@@ -204,7 +225,7 @@ export default function Home() {
         );
       })}
 
-      {/* ---------- Cars (listings, not add-to-cart) ---------- */}
+      {/* ---------- Cars (listings, not add-to-cart; sample until backend M7) ---------- */}
       <section
         className="section section--surface"
         aria-labelledby="cars-title"
@@ -217,6 +238,10 @@ export default function Home() {
             description="Book a viewing, see the inspection report, and ask about financing before you pay."
             action={{ label: "Browse all cars", href: "/c/cars" }}
           />
+          <SampleDataNotice>
+            Preview: car listings are sample data until the cars service is
+            live.
+          </SampleDataNotice>
           <ul role="list" className={`grid ${styles.carGrid}`}>
             {cars.map((car) => (
               <li key={car.id}>
@@ -228,22 +253,24 @@ export default function Home() {
       </section>
 
       {/* ---------- Best sellers ---------- */}
-      <section className="section" aria-labelledby="best-title">
-        <div className="container container--wide">
-          <SectionHeader
-            id="best-title"
-            title="Best sellers"
-            action={{ label: "See all", href: "/best-sellers" }}
-          />
-          <ul role="list" className="grid grid--catalog">
-            {bestSellers.map((p) => (
-              <li key={p.id}>
-                <ProductCard product={p} href={productHref(p.slug)} />
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
+      {bestSellers.length ? (
+        <section className="section" aria-labelledby="best-title">
+          <div className="container container--wide">
+            <SectionHeader
+              id="best-title"
+              title="Best sellers"
+              action={{ label: "See all", href: "/best-sellers" }}
+            />
+            <ul role="list" className="grid grid--catalog">
+              {bestSellers.map((p) => (
+                <li key={p.id}>
+                  <ProductCard product={p} href={productHref(p.slug)} />
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      ) : null}
 
       {/* ---------- Marketplace & business ---------- */}
       <section

@@ -3,7 +3,8 @@ import Link from "next/link";
 
 import { FaqList, Icon, PageHeader } from "@techshop/ui/components";
 
-import { helpTopics } from "@/lib/help";
+import { listArticles } from "@/features/help/api";
+import { helpTopics } from "@/features/help/content";
 
 import styles from "./help.module.css";
 
@@ -24,7 +25,8 @@ const commonQuestions = [
   },
 ];
 
-export default function HelpPage() {
+export default async function HelpPage() {
+  const articles = await listArticles();
   return (
     <main id="main" className="section section--page">
       <div className="container stack stack--lg">
@@ -63,6 +65,23 @@ export default function HelpPage() {
             </Link>
           </li>
         </ul>
+        {articles.length ? (
+          <section aria-labelledby="articles-title" className="stack">
+            <h2 id="articles-title" className={styles.h2}>
+              Help articles
+            </h2>
+            <ul role="list" className="stack stack--sm">
+              {articles.map((a) => (
+                <li key={a.slug}>
+                  <Link href={`/help/articles/${a.slug}`} className="link">
+                    {a.title}
+                  </Link>{" "}
+                  <span className="text-xs text-muted">· {a.topic}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
         <section aria-labelledby="common-title" className="stack">
           <h2 id="common-title" className={styles.h2}>
             Common questions
@@ -70,7 +89,8 @@ export default function HelpPage() {
           <FaqList items={commonQuestions} />
         </section>
         <p className="text-xs text-muted">
-          Help content is sample text until TechShop’s policies are finalised.
+          The topic guides above are sample text until TechShop’s policies are
+          finalised; help articles come from the content team.
         </p>
       </div>
     </main>
