@@ -176,6 +176,132 @@ components:
           format: date-time
           type: string
       type: object
+    BoardJob:
+      additionalProperties: false
+      properties:
+        assignedAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        assignedBy:
+          type: string
+        attempts:
+          format: int32
+          type: integer
+        createdAt:
+          format: date-time
+          type: string
+        deliveredAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        dropoffLatitude:
+          format: double
+          type:
+            - number
+            - "null"
+        dropoffLongitude:
+          format: double
+          type:
+            - number
+            - "null"
+        fulfilmentId:
+          type: string
+        id:
+          type: string
+        kind:
+          type: string
+        orderNumber:
+          type:
+            - string
+            - "null"
+        otpExpiresAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        otpVerifiedAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        pickupAddress: {}
+        pickupWarehouseId:
+          type: string
+        proofFileId:
+          type: string
+        proofMethod:
+          type:
+            - string
+            - "null"
+        recipientName:
+          type:
+            - string
+            - "null"
+        returnRequestId:
+          type: string
+        riderFirstName:
+          type:
+            - string
+            - "null"
+        riderId:
+          type: string
+        routeSequence:
+          format: int32
+          type:
+            - integer
+            - "null"
+        status:
+          type: string
+        updatedAt:
+          format: date-time
+          type: string
+        windowEnd:
+          format: date-time
+          type:
+            - string
+            - "null"
+        windowStart:
+          format: date-time
+          type:
+            - string
+            - "null"
+        zoneId:
+          type: string
+        zoneName:
+          type: string
+      required:
+        - zoneName
+        - orderNumber
+        - riderFirstName
+        - id
+        - kind
+        - fulfilmentId
+        - returnRequestId
+        - riderId
+        - zoneId
+        - status
+        - pickupWarehouseId
+        - pickupAddress
+        - dropoffLatitude
+        - dropoffLongitude
+        - routeSequence
+        - windowStart
+        - windowEnd
+        - attempts
+        - assignedBy
+        - assignedAt
+        - deliveredAt
+        - recipientName
+        - otpExpiresAt
+        - otpVerifiedAt
+        - proofMethod
+        - proofFileId
+        - createdAt
+        - updatedAt
+      type: object
     CampaignInput:
       additionalProperties: false
       properties:
@@ -1472,7 +1598,7 @@ components:
           $ref: "#/components/schemas/LogisticsBoardCountsRow"
         jobs:
           items:
-            $ref: "#/components/schemas/LogisticsBoardRow"
+            $ref: "#/components/schemas/BoardJob"
           type:
             - array
             - "null"
@@ -1506,6 +1632,119 @@ components:
         - userId
         - vehicleType
         - homeWarehouseId
+      type: object
+    DispatchJob:
+      additionalProperties: false
+      properties:
+        assignedAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        assignedBy:
+          type: string
+        attempts:
+          format: int32
+          type: integer
+        createdAt:
+          format: date-time
+          type: string
+        deliveredAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        dropoffLatitude:
+          format: double
+          type:
+            - number
+            - "null"
+        dropoffLongitude:
+          format: double
+          type:
+            - number
+            - "null"
+        fulfilmentId:
+          type: string
+        id:
+          type: string
+        kind:
+          type: string
+        otpExpiresAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        otpVerifiedAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        pickupAddress: {}
+        pickupWarehouseId:
+          type: string
+        proofFileId:
+          type: string
+        proofMethod:
+          type:
+            - string
+            - "null"
+        recipientName:
+          type:
+            - string
+            - "null"
+        returnRequestId:
+          type: string
+        riderId:
+          type: string
+        routeSequence:
+          format: int32
+          type:
+            - integer
+            - "null"
+        status:
+          type: string
+        updatedAt:
+          format: date-time
+          type: string
+        windowEnd:
+          format: date-time
+          type:
+            - string
+            - "null"
+        windowStart:
+          format: date-time
+          type:
+            - string
+            - "null"
+        zoneId:
+          type: string
+      required:
+        - id
+        - kind
+        - fulfilmentId
+        - returnRequestId
+        - riderId
+        - zoneId
+        - status
+        - pickupWarehouseId
+        - pickupAddress
+        - dropoffLatitude
+        - dropoffLongitude
+        - routeSequence
+        - windowStart
+        - windowEnd
+        - attempts
+        - assignedBy
+        - assignedAt
+        - deliveredAt
+        - recipientName
+        - otpExpiresAt
+        - otpVerifiedAt
+        - proofMethod
+        - proofFileId
+        - createdAt
+        - updatedAt
       type: object
     DispatchReturnRequest:
       additionalProperties: false
@@ -3683,140 +3922,6 @@ components:
         - failed
         - deliveredToday
       type: object
-    LogisticsBoardRow:
-      additionalProperties: false
-      properties:
-        assignedAt:
-          format: date-time
-          type:
-            - string
-            - "null"
-        assignedBy:
-          type: string
-        attempts:
-          format: int32
-          type: integer
-        createdAt:
-          format: date-time
-          type: string
-        deliveredAt:
-          format: date-time
-          type:
-            - string
-            - "null"
-        dropoffLatitude:
-          format: double
-          type:
-            - number
-            - "null"
-        dropoffLongitude:
-          format: double
-          type:
-            - number
-            - "null"
-        fulfilmentId:
-          type: string
-        id:
-          type: string
-        kind:
-          type: string
-        orderNumber:
-          type:
-            - string
-            - "null"
-        otpAttempts:
-          format: int32
-          type: integer
-        otpExpiresAt:
-          format: date-time
-          type:
-            - string
-            - "null"
-        otpHash:
-          contentEncoding: base64
-          type: string
-        otpVerifiedAt:
-          format: date-time
-          type:
-            - string
-            - "null"
-        pickupAddress: {}
-        pickupWarehouseId:
-          type: string
-        proofFileId:
-          type: string
-        proofMethod:
-          type:
-            - string
-            - "null"
-        recipientName:
-          type:
-            - string
-            - "null"
-        returnRequestId:
-          type: string
-        riderFirstName:
-          type:
-            - string
-            - "null"
-        riderId:
-          type: string
-        routeSequence:
-          format: int32
-          type:
-            - integer
-            - "null"
-        status:
-          type: string
-        updatedAt:
-          format: date-time
-          type: string
-        windowEnd:
-          format: date-time
-          type:
-            - string
-            - "null"
-        windowStart:
-          format: date-time
-          type:
-            - string
-            - "null"
-        zoneId:
-          type: string
-        zoneName:
-          type: string
-      required:
-        - id
-        - kind
-        - fulfilmentId
-        - returnRequestId
-        - riderId
-        - zoneId
-        - status
-        - pickupWarehouseId
-        - pickupAddress
-        - dropoffLatitude
-        - dropoffLongitude
-        - routeSequence
-        - windowStart
-        - windowEnd
-        - attempts
-        - assignedBy
-        - assignedAt
-        - deliveredAt
-        - recipientName
-        - otpHash
-        - otpExpiresAt
-        - otpAttempts
-        - otpVerifiedAt
-        - proofMethod
-        - proofFileId
-        - createdAt
-        - updatedAt
-        - zoneName
-        - orderNumber
-        - riderFirstName
-      type: object
     LogisticsDeliveryEvent:
       additionalProperties: false
       properties:
@@ -3875,127 +3980,6 @@ components:
         - createdBy
         - occurredAt
         - createdAt
-      type: object
-    LogisticsDeliveryJob:
-      additionalProperties: false
-      properties:
-        assignedAt:
-          format: date-time
-          type:
-            - string
-            - "null"
-        assignedBy:
-          type: string
-        attempts:
-          format: int32
-          type: integer
-        createdAt:
-          format: date-time
-          type: string
-        deliveredAt:
-          format: date-time
-          type:
-            - string
-            - "null"
-        dropoffLatitude:
-          format: double
-          type:
-            - number
-            - "null"
-        dropoffLongitude:
-          format: double
-          type:
-            - number
-            - "null"
-        fulfilmentId:
-          type: string
-        id:
-          type: string
-        kind:
-          type: string
-        otpAttempts:
-          format: int32
-          type: integer
-        otpExpiresAt:
-          format: date-time
-          type:
-            - string
-            - "null"
-        otpHash:
-          contentEncoding: base64
-          type: string
-        otpVerifiedAt:
-          format: date-time
-          type:
-            - string
-            - "null"
-        pickupAddress: {}
-        pickupWarehouseId:
-          type: string
-        proofFileId:
-          type: string
-        proofMethod:
-          type:
-            - string
-            - "null"
-        recipientName:
-          type:
-            - string
-            - "null"
-        returnRequestId:
-          type: string
-        riderId:
-          type: string
-        routeSequence:
-          format: int32
-          type:
-            - integer
-            - "null"
-        status:
-          type: string
-        updatedAt:
-          format: date-time
-          type: string
-        windowEnd:
-          format: date-time
-          type:
-            - string
-            - "null"
-        windowStart:
-          format: date-time
-          type:
-            - string
-            - "null"
-        zoneId:
-          type: string
-      required:
-        - id
-        - kind
-        - fulfilmentId
-        - returnRequestId
-        - riderId
-        - zoneId
-        - status
-        - pickupWarehouseId
-        - pickupAddress
-        - dropoffLatitude
-        - dropoffLongitude
-        - routeSequence
-        - windowStart
-        - windowEnd
-        - attempts
-        - assignedBy
-        - assignedAt
-        - deliveredAt
-        - recipientName
-        - otpHash
-        - otpExpiresAt
-        - otpAttempts
-        - otpVerifiedAt
-        - proofMethod
-        - proofFileId
-        - createdAt
-        - updatedAt
       type: object
     LogisticsDeliveryRate:
       additionalProperties: false
@@ -9585,7 +9569,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/LogisticsDeliveryJob"
+                $ref: "#/components/schemas/DispatchJob"
           description: OK
         default:
           content:
@@ -9643,7 +9627,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/LogisticsDeliveryJob"
+                $ref: "#/components/schemas/DispatchJob"
           description: OK
         default:
           content:

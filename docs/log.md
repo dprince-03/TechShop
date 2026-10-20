@@ -473,3 +473,9 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
 - **Check:** regenerated locally, then ran Prettier on it: no diff against the committed file, so the contract itself was in sync; only formatting differed.
 - **Fix:** `api:types` in `frontend/package.json` now runs Prettier on the generated file, so output is the same every run.
 - **Verification (local, same steps as the CI job):** generated-types check passes; api-client typecheck + unit tests 5/5; format:check, lint, typecheck, build pass.
+
+## 2026-10-21 — Fix: dispatch responses no longer carry the delivery-code hash
+
+- **Issue (found during frontend work):** `GET /dispatch/board` and `POST /dispatch/jobs/{id}/assign|unassign` returned sqlc rows with `otpHash` and `otpAttempts`. Handlers nulled the hash at runtime, but the field stayed in the contract, so any handler that forgot would leak it.
+- **Fix:** response types `DispatchJob` and `BoardJob` in `internal/logistics/http.go`, built field by field from the row with no OTP hash or attempt count. OpenAPI spec and generated TS types regenerated; no web or mobile code used those fields.
+- **Tests:** unit `TestDispatchJobHidesDeliveryCode`; e2e board and assign assertions now fail if either field appears.
