@@ -427,3 +427,7 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
     - the cart endpoints, including guest token and merge, are covered by the commerce contract tests (8/8);
     - not run on a device.
 - Customer app orders (06:45): order list and order detail (parcels by seller, totals, history; awaiting-payment note), and guest tracking (order number + checkout phone) linked from home and account. Typecheck, ESLint, `expo-doctor` 21/21 and the Android bundle export pass. The endpoints are covered by the commerce contract tests. Not run on a device.
+- Customer app checkout (06:48):
+  - **Added** `expo-web-browser` (`npx expo install`).
+  - **`app/checkout.tsx`:** address choose or add, payment method, API quote, pay (price hash + idempotency key), provider page in the in-app browser, a payment status check, then the order page; bank transfers show the account in place. The cart's button now goes to checkout (or to sign-in for guests).
+  - **Verification:** typecheck and ESLint clean; `expo-doctor` 21/21; Android bundle export (2.8 MB). The endpoints (preview, place, idempotent replay, stale-hash 409, fake payment, payment status) are covered by the commerce contract tests. Not run on a device.

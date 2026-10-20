@@ -22,6 +22,7 @@ export default function RootLayout() {
         <Stack.Screen name="orders/index" options={{ title: "Your orders" }} />
         <Stack.Screen name="orders/[number]" options={{ title: "Order" }} />
         <Stack.Screen name="track" options={{ title: "Track an order" }} />
+        <Stack.Screen name="checkout" options={{ title: "Checkout" }} />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

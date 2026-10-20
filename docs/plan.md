@@ -571,3 +571,10 @@ Implements `identity-access.md` §5.1 as a shared package in `frontend/packages/
   - Buying says plainly "coming soon in the app; order on the website". There's no dead or fake button.
   - Lists use `FlatList` for now; FlashList (in the plan) can replace it when the dependency is added.
 - **Next for the customer app:** phone sign-in (reuse the rider `session.ts` once it moves to a shared mobile package), cart, checkout with an `expo-web-browser` payment hand-off, orders and tracking.
+
+## 2026-10-20 — Customer app checkout
+
+- **Payment hand-off as planned (`docs/mobile.md` §1):** the API returns the provider's checkout URL; the app opens it with `expo-web-browser` (added). Card details never touch the app. On return, the app checks `/me/payments/{id}` for about 15 s, then opens the order page. The webhook is what marks the order paid. Bank transfers show the one-time account in place.
+- **Same safety as the web:** the order is placed with the quote's price hash and one idempotency key per attempt (a new key after a price change). On `409 price_changed`, the new total is shown and nothing is charged.
+- **Addresses:** checkout picks a saved address or adds one (the state is typed and matched against the API's list, with suggestions). Full address management on the account screen comes later.
+- **Device testing note:** in development, the fake provider's page is served by the API at `APP_BASE_URL`. For an Android emulator, run the API with `APP_BASE_URL=http://10.0.2.2:8080` so the in-app browser can reach it.

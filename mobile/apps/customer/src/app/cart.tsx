@@ -65,8 +65,11 @@ export default function CartScreen() {
       {(cart!.problems ?? []).map((p) => (
         <Notice key={p} tone="warning">{p}</Notice>
       ))}
-      <Notice>Checkout in the app is coming soon. {status === "signed-in" ? "Your cart is saved to your account, so you can check out on the TechShop Market website." : "Sign in to keep this cart on your account and check out on the website."}</Notice>
-      {status !== "signed-in" ? <Button label="Sign in" onPress={() => router.push("/sign-in")} /> : null}
+      {status === "signed-in" ? (
+        <Button label="Checkout" variant="primary" disabled={!cart!.purchasable} onPress={() => router.push("/checkout")} />
+      ) : (
+        <Button label="Sign in to check out" variant="primary" onPress={() => router.push("/sign-in")} />
+      )}
     </Screen>
   );
 }
