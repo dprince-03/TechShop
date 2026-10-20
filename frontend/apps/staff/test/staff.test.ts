@@ -19,7 +19,7 @@ import {
 } from "@techshop/testing";
 
 const APP_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
-const BASE = process.env.STAFF_URL ?? "http://localhost:3004";
+const BASE = process.env.STAFF_URL ?? "http://localhost:4105";
 const browser = () => new WebClient(BASE, APP_DIR);
 
 // Each TOTP code works once; remember the last step used per account across tests.

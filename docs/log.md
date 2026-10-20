@@ -437,3 +437,11 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
   - staff e2e **13/13**;
   - unit tests: api-client 5/5, bff 7/7, mobile queue 5/5, mobile session 4/4.
   - All servers and containers started for testing were stopped afterwards. Ports 3000 and 3003 belong to other projects and were left alone.
+- Dev ports 3001–3005 → 4101–4105:
+  - **Updated** 13 files: app scripts, e2e defaults, nginx, three READMEs, `backend/.env.example` and `internal/config/config.go`; also the project-domain note.
+  - **Verification:**
+    - no old port references remain;
+    - backend `gofmt`/`go vet`/config tests pass and the API builds;
+    - `nginx -t` passes on the new config;
+    - market and staff started with their own `npm run dev` on 4102 and 4105: market e2e **15/15**, staff e2e **13/13**.
+  - Servers and the test stack were stopped afterwards.

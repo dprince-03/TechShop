@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3004",
+    "dev": "next dev --port 4105",
     "build": "next build",
-    "start": "next start --port 3004",
+    "start": "next start --port 4105",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "test:e2e": "node --import ../../../shared/api-client/test/register.mjs --test --test-concurrency=1 'test/*.test.ts'"

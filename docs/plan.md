@@ -578,3 +578,20 @@ Implements `identity-access.md` §5.1 as a shared package in `frontend/packages/
 - **Same safety as the web:** the order is placed with the quote's price hash and one idempotency key per attempt (a new key after a price change). On `409 price_changed`, the new total is shown and nothing is charged.
 - **Addresses:** checkout picks a saved address or adds one (the state is typed and matched against the API's list, with suggestions). Full address management on the account screen comes later.
 - **Device testing note:** in development, the fake provider's page is served by the API at `APP_BASE_URL`. For an Android emulator, run the API with `APP_BASE_URL=http://10.0.2.2:8080` so the in-app browser can reach it.
+
+## 2026-10-20 — Web dev ports moved to 4101–4105
+
+**Owner decision:** corporate **4101**, market **4102**, wholesale **4103**, seller **4104**, staff **4105**. API stays on 8080.
+
+**Why:** other projects on the owner's machine use the 3000s (AdGuard on 3000, another app on 3003, which clashed with the seller app). A dedicated block avoids clashes. 6000 was considered and rejected: browsers block it (and 6665–6669) as unsafe ports.
+
+**Changed:**
+- each app's `dev`/`start` scripts;
+- the e2e test defaults;
+- the nginx routes;
+- the READMEs;
+- the backend defaults for `CORS_ALLOWED_ORIGINS` and `PAYMENT_CALLBACK_URL` (now `http://localhost:4102/checkout/return`) in `internal/config` and `.env.example`. These backend config changes were approved by the owner.
+
+**Supersedes** the ports in "Multi-app monorepo restructure" and "Corporate dev port moved to 3005".
+
+**Owner action:** a local `backend/.env` that sets `CORS_ALLOWED_ORIGINS` or `PAYMENT_CALLBACK_URL` with the old ports needs the new ones. Claude doesn't read or edit `.env` files.

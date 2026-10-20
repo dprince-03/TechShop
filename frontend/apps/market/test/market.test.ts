@@ -18,7 +18,7 @@ import {
 } from "@techshop/testing";
 
 const APP_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
-const BASE = process.env.MARKET_URL ?? "http://localhost:3001";
+const BASE = process.env.MARKET_URL ?? "http://localhost:4102";
 const browser = () => new WebClient(BASE, APP_DIR);
 const listing = (n: number) => seed().extra[`listing_p${n}`];
 

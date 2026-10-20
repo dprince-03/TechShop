@@ -6,11 +6,11 @@ Commerce platform for phones, laptops, accessories, gaming, smart home, office, 
 
 | App | Path | Stack | Local URL |
 | --- | --- | --- | --- |
-| Company site | `frontend/apps/corporate` | Next.js | http://techshop.localhost · :3005 |
-| Customer marketplace | `frontend/apps/market` | Next.js | http://market.techshop.localhost · :3001 |
-| Wholesale & retail | `frontend/apps/wholesale` | Next.js | http://wholesale.techshop.localhost · :3002 |
-| Seller centre | `frontend/apps/seller` | Next.js | http://seller.techshop.localhost · :3003 |
-| Staff portal (role-based) | `frontend/apps/staff` | Next.js | http://staff.techshop.localhost · :3004 |
+| Company site | `frontend/apps/corporate` | Next.js | http://techshop.localhost · :4101 |
+| Customer marketplace | `frontend/apps/market` | Next.js | http://market.techshop.localhost · :4102 |
+| Wholesale & retail | `frontend/apps/wholesale` | Next.js | http://wholesale.techshop.localhost · :4103 |
+| Seller centre | `frontend/apps/seller` | Next.js | http://seller.techshop.localhost · :4104 |
+| Staff portal (role-based) | `frontend/apps/staff` | Next.js | http://staff.techshop.localhost · :4105 |
 | Customer app | `mobile/apps/customer` | Expo (React Native) | — |
 | Delivery & dispatch app | `mobile/apps/logistics` | Expo (React Native) | — |
 | API | `backend/` | Go, Gin, pgx, goose, sqlc | http://api.techshop.localhost · :8080 |

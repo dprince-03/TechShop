@@ -99,7 +99,7 @@ Full detail: `docs/database/flows.md` and the system docs.
 
 ## 10. Known constraints & gotchas
 
-- Port 3000 is taken by AdGuard on the owner's machine; the corporate site uses 3005.
+- Dev ports: web apps use 4101–4105 (corporate, market, wholesale, seller, staff); 3000 is taken by AdGuard and other projects use the 3000s. Avoid 6000 and 6665–6669 (browsers block them).
 - `frontend/` and `mobile/` have separate installs (different React versions).
 - Backend work is **on hold** until the owner says it's time. That includes the dev test accounts and the weak-secret checks.
 
