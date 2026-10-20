@@ -480,3 +480,23 @@ The owner flagged that the backend ignored their folders and lumped each feature
 ## 2026-10-06 — Recommender database confirmed: Postgres
 
 The owner asked whether MongoDB suits ML better. Answer: training data lives in files (Parquet), the database only holds tabular results and model bookkeeping, and Postgres covers flexibility (`jsonb`) and vectors (`pgvector`). The owner kept Postgres (decision #29 stands).
+
+## 2026-10-20 — Complete frontend build, then mobile (overnight session)
+
+The owner asked for the complete frontend, then mobile, built feature by feature, each endpoint tested before moving on, pushed to GitHub one piece at a time, with no co-author lines. Work starts 01:30 and stops at 07:30 even if unfinished. The owner said to skip any rule that requires asking for permission and to research instead of guessing.
+
+**Plan (in order):**
+1. **Typed API client** in `shared/api-client`, generated from `backend/api/openapi.yaml` (the pipeline in `backend.md` §2.1).
+2. **Web foundation:** a shared BFF session kit (encrypted `httpOnly` cookie, refresh, sign-out) as `identity-access.md` §5.1 describes.
+3. **Market** wired to the API feature by feature: catalogue → sign-in → cart → checkout and payment → orders and tracking → account.
+4. **Staff portal:** sign-in (password + TOTP), then orders, catalogue, finance, marketing, dispatch, warehouse, inventory, content, admin.
+5. **Wholesale, corporate, seller:** wire what the backend already serves. B2B (M6) and seller (M4) endpoints don't exist yet, so those screens keep clearly labelled sample data.
+6. **Mobile:** the logistics app first (its backend, M3, is complete), then the customer app.
+
+**Decisions:**
+- **Branch, not `main`:** work goes to `feat/frontend-integration` and is pushed commit by commit. `main` stays reviewable and a bad commit never lands there directly.
+- **Generated types, hand-written client:** `openapi-typescript@7.13.0` (dev dependency in `frontend/`) generates `shared/api-client/src/generated/schema.ts`. The runtime client is ~150 lines written here instead of adding `openapi-fetch`. *Why:* `shared/` sits outside both install roots, so a runtime dependency there would not resolve from `frontend/node_modules` or `mobile/node_modules` without a third install root. Types-only generation avoids that and adds no shipped code.
+- **Client shape:** `api.get(path, { path, query, body, token, idempotencyKey, init })` returns the success body; `api.request.*` also returns status and headers. Errors are `ApiError` carrying the problem+json `code`, field errors and `X-Request-Id`. Required path, query and body parameters are compile-time errors when missing.
+- **Tests without new tools:** Node's built-in test runner (`node --test`, native TypeScript stripping). Unit tests run in CI; contract tests call a real seeded local API (`test/contract/`), because CI has no running API.
+- **CI:** the frontend job fails if the generated types are stale.
+- **Known audit findings (not fixed):** 5 "high" `npm audit` findings, all in ESLint's `braces`/`micromatch` chain under `eslint-config-next`. They existed before this work, are dev-only and are never shipped. They clear when `eslint-config-next` updates.

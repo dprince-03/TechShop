@@ -6,5 +6,9 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "node --import ./test/register.mjs --test 'test/*.test.ts'",
+    "test:contract": "node --import ./test/register.mjs --test --test-concurrency=1 'test/contract/*.test.ts'"
   }
 }

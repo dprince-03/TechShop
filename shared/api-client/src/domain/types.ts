@@ -1,10 +1,5 @@
-// Response shapes returned by the Go API (backend/internal/handler).
-// Shared by web and mobile — the API contract.
-
-export type HealthResponse = {
-  status: "ok" | "degraded";
-  database: "up" | "down";
-};
+// UI view models shared by web and mobile (product cards, prices, tiers). The API contract
+// itself is generated: see ../contract.ts. Screens map API responses into these shapes.
 
 /** Amounts are integers in the currency's minor unit (kobo for NGN). */
 export type Money = {

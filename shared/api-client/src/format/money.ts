@@ -1,4 +1,4 @@
-import type { Money } from "./types";
+import type { Money } from "../domain/types";
 
 const formatters = new Map<string, Intl.NumberFormat>();
 
@@ -32,3 +32,6 @@ export function discountPercent(price: Money, compareAt?: Money): number | undef
 
 /** Builds a Money value from naira (major units). */
 export const naira = (major: number): Money => ({ amount: Math.round(major * 100), currency: "NGN" });
+
+/** Formats a kobo integer (the API's money fields, e.g. `priceKobo`) as naira. */
+export const formatKobo = (amount: number): string => formatMoney({ amount, currency: "NGN" });

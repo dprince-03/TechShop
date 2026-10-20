@@ -18,9 +18,11 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "api:types": "openapi-typescript ../backend/api/openapi.yaml -o ../shared/api-client/src/generated/schema.ts"
   },
   "devDependencies": {
+    "openapi-typescript": "7.13.0",
     "prettier": "^3.9.9",
     "turbo": "^2"
   }

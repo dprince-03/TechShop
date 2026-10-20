@@ -306,3 +306,16 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
   - **Recommender:** added `RECS_DATABASE_URL` to `recommendation/` (`.env.example`, settings), the psycopg driver to `pyproject.toml` (declared, not installed), and rewrote `test_no_db_access.py` (it now blocks Go's database instead of every database).
   - **Not built yet:** the Go pull job and the recommender's results API.
 - No-Redis rule dropped (2026-10-06): decision #30 recorded; docs, skills and the `pkg/database` doc comment updated. No code or infrastructure changed.
+
+### 2026-10-20
+
+- Typed API client (shared/api-client):
+  - **Local stack for testing:** throwaway Postgres (tmpfs, no host port), migrate and seed in containers on a private network; only the API is published on `127.0.0.1:8080`. Dev secrets are generated per run in the scratchpad and never committed. The committed spec matched a fresh `go run ./cmd/openapi` (189 paths).
+  - **Added:** `openapi-typescript@7.13.0` (dev), `npm run api:types`, `make api-types`, `make test-api-client`, a CI step that fails on stale types.
+  - **Layout:** `src/http/` (client, errors, request typing), `src/generated/` (contract), `src/contract.ts` (`Schema<"…">` alias), `src/format/` (money, phone), `src/domain/` (UI view models). Removed the old untyped client and `HealthResponse`.
+  - **Verification:**
+    - unit tests 5/5 (path and query building, problem+json → `ApiError`, headers and body, network failure);
+    - type-level checks: missing path, unknown path, missing body and missing required query are all compile errors;
+    - contract tests against the live seeded API: **15/15** — categories, category products, search (sort, cursor paging, forged cursor 422), suggest, product detail (buy box, 404 code), deals, best sellers, brands, states (37), delivery estimate (Lagos covered, Kano not), help list and article, banners, unpublished page 404;
+    - `tsc` clean for the package; `npm run typecheck` passes for all five web apps.
+  - **Backend observations (not changed; backend is off-limits during frontend work):** product detail returns `category` as `{"Slug","Name"}` (a Go struct without JSON tags); no CMS pages or banners are seeded, so legal and help pages keep their written placeholder content when the API returns 404.
