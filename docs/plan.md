@@ -604,3 +604,15 @@ The owner had commented out the `ask` and `deny` lists in `.claude/settings.json
 - keep a short `deny` for irreversible actions and the `.claude/CLAUDE.md` "never" rules: `.env` read/edit/write, force-push, `reset --hard`, `clean -f`, `branch -D`, `rm -rf`, migration rollbacks, Docker volume deletion, `psql … DROP`, `ssh`/`scp`/`sftp`/`rsync` to remotes.
 
 `git add` and `git commit` are no longer denied, so commits can be made when asked. Deny rules are enforced by Claude Code itself; Claude can't override them.
+
+## 2026-10-21 — Backend restructure (supersedes the layout part of the 2026-10-06 correction)
+
+Owner approved ("go") the proposed layout and these choices:
+- **Move, don't rewrite.** Packages move with `git mv` (history kept); import paths are fixed by script; `go build`, unit and e2e tests prove behaviour is unchanged.
+- `internal/modules/<feature>/`: identity, catalog, content, files, inventory, wms, sales, payments, ledger, logistics, marketing, notify, tracking.
+- `internal/platform/`: app, config, auth, rbac, httpx, middleware, kit, uow, outbox, jobs, idempotency, ratelimit, realtime, storage, database.
+- `internal/store/` (sqlc output) and `internal/seed/` stay where they are. `pkg/` is unchanged.
+- **Large files split by cutting** into `routes.go`, `handler.go`, `dto.go`, `service.go` per module, no logic changes.
+- **Repository layer only where it earns its place**: new M4 code and complex modules; no pass-through wrappers over sqlc everywhere.
+- **Redis / MongoDB:** `pkg/database/` keeps room for `redis/` and `mongo/` beside `postgres/`; nothing added until a feature needs it.
+- Then M4 (marketplace) starts on top of this layout.

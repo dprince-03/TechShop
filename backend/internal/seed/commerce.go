@@ -11,11 +11,11 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dprince-03/techshop/backend/internal/catalog"
-	"github.com/dprince-03/techshop/backend/internal/inventory"
-	"github.com/dprince-03/techshop/backend/internal/kit"
+	"github.com/dprince-03/techshop/backend/internal/modules/catalog"
+	"github.com/dprince-03/techshop/backend/internal/modules/inventory"
+	"github.com/dprince-03/techshop/backend/internal/platform/kit"
+	"github.com/dprince-03/techshop/backend/internal/platform/uow"
 	"github.com/dprince-03/techshop/backend/internal/store"
-	"github.com/dprince-03/techshop/backend/internal/uow"
 )
 
 //go:embed fixtures.json

@@ -40,7 +40,7 @@ type Querier interface {
 	CatalogListAttributeValues(ctx context.Context, productID uuid.UUID) ([]CatalogListAttributeValuesRow, error)
 	CatalogListBrands(ctx context.Context) ([]CatalogBrand, error)
 	// Catalogue queries (docs/search-catalogue.md). Search itself is the documented dynamic
-	// query in internal/catalog/search_query.go.
+	// query in internal/modules/catalog/search_query.go.
 	CatalogListCategories(ctx context.Context) ([]CatalogCategory, error)
 	CatalogListCompatible(ctx context.Context, deviceProductID *uuid.UUID) ([]CatalogListCompatibleRow, error)
 	CatalogListImages(ctx context.Context, productID uuid.UUID) ([]CatalogListImagesRow, error)

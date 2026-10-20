@@ -479,3 +479,17 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
 - **Issue (found during frontend work):** `GET /dispatch/board` and `POST /dispatch/jobs/{id}/assign|unassign` returned sqlc rows with `otpHash` and `otpAttempts`. Handlers nulled the hash at runtime, but the field stayed in the contract, so any handler that forgot would leak it.
 - **Fix:** response types `DispatchJob` and `BoardJob` in `internal/logistics/http.go`, built field by field from the row with no OTP hash or attempt count. OpenAPI spec and generated TS types regenerated; no web or mobile code used those fields.
 - **Tests:** unit `TestDispatchJobHidesDeliveryCode`; e2e board and assign assertions now fail if either field appears.
+
+## 2026-10-21 — Backend restructure (move, not rewrite)
+
+- **Moves (`git mv`, history kept):** 13 feature packages → `internal/modules/<feature>`; 15 plumbing packages → `internal/platform/<pkg>`. Import paths rewritten by `sed` over exact module paths; `gofmt` re-sorted imports. `internal/store`, `internal/seed`, `pkg/` unchanged.
+- **Splits (cut, not retyped):** each module's `http.go` → `routes.go` (renamed with `git mv`) + `dto.go` (response/request types and their builder functions), done with a small `go/parser` script; imports pruned with the already-installed `gopls imports`. Ledger's nightly integrity check moved to `ledger/jobs.go`. `ledger.go`, `wms.go`, `notify.go` → `service.go`. Small single-file modules (content, files, tracking) stay one file until they grow.
+- **Proof nothing changed:** a line-multiset check per split file (every original line present once, nothing added); `go build`, `go vet`, unit tests pass; regenerated `openapi.yaml` is byte-identical; full e2e suite passes.
+- **Docs updated:** root `CLAUDE.md` config paths, `infra/README.md`, `docs/backend.md` diagram, `docs/messaging-marketing.md` template path, coding-conventions Go note (old "takes precedence" note replaced by the new layout).
+- **E2E note:** `TestUnpaidOrderExpires` needs `WORKER_IN_PROCESS=true` and `ORDER_PAYMENT_TTL=100s` on the test stack; without them it times out (test-setup gap, not a code bug). With them: pass.
+
+## 2026-10-21 — Database docs added (owner request)
+
+- New in `docs/database/`: `DATA-MODEL.md`, `SCHEMA.md`, `MIGRATIONS.md`, `RLS-POLICIES.md`, `SEED-DATA.md`. Short, linking to the existing `erd.md`, `states.md`, `access.md` instead of duplicating them.
+- Facts checked against the code: 205 tables in 22 schemas + `river` (counted from migrations); token audiences from `platform/auth/tokens.go`; CI runs migrations up only; seed roles from the seed output; vendors and warehouses from `seed/commerce.go`.
+- `RLS-POLICIES.md` states the truth: **no RLS today**; access is enforced in the API. It flags a real gap (one DB user owns everything, against rule 01 §6) and recommends a role split, then RLS on seller-scoped tables. Owner decision needed.

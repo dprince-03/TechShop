@@ -20,11 +20,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Backend
 
 - goose and sqlc are pinned as Go tools — run them via `go tool goose` / `go tool sqlc` (or the Make targets), not global binaries.
-- New settings: add a tagged field to `internal/config.Config` and document it in `backend/.env.example`.
+- New settings: add a tagged field to `internal/platform/config.Config` and document it in `backend/.env.example`.
 - Log with `log/slog` only; no `log` or `fmt.Println`.
 - `internal/store/` is sqlc-generated — never hand-edit it (only `doc.go` is hand-written); change `db/queries/` or `db/migrations/` and run `make sqlc`.
 - `make sqlc` intentionally skips while `db/queries/` has no `.sql` files — sqlc errors on an empty query set.
-- New web origins must be added to `CORS_ALLOWED_ORIGINS` (default in `internal/config`, plus `.env.example`).
+- New web origins must be added to `CORS_ALLOWED_ORIGINS` (default in `internal/platform/config`, plus `.env.example`).
 
 ## Web
 

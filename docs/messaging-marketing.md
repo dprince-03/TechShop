@@ -147,7 +147,7 @@ Exact prices, rate limits and webhook signature schemes are confirmed against ea
 
 ### 3.3 Templates
 
-- **Transactional templates live in code**: `internal/notify/templates/<key>/<channel>.<locale>.tmpl`. They use Go `html/template` and `text/template`, with a typed data struct per template, and are reviewed like code. Email layouts share one responsive HTML layout tested in the major clients.
+- **Transactional templates live in code**: `internal/modules/notify/templates/<key>/<channel>.<locale>.tmpl`. They use Go `html/template` and `text/template`, with a typed data struct per template, and are reviewed like code. Email layouts share one responsive HTML layout tested in the major clients.
 - **Marketing content is authored in the Staff portal** with a block editor: heading, text, image, button, product grid from a list or from recommendations, and coupon. It is stored as JSON blocks and rendered by Go into the same layout. HTML is never pasted in, so there is no injected markup.
 - **Merge tags:** `{{first_name}}`, `{{coupon}}`, `{{product_grid}}`, … Each has a required fallback ("there"), so a missing first name never produces "Hi ,".
 - **Locales:** English at launch. The `locale` column allows Pidgin, Hausa, Yoruba and Igbo later.
