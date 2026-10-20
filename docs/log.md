@@ -373,3 +373,22 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
     - market e2e adds a CMS test (**15/15** in total): the content editor saves the cookie policy; the public page still shows the outline (drafts don't leak); admin publishes; the market shows the published text;
     - smoke checks: wholesale, corporate and seller routes answer 200/404 as expected (seller on port 3006 for testing, because 3003 is in use by another project on this machine);
     - CI-equivalent run for `frontend/`: Prettier check, ESLint (7 packages), typecheck (7) and `next build` of all 5 apps with no env set all pass.
+- Logistics app (`mobile/apps/logistics`), first version (stopped early when the session's usage limit was reached):
+  - **Added** with `npx expo install`: expo-secure-store, expo-location, expo-camera, expo-crypto, expo-sqlite; camera and location permission strings in `app.json`.
+  - **Built:**
+    - phone OTP sign-in (logistics audience, per-install device ID that dispatch approves); refresh token in secure storage, access token in memory; one shared refresh; one retry on 401;
+    - Today: shift start/end with location consent, foreground location every 60 s, jobs grouped pickup / deliver / done, cached for offline;
+    - job screen: label scan (QR/Code 128) or typed label, start delivery, delivery code, couldn't-deliver reasons;
+    - offline queue in SQLite with backoff, conflicts kept for the rider;
+    - sync screen; profile with sign-out that clears local job data.
+  - **Verification:**
+    - rider contract tests **2/2**: a full delivery through the typed client, plus a customer refused on rider routes. The contract suite is **45/45** in total;
+    - app unit tests **9/9** (queue and session);
+    - `tsc` and ESLint clean.
+  - **Not done:**
+    - running it on a device or emulator;
+    - `expo-doctor` and an Android bundle export;
+    - background location;
+    - photo proof;
+    - the dispatcher view;
+    - the customer app.

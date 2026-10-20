@@ -30,6 +30,22 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
+      ],
+      "expo-secure-store",
+      "expo-sqlite",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "TechShop Logistics uses your location during a shift so dispatch can route deliveries and customers can see their parcel is on the way."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "TechShop Logistics uses the camera to scan parcel labels at pickup.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
       ]
     ],
     "experiments": {

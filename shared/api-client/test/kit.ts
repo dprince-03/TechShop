@@ -34,7 +34,9 @@ export function account(role: string): SeedAccount {
   return a;
 }
 
-export const api = createApiClient({ baseUrl: API_URL });
+// A per-run client address, so the API's per-IP limits (OTP, tracking) don't trip across runs.
+const runIp = `198.18.${Math.floor(Math.random() * 256)}.${1 + Math.floor(Math.random() * 254)}`;
+export const api = createApiClient({ baseUrl: API_URL, headers: { "X-Forwarded-For": runIp } });
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -122,4 +124,65 @@ export async function staffToken(role = "admin"): Promise<string> {
     await sleep(31_000);
     return staffToken(role);
   }
+}
+
+const IMEI = () => {
+  const body = Array.from({ length: 14 }, (_, i) => (i === 0 ? 3 : Math.floor(Math.random() * 10)));
+  const sum = body.reduce((t, d, i) => {
+    const v = i % 2 === 1 ? d * 2 : d;
+    return t + (v > 9 ? v - 9 : v);
+  }, 0);
+  return body.join("") + String((10 - (sum % 10)) % 10);
+};
+
+/** A customer's paid order for one listing (Lagos address), via cart → preview → order → fake pay. */
+export async function placePaidOrder(role: string, listingId: string) {
+  const token = await customerToken(role);
+  const cart = await api.get("/api/v1/cart", { token });
+  for (const l of cart.lines ?? []) await api.delete("/api/v1/cart/items/{id}", { token, path: { id: l.cartItemId } });
+  await api.post("/api/v1/cart/items", { token, body: { listingId, quantity: 1 } });
+  const a = account(role);
+  const addresses = (await api.get("/api/v1/me/addresses", { token })) ?? [];
+  const addressId =
+    addresses.find((x) => x.stateCode === "LA")?.id ??
+    (await api.post("/api/v1/me/addresses", { token, body: { recipientName: "Test Customer", phone: a.phone ?? "+2348031234567", line1: "12 Allen Avenue", city: "Ikeja", stateCode: "LA", lga: "Ikeja" } })).id;
+  const quote = await api.post("/api/v1/checkout/preview", { token, body: { addressId } });
+  const placed = await api.post("/api/v1/orders", { token, idempotencyKey: crypto.randomUUID(), body: { addressId, priceHash: quote.priceHash, provider: "paystack" } });
+  await fetch(`${API_URL}/dev/pay/paystack/${placed.payment.reference}/success`, { method: "POST" });
+  for (let i = 0; i < 40; i++) {
+    const st = await api.get("/api/v1/me/payments/{id}", { token, path: { id: placed.payment.paymentId } });
+    if (st.orderStatus === "paid") return placed.orderNumber;
+    await sleep(300);
+  }
+  throw new Error(`order ${placed.orderNumber} not paid`);
+}
+
+/** Picks and packs an order's TechShop parcel in the Ikeja warehouse; returns the pack result. */
+export async function pickAndPack(orderNumber: string) {
+  const token = await staffToken("admin");
+  const warehouseId = seed().extra.warehouseIkejaId;
+  const order = await api.get("/api/v1/staff/orders/{number}", { token, path: { number: orderNumber } });
+  const fulfilmentId = order.fulfilments![0].id;
+  const list = await api.post("/api/v1/staff/wms/waves", { token, body: { warehouseId } });
+  await api.post("/api/v1/staff/wms/pick-lists/{id}/claim", { token, path: { id: list.id } });
+  for (const item of (list.items ?? []).filter((i) => i.fulfilmentId === fulfilmentId)) {
+    let serial: string | undefined;
+    if (item.isSerialised) {
+      serial = IMEI();
+      await api.post("/api/v1/staff/inventory/device-units", { token, body: { warehouseId, variantId: item.variantId, condition: item.condition as "new", units: [{ imei: serial }] } });
+    }
+    await api.post("/api/v1/staff/wms/pick-lists/{id}/scan", { token, path: { id: list.id }, body: { orderLineId: item.orderLineId, quantity: item.quantity, serial } });
+  }
+  return api.post("/api/v1/staff/wms/pack", { token, body: { fulfilmentId, weightGrams: 800 } });
+}
+
+/** Signs the seeded rider in on their pre-approved phone (logistics audience). */
+export async function riderToken(): Promise<string> {
+  const a = account("rider");
+  const before = await peekCode(a.phone!);
+  const ch = await api.post("/api/v1/auth/otp/request", { body: { phone: a.phone!, purpose: "login" } });
+  const code = await latestCode(a.phone!, before);
+  const v = await api.post("/api/v1/auth/otp/verify", { body: { challengeId: ch.challengeId, code, audience: "logistics", deviceId: seed().extra.riderDeviceId, deviceName: "Contract test phone", platform: "android" } });
+  if (!v.tokens) throw new Error("rider not signed in");
+  return v.tokens.accessToken;
 }
