@@ -7,7 +7,8 @@ Schema changes are SQL files in [`backend/db/migrations/`](../../backend/db/migr
 | Command | Does |
 |---|---|
 | `make migrate-create name=add_x` | New timestamped file `db/migrations/<ts>_add_x.sql` with Up/Down sections |
-| `make migrate-up` | Applies pending migrations (`DATABASE_URL` from your `backend/.env`) |
+| `make migrate-up` | Applies pending migrations as the table owner (`DATABASE_MIGRATE_URL`, else `DATABASE_URL`) |
+| `make db-users APP_DB_PASSWORD=…` (repo root) | Creates the API's least-privilege login `techshop_app` after migrating |
 | `make migrate-status` | Lists applied and pending migrations |
 | `make migrate-down` | Rolls back one migration. **Local only** |
 | `make migrate-reset` | Rolls back everything. **Local only, destroys data** |
@@ -43,6 +44,11 @@ Schema changes are SQL files in [`backend/db/migrations/`](../../backend/db/migr
 | 21 | `00021_personalisation` | Behaviour events and recommendation tables |
 | 22 | `00022_reference_data` | Nigerian states, TechShop as first-party seller, chart of accounts, open periods, admin role, default flags |
 | 23 | `00023_river_jobs` | River job-queue tables |
+| 24 | `00024_database_roles` | `techshop_rw` / `techshop_ro` group roles and grants; append-only history protected from the app |
+| 25 | `00025_seller_rls` | Row-level security on seller tables |
+| 26 | `00026_listing_moderation` | `auto_flagged` review decision; listings RLS |
+| 27 | `00027_fulfilment_rls` | Fulfilments RLS (writes) |
+| 28 | `00028_review_responses` | Seller answers and moderation reasons on reviews |
 
 The full schema was created up front (all milestones); later milestones add **code**, and new migrations only for changes.
 

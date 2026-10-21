@@ -10,7 +10,7 @@ The live schema is defined by the migrations in [`backend/db/migrations/`](../..
 | The exact DDL | the migration that creates the table (table below) |
 | What a table is for | `\d+ schema.table` in psql, or the `comment on table` line in its migration (every table has a `[domain] purpose` comment) |
 | Status values and allowed changes | [`states.md`](states.md) |
-| Who may read and write what | [`access.md`](access.md), [`RLS-POLICIES.md`](RLS-POLICIES.md) |
+| Who may read and write what | [`access.md`](access.md), [`RLS-POLICIES.md`](RLS-POLICIES.md) (database users and row-level security) |
 | The queries the API runs | [`backend/db/queries/`](../../backend/db/queries/) (sqlc generates Go from these into `backend/internal/store/`) |
 
 ## Size
