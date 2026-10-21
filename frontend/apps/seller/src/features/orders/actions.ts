@@ -29,7 +29,7 @@ export async function packOrder(
       api.post("/api/v1/seller/shops/{shopId}/orders/{orderId}/pack", {
         path: { shopId, orderId },
       }),
-    "Marked as packed.",
+    "Packed. Write the code shown below on the parcel and drop it at a hub.",
   );
 }
 

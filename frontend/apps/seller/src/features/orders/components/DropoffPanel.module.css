@@ -1,0 +1,17 @@
+.label {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  letter-spacing: var(--tracking-wide);
+  padding: var(--space-3) var(--space-4);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  inline-size: fit-content;
+}
+
+.points {
+  display: grid;
+  gap: var(--space-3);
+  padding: 0;
+  list-style: none;
+}

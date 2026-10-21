@@ -225,6 +225,7 @@ export {
   deliveredOrder,
   latestCode,
   peekCode,
+  placePaidOrder,
   seed,
   staffToken,
   tokenForPhone,

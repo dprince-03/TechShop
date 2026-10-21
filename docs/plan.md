@@ -699,3 +699,9 @@ Owner: "research and pick the best options" (standing instruction; don't wait on
 5. **Monnify and OPay:** adapters built from public docs and tested against local stand-ins; live keys are the owner's to provide.
 
 Build order: 2–3 (returns) → 1 (hand-over, unblocks delivery, payouts, seller returns, seller review replies) → payouts → 4 → 5.
+
+## 2026-10-21 — Seller hand-over deadline (decision 1, detail)
+
+A packed seller parcel must be dropped at a TechShop warehouse or hub (not a retail store) within **24 hours of packing**. A deadline that falls on a Sunday (WAT) moves to Monday. If it's missed, the SLA job cancels the order as `late_handover`, refunds the customer, and the breach counts toward the three-strike rule. Source: Jumia Nigeria vendor FAQ, which gives 24 hours to drop off after ready-to-ship (vendor.jumia.com/black-friday-ops-faq; dated 2018). Senegal and Egypt allow 48 hours from the order (vendorhub.jumia.sn/?p=146, sell.jumia.com). 24 hours after packing sits inside both. Sunday is skipped because Jumia's own SLA excludes Sundays.
+
+Later: rider pickup from the seller's address (needs seller pickup addresses), and a seller notification when the hub scans a parcel in.
