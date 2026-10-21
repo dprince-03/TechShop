@@ -1869,6 +1869,51 @@ components:
       required:
         - zoneIds
       type: object
+    Dropoff:
+      additionalProperties: false
+      properties:
+        handoff:
+          description: Own rider (delivery job created) or a carrier (shipment booked)
+          enum:
+            - rider
+            - carrier
+          type: string
+        jobId:
+          type: string
+        orderNumber:
+          type: string
+        parcel:
+          $ref: "#/components/schemas/FulfilmentParcel"
+        shipment:
+          $ref: "#/components/schemas/FulfilmentShipment"
+      required:
+        - parcel
+        - orderNumber
+        - handoff
+      type: object
+    DropoffPoint:
+      additionalProperties: false
+      properties:
+        address:
+          type: string
+        city:
+          type: string
+        code:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        stateCode:
+          type: string
+      required:
+        - id
+        - code
+        - name
+        - address
+        - city
+        - stateCode
+      type: object
     ErrorDetail:
       additionalProperties: false
       properties:
@@ -2609,6 +2654,11 @@ components:
           type: integer
         fulfilledBy:
           type: string
+        handoverBy:
+          format: date-time
+          type:
+            - string
+            - "null"
         id:
           type: string
         lines:
@@ -2656,6 +2706,7 @@ components:
         - cancelledReason
         - createdAt
         - updatedAt
+        - handoverBy
         - sellerName
         - sellerType
       type: object
@@ -8364,8 +8415,19 @@ components:
         createdAt:
           format: date-time
           type: string
+        handoverBy:
+          description: Drop the packed parcel at a TechShop hub before this or the order is cancelled
+          format: date-time
+          type:
+            - string
+            - "null"
         id:
           type: string
+        label:
+          description: "Packed orders: the code to write on the parcel; hub staff scan it"
+          type:
+            - string
+            - "null"
         lines:
           items:
             $ref: "#/components/schemas/OrderLine"
@@ -8396,6 +8458,8 @@ components:
         - placedAt
         - acceptBy
         - packBy
+        - handoverBy
+        - label
         - recipientFirstName
         - city
         - stateCode
@@ -9897,6 +9961,20 @@ components:
       required:
         - fulfilmentId
         - weightGrams
+      type: object
+    WmsReceiveDropoffRequest:
+      additionalProperties: false
+      properties:
+        label:
+          description: The TSS-… label on the parcel
+          maxLength: 40
+          minLength: 4
+          type: string
+        warehouseId:
+          type: string
+      required:
+        - warehouseId
+        - label
       type: object
     WmsReleaseWaveRequest:
       additionalProperties: false
@@ -13226,6 +13304,31 @@ paths:
       summary: Banks payouts can go to
       tags:
         - Seller Centre
+  /api/v1/seller/dropoff-points:
+    get:
+      operationId: sellerDropoffPoints
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/DropoffPoint"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Where to drop packed parcels
+      tags:
+        - Seller Centre · Orders
   /api/v1/seller/shops:
     get:
       operationId: sellerMyShops
@@ -13906,7 +14009,7 @@ paths:
           description: Error
       security:
         - bearer: []
-      summary: Mark as packed and ready to hand over
+      summary: "Mark as packed: returns the parcel label and the drop-off deadline"
       tags:
         - Seller Centre · Orders
   /api/v1/seller/shops/{shopId}/reviews:
@@ -17313,6 +17416,34 @@ paths:
       security:
         - bearer: []
       summary: Add or update a carrier (bookings need an adapter; only the fake carrier exists)
+      tags:
+        - Staff · Warehouse
+  /api/v1/staff/wms/dropoffs:
+    post:
+      description: Requires permission `fulfilment.pick`.
+      operationId: wmsReceiveDropoff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WmsReceiveDropoffRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dropoff"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: "Receive a seller's packed parcel at a hub (scan its label): rider job or carrier booking"
       tags:
         - Staff · Warehouse
   /api/v1/staff/wms/fulfilments/{id}/shipping:

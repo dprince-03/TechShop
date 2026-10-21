@@ -23,6 +23,7 @@ import (
 	"github.com/dprince-03/techshop/backend/internal/modules/payments"
 	"github.com/dprince-03/techshop/backend/internal/modules/reviews"
 	"github.com/dprince-03/techshop/backend/internal/modules/sales"
+	"github.com/dprince-03/techshop/backend/internal/modules/wms"
 	"github.com/dprince-03/techshop/backend/internal/platform/httpx"
 	"github.com/dprince-03/techshop/backend/internal/platform/jobs"
 	"github.com/dprince-03/techshop/backend/internal/platform/kit"
@@ -57,12 +58,13 @@ type Service struct {
 	notify  *notify.Service
 	catalog *catalog.Service
 	sales   *sales.Service
+	wms     *wms.Service
 	reviews *reviews.Service
 }
 
 // New creates the module.
-func New(d *kit.Deps, banks Banks, n *notify.Service, cat *catalog.Service, sl *sales.Service, rv *reviews.Service) *Service {
-	return &Service{d: d, banks: banks, notify: n, catalog: cat, sales: sl, reviews: rv}
+func New(d *kit.Deps, banks Banks, n *notify.Service, cat *catalog.Service, sl *sales.Service, wh *wms.Service, rv *reviews.Service) *Service {
+	return &Service{d: d, banks: banks, notify: n, catalog: cat, sales: sl, wms: wh, reviews: rv}
 }
 
 // Name implements kit.Module.

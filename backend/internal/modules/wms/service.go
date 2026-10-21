@@ -238,24 +238,99 @@ func (s *Service) Pack(ctx context.Context, fulfilmentID, actor uuid.UUID, weigh
 		if _, err := s.sales.Move(ctx, tx, fulfilmentID, "packed", &actor, "Packed as "+label); err != nil {
 			return err
 		}
+		if out.Handoff, out.JobID, out.Shipment, err = s.handoff(ctx, tx, f); err != nil {
+			return err
+		}
+		return tx.Audit("wms.packed", "fulfilment", fulfilmentID.String(), map[string]any{"label": label, "weight": weight, "flagged": out.PackRecord.Flagged})
+	})
+	return out, err
+}
+
+// handoff sends a parcel on: addresses inside a delivery zone get a rider job, everywhere else
+// a carrier shipment is booked.
+func (s *Service) handoff(ctx context.Context, tx *uow.Tx, f store.SalesFulfilment) (string, *uuid.UUID, *store.FulfilmentShipment, error) {
+	o, err := tx.Q.SalesGetOrder(ctx, f.OrderID)
+	if err != nil {
+		return "", nil, nil, err
+	}
+	if s.logistics.Covers(ctx, tx.Q, o.ShipTo) {
+		j, err := s.logistics.CreateDeliveryJob(ctx, tx, f.ID)
+		if err != nil {
+			return "", nil, nil, err
+		}
+		return "rider", &j.ID, nil, nil
+	}
+	sh, err := s.book(ctx, tx, f, o)
+	if err != nil {
+		return "", nil, nil, err
+	}
+	return "carrier", nil, &sh, nil
+}
+
+// ---- Seller drop-off (docs/plan.md 2026-10-21 decision 1)
+
+// SellerParcel gives a packed seller fulfilment its label (TSS-…), which the seller writes or
+// prints on the parcel and hub staff scan at drop-off. Calling it again returns the same parcel.
+func (s *Service) SellerParcel(ctx context.Context, tx *uow.Tx, fulfilmentID uuid.UUID) (store.FulfilmentParcel, error) {
+	if ps, err := tx.Q.FulfilmentParcelsForFulfilment(ctx, fulfilmentID); err != nil || len(ps) > 0 {
+		if err != nil {
+			return store.FulfilmentParcel{}, err
+		}
+		return ps[0], nil
+	}
+	p, err := tx.Q.FulfilmentCreateParcel(ctx, store.FulfilmentCreateParcelParams{FulfilmentID: fulfilmentID, LabelCode: "TSS-" + labelCode(8)})
+	return p, httpx.DB(err, "parcel")
+}
+
+// Dropoff is the result of receiving a seller parcel at a hub.
+type Dropoff struct {
+	Parcel      store.FulfilmentParcel    `json:"parcel"`
+	OrderNumber string                    `json:"orderNumber"`
+	Handoff     string                    `json:"handoff" enum:"rider,carrier" doc:"Own rider (delivery job created) or a carrier (shipment booked)"`
+	JobID       *uuid.UUID                `json:"jobId,omitempty"`
+	Shipment    *store.FulfilmentShipment `json:"shipment,omitempty"`
+}
+
+// ReceiveDropoff is the hand-over of a seller parcel: hub staff scan its label, the parcel is
+// now in TechShop's hands (handed_over, which stops the seller's hand-over clock), and it goes
+// on exactly like TechShop's own parcels. Only TechShop confirms delivery from here.
+func (s *Service) ReceiveDropoff(ctx context.Context, warehouseID uuid.UUID, label string, actor uuid.UUID) (Dropoff, error) {
+	var out Dropoff
+	err := s.d.Runner.Run(ctx, func(tx *uow.Tx) error {
+		wh, err := tx.Q.InventoryGetWarehouse(ctx, warehouseID)
+		if err != nil || !wh.IsActive || (wh.Kind != "warehouse" && wh.Kind != "hub") {
+			return httpx.Invalid("not_a_dropoff_point", "Seller parcels are received at an active warehouse or hub.")
+		}
+		p, err := tx.Q.FulfilmentParcelByLabel(ctx, strings.ToUpper(strings.TrimSpace(label)))
+		if err != nil {
+			return httpx.NotFound("Parcel")
+		}
+		f, err := tx.Q.SalesGetFulfilmentForUpdate(ctx, p.FulfilmentID)
+		if err != nil {
+			return err
+		}
+		if f.FulfilledBy != "seller" {
+			return httpx.Conflict("not_a_seller_parcel", "This is a TechShop parcel; it leaves on a manifest.")
+		}
+		if f.Status != "packed" {
+			return httpx.Conflict("parcel_not_expected", "This parcel isn't waiting for drop-off (it's "+strings.ReplaceAll(f.Status, "_", " ")+").")
+		}
+		if err := tx.Q.SalesSetFulfilmentWarehouse(ctx, store.SalesSetFulfilmentWarehouseParams{ID: f.ID, WarehouseID: &wh.ID}); err != nil {
+			return err
+		}
+		f.WarehouseID = &wh.ID
+		if _, err := s.sales.Move(ctx, tx, f.ID, "handed_over", &actor, "Dropped off at "+wh.Name); err != nil {
+			return err
+		}
 		o, err := tx.Q.SalesGetOrder(ctx, f.OrderID)
 		if err != nil {
 			return err
 		}
-		if s.logistics.Covers(ctx, tx.Q, o.ShipTo) {
-			j, err := s.logistics.CreateDeliveryJob(ctx, tx, fulfilmentID)
-			if err != nil {
-				return err
-			}
-			out.Handoff, out.JobID = "rider", &j.ID
-		} else {
-			sh, err := s.book(ctx, tx, f, o)
-			if err != nil {
-				return err
-			}
-			out.Handoff, out.Shipment = "carrier", &sh
+		out.Parcel, out.OrderNumber = p, o.OrderNumber
+		if out.Handoff, out.JobID, out.Shipment, err = s.handoff(ctx, tx, f); err != nil {
+			return err
 		}
-		return tx.Audit("wms.packed", "fulfilment", fulfilmentID.String(), map[string]any{"label": label, "weight": weight, "flagged": out.PackRecord.Flagged})
+		return tx.Audit("wms.seller_dropoff", "fulfilment", f.ID.String(), map[string]any{"label": p.LabelCode, "warehouse": wh.Code, "seller": f.SellerID})
 	})
 	return out, err
 }

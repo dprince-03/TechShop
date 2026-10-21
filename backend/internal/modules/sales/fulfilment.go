@@ -17,7 +17,7 @@ var fulfilmentFlow = map[string][]string{
 	"pending":     {"accepted", "picking", "cancelled"},
 	"accepted":    {"packed", "cancelled"},
 	"picking":     {"packed", "pending"},
-	"packed":      {"handed_over", "in_transit"},
+	"packed":      {"handed_over", "in_transit", "cancelled"}, // cancelled: seller parcel never handed over
 	"handed_over": {"in_transit"},
 	"in_transit":  {"delivered", "failed"},
 	"failed":      {"in_transit", "returned"},

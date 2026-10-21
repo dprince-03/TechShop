@@ -130,6 +130,17 @@ func (s *Service) Routes(r *kit.Routes) {
 			p, err := s.Pack(ctx, in.Body.FulfilmentID, actor(ctx), in.Body.WeightGrams, in.Body.BoxCode)
 			return &struct{ Body Packed }{p}, err
 		})
+	httpx.Register(g, op(httpx.Op{ID: "wmsReceiveDropoff", Method: http.MethodPost, Path: "/api/v1/staff/wms/dropoffs", Perm: "fulfilment.pick", Status: 201,
+		Summary: "Receive a seller's packed parcel at a hub (scan its label): rider job or carrier booking"}),
+		func(ctx context.Context, in *struct {
+			Body struct {
+				WarehouseID uuid.UUID `json:"warehouseId"`
+				Label       string    `json:"label" minLength:"4" maxLength:"40" doc:"The TSS-… label on the parcel"`
+			}
+		}) (*struct{ Body Dropoff }, error) {
+			d, err := s.ReceiveDropoff(ctx, in.Body.WarehouseID, in.Body.Label, actor(ctx))
+			return &struct{ Body Dropoff }{d}, err
+		})
 	httpx.Register(g, op(httpx.Op{ID: "wmsCreateManifest", Method: http.MethodPost, Path: "/api/v1/staff/wms/manifests", Perm: "fulfilment.manage", Status: 201,
 		Summary: "List the parcels leaving with a rider or carrier"}),
 		func(ctx context.Context, in *struct {

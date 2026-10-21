@@ -1710,6 +1710,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/seller/dropoff-points": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Where to drop packed parcels */
+    get: operations["sellerDropoffPoints"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/seller/shops": {
     parameters: {
       query?: never;
@@ -1994,7 +2011,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Mark as packed and ready to hand over */
+    /** Mark as packed: returns the parcel label and the drop-off deadline */
     post: operations["sellerPackOrder"];
     delete?: never;
     options?: never;
@@ -4000,6 +4017,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/staff/wms/dropoffs": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Receive a seller's packed parcel at a hub (scan its label): rider job or carrier booking
+     * @description Requires permission `fulfilment.pick`.
+     */
+    post: operations["wmsReceiveDropoff"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/staff/wms/fulfilments/{id}/shipping": {
     parameters: {
       query?: never;
@@ -5026,6 +5063,25 @@ export interface components {
     DispatchSetRiderZonesRequest: {
       zoneIds: string[] | null;
     };
+    Dropoff: {
+      /**
+       * @description Own rider (delivery job created) or a carrier (shipment booked)
+       * @enum {string}
+       */
+      handoff: "rider" | "carrier";
+      jobId?: string;
+      orderNumber: string;
+      parcel: components["schemas"]["FulfilmentParcel"];
+      shipment?: components["schemas"]["FulfilmentShipment"];
+    };
+    DropoffPoint: {
+      address: string;
+      city: string;
+      code: string;
+      id: string;
+      name: string;
+      stateCode: string;
+    };
     ErrorDetail: {
       /** @description Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id' */
       location?: string;
@@ -5320,6 +5376,8 @@ export interface components {
       /** Format: int64 */
       deliveryFeeKobo: number;
       fulfilledBy: string;
+      /** Format: date-time */
+      handoverBy: string | null;
       id: string;
       lines: components["schemas"]["SalesOrderLine"][] | null;
       method: string;
@@ -7515,7 +7573,14 @@ export interface components {
       city: string;
       /** Format: date-time */
       createdAt: string;
+      /**
+       * Format: date-time
+       * @description Drop the packed parcel at a TechShop hub before this or the order is cancelled
+       */
+      handoverBy: string | null;
       id: string;
+      /** @description Packed orders: the code to write on the parcel; hub staff scan it */
+      label: string | null;
       lines?: components["schemas"]["OrderLine"][] | null;
       orderNumber: string;
       /**
@@ -8096,6 +8161,11 @@ export interface components {
       fulfilmentId: string;
       /** Format: int32 */
       weightGrams: number;
+    };
+    WmsReceiveDropoffRequest: {
+      /** @description The TSS-… label on the parcel */
+      label: string;
+      warehouseId: string;
     };
     WmsReleaseWaveRequest: {
       warehouseId: string;
@@ -11585,6 +11655,35 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Bank"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerDropoffPoints: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DropoffPoint"][] | null;
         };
       };
       /** @description Error */
@@ -15831,6 +15930,39 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["FulfilmentCarrier"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  wmsReceiveDropoff: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["WmsReceiveDropoffRequest"];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Dropoff"];
         };
       };
       /** @description Error */

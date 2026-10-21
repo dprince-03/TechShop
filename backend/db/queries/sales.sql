@@ -225,6 +225,13 @@ update sales.fulfilments set pack_by = $2 where id = $1;
 select f.*, o.order_number from sales.fulfilments f join sales.orders o on o.id = f.order_id
 where f.status = 'accepted' and f.fulfilled_by = 'seller' and f.pack_by < now() limit 50;
 
+-- name: SalesPendingHandoverBreaches :many
+select f.*, o.order_number from sales.fulfilments f join sales.orders o on o.id = f.order_id
+where f.status = 'packed' and f.fulfilled_by = 'seller' and f.handover_by < now() limit 50;
+
+-- name: SalesSetHandoverBy :exec
+update sales.fulfilments set handover_by = $2 where id = $1;
+
 -- name: FulfilmentSLABreaches30d :one
 select count(*)::int from fulfilment.seller_sla_events
 where seller_id = $1 and kind in ('late_accept', 'late_pack', 'late_handover') and created_at > now() - interval '30 days';
@@ -234,5 +241,6 @@ where seller_id = $1 and kind in ('late_accept', 'late_pack', 'late_handover') a
 -- job can be tested without waiting a day.
 update sales.fulfilments
 set accept_by = case when @which::text = 'accept' then now() - interval '1 minute' else accept_by end,
-    pack_by = case when @which::text = 'pack' then now() - interval '1 minute' else pack_by end
+    pack_by = case when @which::text = 'pack' then now() - interval '1 minute' else pack_by end,
+    handover_by = case when @which::text = 'handover' then now() - interval '1 minute' else handover_by end
 where id = @id;

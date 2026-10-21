@@ -18,9 +18,10 @@ import (
 )
 
 // Seller-shipped orders in Seller Centre (M4 slice 3, orders-fulfilment.md §2.1, §4): the queue,
-// accept, pack and cancel. Deadlines are enforced by the sales module's SLA job. Hand-over (rider
-// pickup or the seller's own carrier) waits for an owner decision, so sellers see only the
-// recipient's first name and city here, not the full address or phone.
+// accept, pack and cancel. Deadlines are enforced by the sales module's SLA job. Hand-over is a
+// drop-off at a TechShop hub (docs/plan.md 2026-10-21): packing gives the parcel a label, hub
+// staff scan it in and TechShop delivers it. Sellers never deliver, so they see only the
+// recipient's first name and city, not the full address or phone.
 
 var orderRoles = []string{"owner", "manager", "staff"}
 
@@ -44,6 +45,8 @@ type SellerOrder struct {
 	PlacedAt        time.Time   `json:"placedAt"`
 	AcceptBy        *time.Time  `json:"acceptBy" doc:"Accept before this or the order is cancelled"`
 	PackBy          *time.Time  `json:"packBy" doc:"Pack before this or the order is cancelled"`
+	HandoverBy      *time.Time  `json:"handoverBy" doc:"Drop the packed parcel at a TechShop hub before this or the order is cancelled"`
+	Label           *string     `json:"label" doc:"Packed orders: the code to write on the parcel; hub staff scan it"`
 	RecipientFirst  string      `json:"recipientFirstName"`
 	City            string      `json:"city"`
 	StateCode       string      `json:"stateCode"`
@@ -60,14 +63,14 @@ func sellerOrder(f store.SalesFulfilment, number string, shipTo []byte, placed t
 	}
 	_ = json.Unmarshal(shipTo, &a)
 	first, _, _ := strings.Cut(strings.TrimSpace(a.RecipientName), " ")
-	return SellerOrder{ID: f.ID, OrderNumber: number, Status: f.Status, PlacedAt: placed, AcceptBy: f.AcceptBy, PackBy: f.PackBy,
+	return SellerOrder{ID: f.ID, OrderNumber: number, Status: f.Status, PlacedAt: placed, AcceptBy: f.AcceptBy, PackBy: f.PackBy, HandoverBy: f.HandoverBy,
 		RecipientFirst: first, City: a.City, StateCode: a.StateCode, CancelledReason: f.CancelledReason, CreatedAt: f.CreatedAt}
 }
 
 func asFulfilment(r store.SalesGetSellerFulfilmentRow) store.SalesFulfilment {
 	return store.SalesFulfilment{ID: r.ID, OrderID: r.OrderID, SellerID: r.SellerID, FulfilledBy: r.FulfilledBy, Method: r.Method,
 		WarehouseID: r.WarehouseID, CollectionStoreID: r.CollectionStoreID, Status: r.Status, DeliveryFeeKobo: r.DeliveryFeeKobo,
-		AcceptBy: r.AcceptBy, PackBy: r.PackBy, DeliveredAt: r.DeliveredAt, CancelledReason: r.CancelledReason, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt}
+		AcceptBy: r.AcceptBy, PackBy: r.PackBy, HandoverBy: r.HandoverBy, DeliveredAt: r.DeliveredAt, CancelledReason: r.CancelledReason, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt}
 }
 
 // withOrder runs fn on one of the shop's own seller-shipped fulfilments and returns its view.
@@ -90,6 +93,13 @@ func (s *Service) withOrder(ctx context.Context, shopID, id uuid.UUID, fn func(t
 			}
 		}
 		out = sellerOrder(asFulfilment(r), r.OrderNumber, r.ShipTo, r.PlacedAt)
+		parcels, err := tx.Q.FulfilmentParcelsForFulfilment(ctx, id)
+		if err != nil {
+			return err
+		}
+		if len(parcels) > 0 {
+			out.Label = &parcels[0].LabelCode
+		}
 		lines, err := tx.Q.SalesFulfilmentLines(ctx, id)
 		out.Lines = make([]OrderLine, len(lines))
 		for i, l := range lines {
@@ -101,9 +111,29 @@ func (s *Service) withOrder(ctx context.Context, shopID, id uuid.UUID, fn func(t
 	return out, err
 }
 
+// DropoffPoint is a TechShop warehouse or hub that receives seller parcels.
+type DropoffPoint struct {
+	ID        uuid.UUID `json:"id"`
+	Code      string    `json:"code"`
+	Name      string    `json:"name"`
+	Address   string    `json:"address"`
+	City      string    `json:"city"`
+	StateCode string    `json:"stateCode"`
+}
+
 func (s *Service) orderRoutes(r *kit.Routes) {
 	g := r.Public
 	sel := func(o httpx.Op) httpx.Op { o.Tag = "Seller Centre · Orders"; o.Auth = sellerAud; return o }
+
+	httpx.Register(g, sel(httpx.Op{ID: "sellerDropoffPoints", Method: http.MethodGet, Path: "/api/v1/seller/dropoff-points", Summary: "Where to drop packed parcels"}),
+		func(ctx context.Context, _ *struct{}) (*struct{ Body []DropoffPoint }, error) {
+			rows, err := s.d.Q.FulfilmentDropoffPoints(ctx)
+			out := make([]DropoffPoint, len(rows))
+			for i, w := range rows {
+				out[i] = DropoffPoint{ID: w.ID, Code: w.Code, Name: w.Name, Address: w.Address, City: w.City, StateCode: w.StateCode}
+			}
+			return &struct{ Body []DropoffPoint }{out}, err
+		})
 	base := "/api/v1/seller/shops/{shopId}/orders"
 
 	httpx.Register(g, sel(httpx.Op{ID: "sellerListOrders", Method: http.MethodGet, Path: base, Summary: "Orders to ship, newest first"}),
@@ -122,7 +152,7 @@ func (s *Service) orderRoutes(r *kit.Routes) {
 			err = s.inShop(ctx, in.ShopID, orderRoles, func(tx *uow.Tx, _ store.SellersSeller, _ string) error {
 				rows, err := tx.Q.SalesSellerFulfilmentsPage(ctx, store.SalesSellerFulfilmentsPageParams{SellerID: in.ShopID, Status: optional(in.Status), Before: before, Lim: int32(lim + 1)})
 				for _, r := range rows {
-					f := store.SalesFulfilment{ID: r.ID, Status: r.Status, AcceptBy: r.AcceptBy, PackBy: r.PackBy, CancelledReason: r.CancelledReason, CreatedAt: r.CreatedAt}
+					f := store.SalesFulfilment{ID: r.ID, Status: r.Status, AcceptBy: r.AcceptBy, PackBy: r.PackBy, HandoverBy: r.HandoverBy, CancelledReason: r.CancelledReason, CreatedAt: r.CreatedAt}
 					views = append(views, sellerOrder(f, r.OrderNumber, r.ShipTo, r.PlacedAt))
 				}
 				return err
@@ -158,7 +188,7 @@ func (s *Service) orderRoutes(r *kit.Routes) {
 			return &struct{ Body SellerOrder }{o}, err
 		})
 
-	httpx.Register(g, sel(httpx.Op{ID: "sellerPackOrder", Method: http.MethodPost, Path: base + "/{orderId}/pack", Summary: "Mark as packed and ready to hand over"}),
+	httpx.Register(g, sel(httpx.Op{ID: "sellerPackOrder", Method: http.MethodPost, Path: base + "/{orderId}/pack", Summary: "Mark as packed: returns the parcel label and the drop-off deadline"}),
 		func(ctx context.Context, in *struct {
 			ShopID  uuid.UUID `path:"shopId"`
 			OrderID uuid.UUID `path:"orderId"`
@@ -168,7 +198,11 @@ func (s *Service) orderRoutes(r *kit.Routes) {
 				if f.Status != "accepted" {
 					return httpx.Conflict("bad_transition", "Accept the order before packing it.")
 				}
-				_, err := s.sales.Move(ctx, tx, f.ID, "packed", &uid, "")
+				p, err := s.wms.SellerParcel(ctx, tx, f.ID)
+				if err != nil {
+					return err
+				}
+				_, err = s.sales.PackSellerFulfilment(ctx, tx, f.ID, uid, "Packed by seller as "+p.LabelCode)
 				return err
 			})
 			return &struct{ Body SellerOrder }{o}, err

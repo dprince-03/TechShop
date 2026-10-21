@@ -2445,6 +2445,8 @@ type SalesFulfilment struct {
 	CancelledReason   *string    `json:"cancelledReason"`
 	CreatedAt         time.Time  `json:"createdAt"`
 	UpdatedAt         time.Time  `json:"updatedAt"`
+	// Seller-shipped only: drop the packed parcel at a hub before this.
+	HandoverBy *time.Time `json:"handoverBy"`
 }
 
 // [sales] One checkout. Totals must add up; ship_to snapshots the address; status is derived from fulfilments.
