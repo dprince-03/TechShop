@@ -1,17 +1,19 @@
-import { Stack, useLocalSearchParams } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { ActivityIndicator } from "react-native";
 
 import { formatKobo } from "@techshop/api-client";
-import { Body, Card, Notice, Screen, Title } from "@techshop/mobile-ui";
+import { Body, Button, Card, Notice, Screen, Title } from "@techshop/mobile-ui";
 
 import { useSession } from "@/features/auth/SessionProvider";
 import { useLoad } from "@/features/catalogue/useLoad";
 import { orderStatus, parcelStatus, when } from "@/features/orders/status";
+import { RateSeller } from "@/features/reviews/RateSeller";
 
 /** One order: status, parcels by seller, totals and history. */
 export default function Order() {
   const { number } = useLocalSearchParams<{ number: string }>();
   const { session } = useSession();
+  const router = useRouter();
   const r = useLoad(() => session.api.get("/api/v1/me/orders/{number}", { path: { number } }), number);
   if (r.loading && !r.data) return <ActivityIndicator style={{ flex: 1 }} accessibilityLabel="Loading order" />;
   if (!r.data) return <Screen underHeader><Notice tone="danger">{r.error ?? "Not found."}</Notice></Screen>;
@@ -28,6 +30,14 @@ export default function Order() {
           {(f.lines ?? []).map((l) => (
             <Body key={l.id} small muted>{`${l.quantity} × ${l.productName} · ${formatKobo(l.lineTotalKobo)}`}</Body>
           ))}
+          {f.status === "delivered"
+            ? (f.lines ?? [])
+                .filter((l) => !l.cancelledAt)
+                .map((l) => (
+                  <Button key={`review-${l.id}`} label={`Review ${l.productName}`} onPress={() => router.push({ pathname: "/review/[lineId]", params: { lineId: l.id, name: l.productName } })} />
+                ))
+            : null}
+          {f.status === "delivered" ? <RateSeller fulfilmentId={f.id} seller={f.sellerName} /> : null}
         </Card>
       ))}
       <Card>

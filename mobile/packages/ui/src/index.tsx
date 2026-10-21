@@ -136,7 +136,33 @@ export function Card({ children, onPress, label }: { children: ReactNode; onPres
   );
 }
 
+/** 1–5 star picker: five 44px buttons announced as a radio group ("4 stars, selected"). */
+export function StarPicker({ label, value, onChange }: { label: string; value: number; onChange: (n: number) => void }) {
+  const c = useColors();
+  return (
+    <View style={styles.field}>
+      <Text style={{ color: c.text, fontSize: tokens.fontSize.sm, fontWeight: "600" }}>{label}</Text>
+      <View accessibilityRole="radiogroup" accessibilityLabel={label} style={styles.stars}>
+        {[1, 2, 3, 4, 5].map((n) => (
+          <Pressable
+            key={n}
+            accessibilityRole="radio"
+            accessibilityLabel={`${n} star${n === 1 ? "" : "s"}`}
+            accessibilityState={{ checked: value === n }}
+            onPress={() => onChange(n)}
+            style={[styles.star, { borderColor: n <= value ? c.rating : c.borderStrong, backgroundColor: n <= value ? c.surface : c.bg }]}
+          >
+            <Text style={{ color: n <= value ? c.rating : c.textSubtle, fontSize: tokens.fontSize.xl }}>★</Text>
+          </Pressable>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  stars: { flexDirection: "row", gap: tokens.space[2] },
+  star: { width: tokens.control.md, height: tokens.control.md, borderWidth: 1, borderRadius: tokens.radius.sm, alignItems: "center", justifyContent: "center" },
   screen: { flex: 1 },
   scroll: { flexGrow: 1 },
   content: { flex: 1, padding: tokens.space[4], gap: tokens.space[4] },
