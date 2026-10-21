@@ -11,6 +11,7 @@ import { OrderActions } from "@/features/orders/components/OrderActions";
 import styles from "@/features/orders/components/Orders.module.css";
 import { StatusBadge } from "@/features/orders/components/StatusBadge";
 import { getMyOrder } from "@/features/orders/server";
+import { RateSellerForm } from "@/features/reviews/components/ReviewForms";
 import {
   formatDateTime,
   orderStatus,
@@ -108,8 +109,18 @@ export default async function OrderPage(props: PageProps<"/orders/[number]">) {
                           <span className="badge">Cancelled</span>
                         ) : null}
                       </span>
-                      <span className="tabular-nums">
-                        {formatKobo(l.lineTotalKobo)}
+                      <span className="cluster">
+                        {f.status === "delivered" && !l.cancelledAt ? (
+                          <Link
+                            href={`/orders/${order.orderNumber}/review/${l.id}`}
+                            className="link text-sm"
+                          >
+                            Review
+                          </Link>
+                        ) : null}
+                        <span className="tabular-nums">
+                          {formatKobo(l.lineTotalKobo)}
+                        </span>
                       </span>
                     </li>
                   ))}
@@ -120,6 +131,14 @@ export default async function OrderPage(props: PageProps<"/orders/[number]">) {
                     ? "Shipped by TechShop"
                     : "Shipped by the seller"}
                 </p>
+                {f.status === "delivered" ? (
+                  <details>
+                    <summary className="link text-sm">
+                      Rate {f.sellerName}
+                    </summary>
+                    <RateSellerForm fulfilmentId={f.id} seller={f.sellerName} />
+                  </details>
+                ) : null}
               </section>
             ))}
 

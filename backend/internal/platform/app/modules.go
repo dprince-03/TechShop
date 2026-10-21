@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 
+	"github.com/dprince-03/techshop/backend/internal/modules/aftersales"
 	"github.com/dprince-03/techshop/backend/internal/modules/catalog"
 	"github.com/dprince-03/techshop/backend/internal/modules/content"
 	"github.com/dprince-03/techshop/backend/internal/modules/files"
@@ -13,7 +14,9 @@ import (
 	"github.com/dprince-03/techshop/backend/internal/modules/marketing"
 	"github.com/dprince-03/techshop/backend/internal/modules/notify"
 	"github.com/dprince-03/techshop/backend/internal/modules/payments"
+	"github.com/dprince-03/techshop/backend/internal/modules/reviews"
 	"github.com/dprince-03/techshop/backend/internal/modules/sales"
+	"github.com/dprince-03/techshop/backend/internal/modules/sellers"
 	"github.com/dprince-03/techshop/backend/internal/modules/tracking"
 	"github.com/dprince-03/techshop/backend/internal/modules/wms"
 	"github.com/dprince-03/techshop/backend/internal/platform/kit"
@@ -32,6 +35,8 @@ type Registry struct {
 	Payments  *payments.Service
 	Logistics *logistics.Service
 	WMS       *wms.Service
+	Sellers   *sellers.Service
+	Returns   *aftersales.Service
 }
 
 // Mods is filled by buildModules (dependencies flow one way).
@@ -53,6 +58,9 @@ func buildModules(d *kit.Deps) []kit.Module {
 	pay := payments.New(d, sl, led, n) // also plugs itself into sales as its PaymentPort
 	lg := logistics.New(d, sl, n)      // also plugs zone pricing into sales
 	wh := wms.New(d, sl, lg)
-	Mods = Registry{Notify: n, Identity: id, Catalog: cat, Inventory: inv, Ledger: led, Marketing: mk, Sales: sl, Payments: pay, Logistics: lg, WMS: wh}
-	return []kit.Module{n, id, files.New(d), cat, inv, content.New(d), tracking.New(d), led, mk, sl, pay, lg, wh}
+	rv := reviews.New(d)
+	as := aftersales.New(d, pay, inv)          // refunds through payments, restock through inventory
+	sel := sellers.New(d, pay, n, cat, sl, rv) // payments answers bank name enquiries; catalog owns listing rules
+	Mods = Registry{Notify: n, Identity: id, Catalog: cat, Inventory: inv, Ledger: led, Marketing: mk, Sales: sl, Payments: pay, Logistics: lg, WMS: wh, Sellers: sel, Returns: as}
+	return []kit.Module{n, id, files.New(d), cat, inv, content.New(d), tracking.New(d), led, mk, sl, pay, lg, wh, rv, sel, as}
 }

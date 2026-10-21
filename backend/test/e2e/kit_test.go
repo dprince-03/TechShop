@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"net/http"
 	"os"
@@ -100,6 +101,14 @@ type req struct {
 	headers             map[string]string
 }
 
+// testIP is a stable address for a test, from 198.18.0.0/15 (reserved for testing).
+func testIP(t *testing.T) string {
+	h := fnv.New32a()
+	_, _ = h.Write([]byte(t.Name()))
+	v := h.Sum32()
+	return fmt.Sprintf("198.%d.%d.%d", 18+(v>>16)%2, (v>>8)%256, 1+v%254)
+}
+
 func call(t *testing.T, r req) resp {
 	t.Helper()
 	var rd io.Reader
@@ -114,6 +123,10 @@ func call(t *testing.T, r req) resp {
 		t.Fatal(err)
 	}
 	hr.Header.Set("Content-Type", "application/json")
+	// Each test is its own shopper on its own network (the API trusts X-Forwarded-For from the
+	// local proxy range), so per-network limits like 20 codes an hour apply per test, not to
+	// the whole suite.
+	hr.Header.Set("X-Forwarded-For", testIP(t))
 	if r.token != "" {
 		hr.Header.Set("Authorization", "Bearer "+r.token)
 	}

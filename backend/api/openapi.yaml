@@ -176,6 +176,84 @@ components:
           format: date-time
           type: string
       type: object
+    Bank:
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+      required:
+        - code
+        - name
+      type: object
+    BankAccount:
+      additionalProperties: false
+      properties:
+        accountName:
+          description: The name the seller typed
+          type: string
+        accountNumberLast4:
+          type: string
+        bankCode:
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        id:
+          type: string
+        isDefault:
+          type: boolean
+        nameMatch:
+          description: Bank name vs the shop's legal holder
+          enum:
+            - match
+            - partial
+            - mismatch
+            - unknown
+          type: string
+        payoutsFrom:
+          description: New accounts are held for 24 hours before payouts can use them
+          format: date-time
+          type: string
+        resolvedAccountName:
+          description: The name the bank holds
+          type:
+            - string
+            - "null"
+        verified:
+          type: boolean
+      required:
+        - id
+        - bankCode
+        - accountName
+        - resolvedAccountName
+        - accountNumberLast4
+        - nameMatch
+        - verified
+        - isDefault
+        - payoutsFrom
+        - createdAt
+      type: object
+    BankInput:
+      additionalProperties: false
+      properties:
+        accountName:
+          maxLength: 100
+          minLength: 3
+          type: string
+        accountNumber:
+          description: 10-digit NUBAN; encrypted at rest
+          pattern: ^[0-9]{10}$
+          type: string
+        bankCode:
+          pattern: ^[0-9]{3,6}$
+          type: string
+      required:
+        - bankCode
+        - accountNumber
+        - accountName
+      type: object
     BoardJob:
       additionalProperties: false
       properties:
@@ -1104,6 +1182,29 @@ components:
           type: string
       required:
         - newPassword
+      type: object
+    CheckResult:
+      additionalProperties: false
+      properties:
+        reasons:
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        risk:
+          format: int32
+          type: integer
+        status:
+          enum:
+            - active
+            - in_review
+            - rejected
+          type: string
+      required:
+        - status
+        - risk
+        - reasons
       type: object
     CheckoutPreviewRequest:
       additionalProperties: false
@@ -2949,6 +3050,39 @@ components:
         - unread
         - page
       type: object
+    InspectInput:
+      additionalProperties: false
+      properties:
+        disposition:
+          enum:
+            - restock_new
+            - restock_open_box
+            - repair
+            - return_to_supplier
+            - write_off
+          type: string
+        grade:
+          enum:
+            - A
+            - B
+            - C
+            - faulty
+          type: string
+        notes:
+          maxLength: 500
+          type: string
+        scannedSerial:
+          description: IMEI or serial on the item (required for serialised devices)
+          maxLength: 40
+          type: string
+        warehouseId:
+          description: Where restocked items go
+          type: string
+      required:
+        - warehouseId
+        - grade
+        - disposition
+      type: object
     InventoryDeviceUnit:
       additionalProperties: false
       properties:
@@ -3696,6 +3830,132 @@ components:
         - createdAt
         - updatedAt
       type: object
+    Kyc:
+      additionalProperties: false
+      properties:
+        cacRcNumber:
+          type:
+            - string
+            - "null"
+        documents:
+          items:
+            $ref: "#/components/schemas/KycDocument"
+          type:
+            - array
+            - "null"
+        id:
+          type: string
+        idNumberLast4:
+          type: string
+        idType:
+          type: string
+        note:
+          description: The reviewer's reason (rejected) or request (needs_more_info)
+          type:
+            - string
+            - "null"
+        reviewedAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        status:
+          enum:
+            - submitted
+            - in_review
+            - approved
+            - rejected
+            - needs_more_info
+          type: string
+        submittedAt:
+          format: date-time
+          type: string
+        tin:
+          type:
+            - string
+            - "null"
+      required:
+        - id
+        - status
+        - idType
+        - idNumberLast4
+        - cacRcNumber
+        - tin
+        - note
+        - documents
+        - submittedAt
+        - reviewedAt
+      type: object
+    KycDecision:
+      additionalProperties: false
+      properties:
+        decision:
+          enum:
+            - approved
+            - rejected
+            - needs_more_info
+          type: string
+        note:
+          description: Required unless approving; the seller sees it
+          maxLength: 500
+          type: string
+      required:
+        - decision
+      type: object
+    KycDocument:
+      additionalProperties: false
+      properties:
+        fileId:
+          type: string
+        kind:
+          enum:
+            - id_front
+            - id_back
+            - cac_certificate
+            - utility_bill
+            - selfie
+          type: string
+      required:
+        - kind
+        - fileId
+      type: object
+    KycInput:
+      additionalProperties: false
+      properties:
+        cacRcNumber:
+          description: Required for business sellers
+          maxLength: 20
+          type: string
+        documents:
+          description: Files uploaded with purpose kyc_document
+          items:
+            $ref: "#/components/schemas/KycDocument"
+          maxItems: 6
+          minItems: 1
+          type:
+            - array
+            - "null"
+        idNumber:
+          description: Encrypted at rest; only the last 4 digits are ever shown
+          maxLength: 30
+          minLength: 6
+          type: string
+        idType:
+          enum:
+            - nin
+            - nin_slip
+            - passport
+            - drivers_licence
+            - voters_card
+          type: string
+        tin:
+          maxLength: 20
+          type: string
+      required:
+        - idType
+        - idNumber
+        - documents
+      type: object
     Line:
       additionalProperties: false
       properties:
@@ -3779,12 +4039,81 @@ components:
         - vatKobo
         - available
       type: object
+    LineReviewInput:
+      additionalProperties: false
+      properties:
+        body:
+          maxLength: 3000
+          type: string
+        imageFileIds:
+          items:
+            type: string
+          maxItems: 5
+          type:
+            - array
+            - "null"
+        rating:
+          format: int32
+          maximum: 5
+          minimum: 1
+          type: integer
+        title:
+          maxLength: 120
+          type: string
+      required:
+        - rating
+      type: object
     ListFinanceLedgerJournal:
       additionalProperties: false
       properties:
         items:
           items:
             $ref: "#/components/schemas/FinanceLedgerJournal"
+          type:
+            - array
+            - "null"
+        page:
+          $ref: "#/components/schemas/Page"
+      required:
+        - items
+        - page
+      type: object
+    ListListing:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/Listing"
+          type:
+            - array
+            - "null"
+        page:
+          $ref: "#/components/schemas/Page"
+      required:
+        - items
+        - page
+      type: object
+    ListPublicReview:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/PublicReview"
+          type:
+            - array
+            - "null"
+        page:
+          $ref: "#/components/schemas/Page"
+      required:
+        - items
+        - page
+      type: object
+    ListReturnRow:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/ReturnRow"
           type:
             - array
             - "null"
@@ -3823,6 +4152,292 @@ components:
       required:
         - items
         - page
+      type: object
+    ListSellerOrder:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/SellerOrder"
+          type:
+            - array
+            - "null"
+        page:
+          $ref: "#/components/schemas/Page"
+      required:
+        - items
+        - page
+      type: object
+    ListSellerReview:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/SellerReview"
+          type:
+            - array
+            - "null"
+        page:
+          $ref: "#/components/schemas/Page"
+      required:
+        - items
+        - page
+      type: object
+    ListVendorRow:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/VendorRow"
+          type:
+            - array
+            - "null"
+        page:
+          $ref: "#/components/schemas/Page"
+      required:
+        - items
+        - page
+      type: object
+    Listing:
+      additionalProperties: false
+      properties:
+        batteryHealthPct:
+          format: int32
+          type:
+            - integer
+            - "null"
+        compareAt:
+          description: Kobo
+          format: int64
+          type:
+            - integer
+            - "null"
+        condition:
+          type: string
+        conditionNotes:
+          type:
+            - string
+            - "null"
+        createdAt:
+          format: date-time
+          type: string
+        grade:
+          type:
+            - string
+            - "null"
+        handlingDays:
+          format: int32
+          type: integer
+        id:
+          type: string
+        price:
+          description: Kobo
+          format: int64
+          type: integer
+        productName:
+          type: string
+        productSlug:
+          type: string
+        publishedAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        sellerStock:
+          format: int32
+          type:
+            - integer
+            - "null"
+        sku:
+          type: string
+        status:
+          enum:
+            - draft
+            - auto_check
+            - in_review
+            - changes_requested
+            - active
+            - paused
+            - suspended
+            - rejected
+          type: string
+        updatedAt:
+          format: date-time
+          type: string
+        variantId:
+          type: string
+        variantName:
+          type: string
+        warrantyMonths:
+          format: int32
+          type: integer
+        warrantyProvider:
+          type: string
+      required:
+        - id
+        - variantId
+        - productName
+        - productSlug
+        - variantName
+        - sku
+        - condition
+        - grade
+        - price
+        - compareAt
+        - sellerStock
+        - handlingDays
+        - warrantyProvider
+        - warrantyMonths
+        - conditionNotes
+        - batteryHealthPct
+        - status
+        - publishedAt
+        - createdAt
+        - updatedAt
+      type: object
+    ListingDetail:
+      additionalProperties: false
+      properties:
+        batteryHealthPct:
+          format: int32
+          type:
+            - integer
+            - "null"
+        compareAt:
+          description: Kobo
+          format: int64
+          type:
+            - integer
+            - "null"
+        condition:
+          type: string
+        conditionNotes:
+          type:
+            - string
+            - "null"
+        createdAt:
+          format: date-time
+          type: string
+        grade:
+          type:
+            - string
+            - "null"
+        handlingDays:
+          format: int32
+          type: integer
+        id:
+          type: string
+        price:
+          description: Kobo
+          format: int64
+          type: integer
+        productName:
+          type: string
+        productSlug:
+          type: string
+        publishedAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        reviews:
+          items:
+            $ref: "#/components/schemas/ListingReview"
+          type:
+            - array
+            - "null"
+        sellerStock:
+          format: int32
+          type:
+            - integer
+            - "null"
+        sku:
+          type: string
+        status:
+          enum:
+            - draft
+            - auto_check
+            - in_review
+            - changes_requested
+            - active
+            - paused
+            - suspended
+            - rejected
+          type: string
+        updatedAt:
+          format: date-time
+          type: string
+        variantId:
+          type: string
+        variantName:
+          type: string
+        warrantyMonths:
+          format: int32
+          type: integer
+        warrantyProvider:
+          type: string
+      required:
+        - reviews
+        - id
+        - variantId
+        - productName
+        - productSlug
+        - variantName
+        - sku
+        - condition
+        - grade
+        - price
+        - compareAt
+        - sellerStock
+        - handlingDays
+        - warrantyProvider
+        - warrantyMonths
+        - conditionNotes
+        - batteryHealthPct
+        - status
+        - publishedAt
+        - createdAt
+        - updatedAt
+      type: object
+    ListingEdit:
+      additionalProperties: false
+      properties:
+        batteryHealthPct:
+          format: int32
+          maximum: 100
+          minimum: 1
+          type: integer
+        conditionNotes:
+          maxLength: 500
+          type: string
+        grade:
+          enum:
+            - A
+            - B
+            - C
+            - ""
+          type: string
+        handlingDays:
+          format: int32
+          maximum: 10
+          minimum: 0
+          type: integer
+        warrantyMonths:
+          format: int32
+          maximum: 60
+          minimum: 0
+          type: integer
+        warrantyProvider:
+          enum:
+            - manufacturer
+            - techshop
+            - seller
+            - none
+          type: string
+      required:
+        - warrantyProvider
+        - warrantyMonths
+        - handlingDays
       type: object
     ListingInput:
       additionalProperties: false
@@ -3896,6 +4511,48 @@ components:
         - condition
         - price
         - fulfilledBy
+      type: object
+    ListingResult:
+      additionalProperties: false
+      properties:
+        check:
+          $ref: "#/components/schemas/CheckResult"
+        listing:
+          $ref: "#/components/schemas/Listing"
+      required:
+        - listing
+        - check
+      type: object
+    ListingReview:
+      additionalProperties: false
+      properties:
+        createdAt:
+          format: date-time
+          type: string
+        decision:
+          enum:
+            - auto_passed
+            - auto_flagged
+            - approved
+            - changes_requested
+            - rejected
+            - suspended
+          type: string
+        note:
+          type:
+            - string
+            - "null"
+        reasons:
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+      required:
+        - decision
+        - reasons
+        - note
+        - createdAt
       type: object
     LogisticsBoardCountsRow:
       additionalProperties: false
@@ -4770,6 +5427,24 @@ components:
         - businesses
         - createdAt
       type: object
+    Member:
+      additionalProperties: false
+      properties:
+        createdAt:
+          format: date-time
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+        userId:
+          type: string
+      required:
+        - userId
+        - name
+        - role
+        - createdAt
+      type: object
     MergeCartRequest:
       additionalProperties: false
       properties:
@@ -4854,6 +5529,99 @@ components:
       required:
         - messageId
         - status
+      type: object
+    MyReview:
+      additionalProperties: false
+      properties:
+        createdAt:
+          format: date-time
+          type: string
+        id:
+          type: string
+        rating:
+          format: int32
+          type: integer
+        status:
+          description: pending = waiting for a moderator
+          enum:
+            - published
+            - pending
+          type: string
+        verified:
+          type: boolean
+      required:
+        - id
+        - rating
+        - verified
+        - status
+        - createdAt
+      type: object
+    NewListing:
+      additionalProperties: false
+      properties:
+        batteryHealthPct:
+          format: int32
+          maximum: 100
+          minimum: 1
+          type: integer
+        compareAt:
+          description: Kobo. A new listing has no price history, so this is refused (FCCPA)
+          format: int64
+          type: integer
+        condition:
+          enum:
+            - new
+            - uk_used
+            - refurbished
+            - open_box
+          type: string
+        conditionNotes:
+          description: Required unless new
+          maxLength: 500
+          type: string
+        grade:
+          enum:
+            - A
+            - B
+            - C
+            - ""
+          type: string
+        handlingDays:
+          description: Days to hand over to delivery (default 1)
+          format: int32
+          maximum: 10
+          minimum: 0
+          type: integer
+        price:
+          description: Kobo
+          format: int64
+          minimum: 1
+          type: integer
+        sellerStock:
+          format: int32
+          maximum: 100000
+          minimum: 0
+          type: integer
+        variantId:
+          type: string
+        warrantyMonths:
+          format: int32
+          maximum: 60
+          minimum: 0
+          type: integer
+        warrantyProvider:
+          enum:
+            - manufacturer
+            - techshop
+            - seller
+            - none
+            - ""
+          type: string
+      required:
+        - variantId
+        - condition
+        - price
+        - sellerStock
       type: object
     NewStaffInput:
       additionalProperties: false
@@ -4982,6 +5750,34 @@ components:
         - score
         - buyBox
       type: object
+    Onboarding:
+      additionalProperties: false
+      properties:
+        bankAccounts:
+          items:
+            $ref: "#/components/schemas/BankAccount"
+          type:
+            - array
+            - "null"
+        kyc:
+          $ref: "#/components/schemas/Kyc"
+        nextStep:
+          description: What the seller should do next
+          enum:
+            - submit_kyc
+            - add_bank_account
+            - await_review
+            - fix_kyc
+            - done
+          type: string
+        shop:
+          $ref: "#/components/schemas/Shop"
+      required:
+        - shop
+        - kyc
+        - bankAccounts
+        - nextStep
+      type: object
     OrderDetail:
       additionalProperties: false
       properties:
@@ -5099,6 +5895,43 @@ components:
         - cancelledAt
         - createdAt
         - updatedAt
+      type: object
+    OrderLine:
+      additionalProperties: false
+      properties:
+        cancelledAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        condition:
+          type: string
+        lineTotal:
+          description: Kobo
+          format: int64
+          type: integer
+        productName:
+          type: string
+        quantity:
+          format: int32
+          type: integer
+        sku:
+          type: string
+        unitPrice:
+          description: Kobo
+          format: int64
+          type: integer
+        variantName:
+          type: string
+      required:
+        - productName
+        - variantName
+        - sku
+        - condition
+        - quantity
+        - unitPrice
+        - lineTotal
+        - cancelledAt
       type: object
     Packed:
       additionalProperties: false
@@ -6023,6 +6856,17 @@ components:
         - name
         - variants
       type: object
+    ProductReviews:
+      additionalProperties: false
+      properties:
+        reviews:
+          $ref: "#/components/schemas/ListPublicReview"
+        summary:
+          $ref: "#/components/schemas/Summary"
+      required:
+        - summary
+        - reviews
+      type: object
     ProductSummary:
       additionalProperties: false
       properties:
@@ -6212,6 +7056,109 @@ components:
         - createdAt
         - updatedAt
       type: object
+    PublicReview:
+      additionalProperties: false
+      properties:
+        body:
+          type:
+            - string
+            - "null"
+        createdAt:
+          format: date-time
+          type: string
+        id:
+          type: string
+        imageFileIds:
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        rating:
+          format: int32
+          type: integer
+        reviewer:
+          type: string
+        sellerResponse:
+          type:
+            - string
+            - "null"
+        sellerResponseAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        title:
+          type:
+            - string
+            - "null"
+        verified:
+          type: boolean
+      required:
+        - id
+        - rating
+        - title
+        - body
+        - verified
+        - reviewer
+        - imageFileIds
+        - sellerResponse
+        - sellerResponseAt
+        - createdAt
+      type: object
+    QueueItem:
+      additionalProperties: false
+      properties:
+        body:
+          type:
+            - string
+            - "null"
+        createdAt:
+          format: date-time
+          type: string
+        id:
+          type: string
+        openReports:
+          format: int32
+          type: integer
+        productName:
+          type: string
+        productSlug:
+          type: string
+        rating:
+          format: int32
+          type: integer
+        reasons:
+          description: Why the automatic checks held it
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        reviewer:
+          type: string
+        status:
+          type: string
+        title:
+          type:
+            - string
+            - "null"
+        verified:
+          type: boolean
+      required:
+        - id
+        - productName
+        - productSlug
+        - rating
+        - title
+        - body
+        - verified
+        - reviewer
+        - status
+        - reasons
+        - openReports
+        - createdAt
+      type: object
     Quote:
       additionalProperties: false
       properties:
@@ -6282,6 +7229,20 @@ components:
         - problems
         - purchasable
       type: object
+    RateSellerRequest:
+      additionalProperties: false
+      properties:
+        comment:
+          maxLength: 500
+          type: string
+        rating:
+          format: int32
+          maximum: 5
+          minimum: 1
+          type: integer
+      required:
+        - rating
+      type: object
     ReasonBody:
       additionalProperties: false
       properties:
@@ -6300,6 +7261,31 @@ components:
           type: string
       required:
         - refreshToken
+      type: object
+    RegisterInput:
+      additionalProperties: false
+      properties:
+        city:
+          maxLength: 60
+          minLength: 2
+          type: string
+        displayName:
+          maxLength: 60
+          minLength: 3
+          type: string
+        stateCode:
+          pattern: ^[A-Z]{2}$
+          type: string
+        type:
+          enum:
+            - business
+            - individual
+          type: string
+      required:
+        - type
+        - displayName
+        - stateCode
+        - city
       type: object
     RegisterPushTokenRequest:
       additionalProperties: false
@@ -6326,6 +7312,20 @@ components:
         - token
         - app
         - platform
+      type: object
+    ReportReviewRequest:
+      additionalProperties: false
+      properties:
+        reason:
+          enum:
+            - abuse
+            - personal_data
+            - off_topic
+            - fake
+            - other
+          type: string
+      required:
+        - reason
       type: object
     RequestOtpRequest:
       additionalProperties: false
@@ -6394,6 +7394,205 @@ components:
           type: string
       required:
         - provider
+      type: object
+    Return:
+      additionalProperties: false
+      properties:
+        autoApproved:
+          type: boolean
+        createdAt:
+          format: date-time
+          type: string
+        details:
+          type:
+            - string
+            - "null"
+        items:
+          items:
+            $ref: "#/components/schemas/ReturnItem"
+          type:
+            - array
+            - "null"
+        method:
+          type:
+            - string
+            - "null"
+        orderNumber:
+          type: string
+        reason:
+          type: string
+        refund:
+          description: Kobo, total for the items
+          format: int64
+          type: integer
+        rejectionReason:
+          type:
+            - string
+            - "null"
+        rma:
+          type: string
+        status:
+          enum:
+            - requested
+            - approved
+            - rejected
+            - awaiting_pickup
+            - received
+            - inspected
+            - refunded
+            - replaced
+            - closed
+          type: string
+      required:
+        - rma
+        - orderNumber
+        - reason
+        - details
+        - method
+        - status
+        - autoApproved
+        - rejectionReason
+        - items
+        - refund
+        - createdAt
+      type: object
+    ReturnInput:
+      additionalProperties: false
+      properties:
+        details:
+          maxLength: 1000
+          type: string
+        items:
+          items:
+            $ref: "#/components/schemas/ReturnItemInput"
+          maxItems: 20
+          minItems: 1
+          type:
+            - array
+            - "null"
+        method:
+          description: How the item comes back
+          enum:
+            - pickup
+            - store_dropoff
+          type: string
+        reason:
+          enum:
+            - faulty
+            - damaged
+            - not_as_described
+            - wrong_item
+            - change_of_mind
+          type: string
+      required:
+        - items
+        - reason
+        - method
+      type: object
+    ReturnItem:
+      additionalProperties: false
+      properties:
+        disposition:
+          type:
+            - string
+            - "null"
+        grade:
+          type:
+            - string
+            - "null"
+        id:
+          type: string
+        orderLineId:
+          type: string
+        productName:
+          type: string
+        quantity:
+          format: int32
+          type: integer
+        refund:
+          description: "Kobo: the price paid for these units"
+          format: int64
+          type: integer
+        serialised:
+          description: The inspector must scan the IMEI or serial
+          type: boolean
+        variantName:
+          type: string
+      required:
+        - id
+        - orderLineId
+        - productName
+        - variantName
+        - quantity
+        - refund
+        - serialised
+        - grade
+        - disposition
+      type: object
+    ReturnItemInput:
+      additionalProperties: false
+      properties:
+        orderLineId:
+          type: string
+        quantity:
+          format: int32
+          minimum: 1
+          type: integer
+      required:
+        - orderLineId
+        - quantity
+      type: object
+    ReturnRow:
+      additionalProperties: false
+      properties:
+        autoApproved:
+          type: boolean
+        createdAt:
+          format: date-time
+          type: string
+        orderNumber:
+          type: string
+        reason:
+          type: string
+        rma:
+          type: string
+        status:
+          type: string
+      required:
+        - rma
+        - orderNumber
+        - reason
+        - status
+        - autoApproved
+        - createdAt
+      type: object
+    ReviewInput:
+      additionalProperties: false
+      properties:
+        body:
+          maxLength: 3000
+          type: string
+        imageFileIds:
+          description: Files uploaded with purpose review_image
+          items:
+            type: string
+          maxItems: 5
+          type:
+            - array
+            - "null"
+        orderLineId:
+          description: "Your delivered order line for this product: marks the review as a verified purchase"
+          type: string
+        rating:
+          format: int32
+          maximum: 5
+          minimum: 1
+          type: integer
+        title:
+          maxLength: 120
+          type: string
+      required:
+        - rating
       type: object
     RevokeOtherSessionsResponse:
       additionalProperties: false
@@ -7128,6 +8327,154 @@ components:
         - searches
         - lastSeen
       type: object
+    SellerCancelOrderRequest:
+      additionalProperties: false
+      properties:
+        note:
+          maxLength: 300
+          type: string
+        reason:
+          enum:
+            - out_of_stock
+            - damaged
+            - price_error
+            - other
+          type: string
+      required:
+        - reason
+      type: object
+    SellerOrder:
+      additionalProperties: false
+      properties:
+        acceptBy:
+          description: Accept before this or the order is cancelled
+          format: date-time
+          type:
+            - string
+            - "null"
+        cancelledReason:
+          type:
+            - string
+            - "null"
+        city:
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        id:
+          type: string
+        lines:
+          items:
+            $ref: "#/components/schemas/OrderLine"
+          type:
+            - array
+            - "null"
+        orderNumber:
+          type: string
+        packBy:
+          description: Pack before this or the order is cancelled
+          format: date-time
+          type:
+            - string
+            - "null"
+        placedAt:
+          format: date-time
+          type: string
+        recipientFirstName:
+          type: string
+        stateCode:
+          type: string
+        status:
+          type: string
+      required:
+        - id
+        - orderNumber
+        - status
+        - placedAt
+        - acceptBy
+        - packBy
+        - recipientFirstName
+        - city
+        - stateCode
+        - cancelledReason
+        - createdAt
+      type: object
+    SellerRespondToReviewRequest:
+      additionalProperties: false
+      properties:
+        text:
+          maxLength: 1000
+          minLength: 2
+          type: string
+      required:
+        - text
+      type: object
+    SellerReview:
+      additionalProperties: false
+      properties:
+        body:
+          type:
+            - string
+            - "null"
+        createdAt:
+          format: date-time
+          type: string
+        id:
+          type: string
+        productName:
+          type: string
+        productSlug:
+          type: string
+        rating:
+          format: int32
+          type: integer
+        reviewer:
+          type: string
+        sellerResponse:
+          type:
+            - string
+            - "null"
+        title:
+          type:
+            - string
+            - "null"
+      required:
+        - id
+        - productName
+        - productSlug
+        - rating
+        - title
+        - body
+        - reviewer
+        - sellerResponse
+        - createdAt
+      type: object
+    SellerSetListingPriceRequest:
+      additionalProperties: false
+      properties:
+        compareAt:
+          description: Kobo; at most the 30-day maximum price (FCCPA)
+          format: int64
+          type: integer
+        price:
+          description: Kobo
+          format: int64
+          minimum: 1
+          type: integer
+      required:
+        - price
+      type: object
+    SellerSetListingStockRequest:
+      additionalProperties: false
+      properties:
+        stock:
+          format: int32
+          maximum: 100000
+          minimum: 0
+          type: integer
+      required:
+        - stock
+      type: object
     SessionDTO:
       additionalProperties: false
       properties:
@@ -7156,6 +8503,57 @@ components:
         - lastUsedAt
         - createdAt
         - current
+      type: object
+    Shop:
+      additionalProperties: false
+      properties:
+        city:
+          type:
+            - string
+            - "null"
+        createdAt:
+          format: date-time
+          type: string
+        displayName:
+          type: string
+        id:
+          type: string
+        role:
+          description: Your role in this shop
+          enum:
+            - owner
+            - manager
+            - staff
+            - finance
+          type: string
+        slug:
+          type: string
+        stateCode:
+          type:
+            - string
+            - "null"
+        status:
+          enum:
+            - pending_kyc
+            - active
+            - suspended
+            - closed
+          type: string
+        type:
+          enum:
+            - business
+            - individual
+            - first_party
+          type: string
+      required:
+        - id
+        - type
+        - displayName
+        - slug
+        - status
+        - stateCode
+        - city
+        - createdAt
       type: object
     StaffAddProductImageRequest:
       additionalProperties: false
@@ -7210,6 +8608,59 @@ components:
         - delta
         - reason
         - note
+      type: object
+    StaffBankAccount:
+      additionalProperties: false
+      properties:
+        accountName:
+          description: The name the seller typed
+          type: string
+        accountNumberLast4:
+          type: string
+        bankCode:
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        id:
+          type: string
+        isDefault:
+          type: boolean
+        nameMatch:
+          description: Bank name vs the shop's legal holder
+          enum:
+            - match
+            - partial
+            - mismatch
+            - unknown
+          type: string
+        otherSellersWithAccount:
+          description: "Other shops using the same account number: a banned seller returning?"
+          format: int64
+          type: integer
+        payoutsFrom:
+          description: New accounts are held for 24 hours before payouts can use them
+          format: date-time
+          type: string
+        resolvedAccountName:
+          description: The name the bank holds
+          type:
+            - string
+            - "null"
+        verified:
+          type: boolean
+      required:
+        - otherSellersWithAccount
+        - id
+        - bankCode
+        - accountName
+        - resolvedAccountName
+        - accountNumberLast4
+        - nameMatch
+        - verified
+        - isDefault
+        - payoutsFrom
+        - createdAt
       type: object
     StaffCreateAttributeRequest:
       additionalProperties: false
@@ -7468,6 +8919,41 @@ components:
         - city
         - stateCode
       type: object
+    StaffDecideReturnRequest:
+      additionalProperties: false
+      properties:
+        decision:
+          enum:
+            - approve
+            - reject
+          type: string
+        reason:
+          description: Required to reject; the customer sees it
+          maxLength: 500
+          type: string
+      required:
+        - decision
+      type: object
+    StaffDecideReviewRequest:
+      additionalProperties: false
+      properties:
+        decision:
+          enum:
+            - publish
+            - hide
+            - reject
+          type: string
+      required:
+        - decision
+      type: object
+    StaffDecideReviewResponse:
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+      required:
+        - status
+      type: object
     StaffDecideSuggestionRequest:
       additionalProperties: false
       properties:
@@ -7641,6 +9127,24 @@ components:
         - status
         - resolution
       type: object
+    StaffRevealKycIdRequest:
+      additionalProperties: false
+      properties:
+        reason:
+          maxLength: 300
+          minLength: 10
+          type: string
+      required:
+        - reason
+      type: object
+    StaffRevealKycIdResponse:
+      additionalProperties: false
+      properties:
+        idNumber:
+          type: string
+      required:
+        - idNumber
+      type: object
     StaffSaveHelpRequest:
       additionalProperties: false
       properties:
@@ -7794,6 +9298,31 @@ components:
           description: "Approve only: when to send (default now)"
           format: date-time
           type: string
+      type: object
+    Summary:
+      additionalProperties: false
+      properties:
+        average:
+          description: "Weighted: verified purchases count 1, unverified 0.5"
+          format: double
+          type: number
+        stars:
+          additionalProperties:
+            format: int32
+            type: integer
+          description: Count per star, keys "1"–"5"
+          type: object
+        total:
+          format: int32
+          type: integer
+        verified:
+          format: int32
+          type: integer
+      required:
+        - average
+        - total
+        - verified
+        - stars
       type: object
     TOTPSetup:
       additionalProperties: false
@@ -8054,6 +9583,85 @@ components:
         - label
         - channel
         - sharePct
+      type: object
+    Vendor:
+      additionalProperties: false
+      properties:
+        bankAccounts:
+          items:
+            $ref: "#/components/schemas/StaffBankAccount"
+          type:
+            - array
+            - "null"
+        kyc:
+          $ref: "#/components/schemas/Kyc"
+        legalHolder:
+          description: Name bank accounts are compared with
+          type: string
+        members:
+          items:
+            $ref: "#/components/schemas/Member"
+          type:
+            - array
+            - "null"
+        otherSellersWithIdNumber:
+          description: Other shops that submitted the same ID number
+          format: int64
+          type: integer
+        shop:
+          $ref: "#/components/schemas/Shop"
+      required:
+        - shop
+        - legalHolder
+        - members
+        - kyc
+        - otherSellersWithIdNumber
+        - bankAccounts
+      type: object
+    VendorRow:
+      additionalProperties: false
+      properties:
+        city:
+          type:
+            - string
+            - "null"
+        createdAt:
+          format: date-time
+          type: string
+        displayName:
+          type: string
+        id:
+          type: string
+        kycStatus:
+          type:
+            - string
+            - "null"
+        kycSubmittedAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        slug:
+          type: string
+        stateCode:
+          type:
+            - string
+            - "null"
+        status:
+          type: string
+        type:
+          type: string
+      required:
+        - id
+        - type
+        - displayName
+        - slug
+        - status
+        - city
+        - stateCode
+        - kycStatus
+        - kycSubmittedAt
+        - createdAt
       type: object
     VerifyNewDeviceOtpRequest:
       additionalProperties: false
@@ -10232,6 +11840,35 @@ paths:
       summary: Your current consent choices
       tags:
         - Privacy
+  /api/v1/me/deliveries/{fulfilmentId}/rating:
+    post:
+      operationId: rateSeller
+      parameters:
+        - in: path
+          name: fulfilmentId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RateSellerRequest"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Rate the seller of a delivered part of your order
+      tags:
+        - Reviews
   /api/v1/me/mfa/totp:
     delete:
       operationId: removeTotp
@@ -10417,6 +12054,39 @@ paths:
       summary: Mark one as read
       tags:
         - Notifications
+  /api/v1/me/order-lines/{lineId}/review:
+    post:
+      operationId: reviewOrderLine
+      parameters:
+        - in: path
+          name: lineId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LineReviewInput"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyReview"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Review an item you received (verified purchase)
+      tags:
+        - Reviews
   /api/v1/me/orders:
     get:
       operationId: listMyOrders
@@ -10586,6 +12256,39 @@ paths:
       summary: Pay again for an unpaid order (e.g. another method)
       tags:
         - Payments
+  /api/v1/me/orders/{number}/returns:
+    post:
+      operationId: requestReturn
+      parameters:
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReturnInput"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Return"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Return items from a delivered order (7 days, faulty / damaged / wrong / not as described)
+      tags:
+        - Returns
   /api/v1/me/password:
     post:
       operationId: changePassword
@@ -10760,6 +12463,58 @@ paths:
       summary: My refunds
       tags:
         - Payments
+  /api/v1/me/returns:
+    get:
+      operationId: myReturns
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/ReturnRow"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Your returns, newest first
+      tags:
+        - Returns
+  /api/v1/me/returns/{rma}:
+    get:
+      operationId: myReturn
+      parameters:
+        - in: path
+          name: rma
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Return"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: One of your returns
+      tags:
+        - Returns
   /api/v1/me/saved:
     get:
       operationId: listSaved
@@ -11020,6 +12775,112 @@ paths:
       summary: Product page with offers and the buy box
       tags:
         - Catalogue
+  /api/v1/products/{slug}/reviews:
+    get:
+      operationId: productReviews
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+        - explode: false
+          in: query
+          name: verified
+          schema:
+            enum:
+              - "true"
+              - "false"
+              - ""
+            type: string
+        - explode: false
+          in: query
+          name: cursor
+          schema:
+            type: string
+        - explode: false
+          in: query
+          name: limit
+          schema:
+            format: int64
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductReviews"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      summary: Published reviews (verified purchases first) and the rating summary
+      tags:
+        - Reviews
+    post:
+      operationId: createReview
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewInput"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyReview"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Review a product (one per product)
+      tags:
+        - Reviews
+  /api/v1/reviews/{id}/report:
+    post:
+      operationId: reportReview
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportReviewRequest"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Report a review that breaks the rules
+      tags:
+        - Reviews
   /api/v1/rider/devices:
     post:
       operationId: riderRegisterDevice
@@ -11337,6 +13198,786 @@ paths:
       summary: "Autocomplete: queries, categories, products"
       tags:
         - Catalogue
+  /api/v1/seller/banks:
+    get:
+      operationId: sellerBanks
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/Bank"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Banks payouts can go to
+      tags:
+        - Seller Centre
+  /api/v1/seller/shops:
+    get:
+      operationId: sellerMyShops
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/Shop"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Shops you belong to, with your role
+      tags:
+        - Seller Centre
+    post:
+      operationId: sellerRegisterShop
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Shop"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Open a shop (waits for verification)
+      tags:
+        - Seller Centre
+  /api/v1/seller/shops/{shopId}/bank-accounts:
+    post:
+      operationId: sellerAddBankAccount
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BankInput"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BankAccount"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Add a payout account (checked with the bank; owner or finance)
+      tags:
+        - Seller Centre
+  /api/v1/seller/shops/{shopId}/bank-accounts/{accountId}:
+    delete:
+      operationId: sellerDeleteBankAccount
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: accountId
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Remove an account that isn't the default
+      tags:
+        - Seller Centre
+  /api/v1/seller/shops/{shopId}/bank-accounts/{accountId}/default:
+    post:
+      operationId: sellerSetDefaultBank
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: accountId
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Pay out to this account
+      tags:
+        - Seller Centre
+  /api/v1/seller/shops/{shopId}/kyc:
+    post:
+      operationId: sellerSubmitKyc
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KycInput"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Kyc"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Submit identity and business verification (owner)
+      tags:
+        - Seller Centre
+  /api/v1/seller/shops/{shopId}/listings:
+    get:
+      operationId: sellerListListings
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+        - explode: false
+          in: query
+          name: status
+          schema:
+            enum:
+              - draft
+              - in_review
+              - changes_requested
+              - active
+              - paused
+              - suspended
+              - rejected
+              - ""
+            type: string
+        - explode: false
+          in: query
+          name: cursor
+          schema:
+            type: string
+        - explode: false
+          in: query
+          name: limit
+          schema:
+            format: int64
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListListing"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Your listings, newest first
+      tags:
+        - Seller Centre · Listings
+    post:
+      operationId: sellerCreateListing
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewListing"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingResult"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: "Offer a catalogue variant (automatic checks decide: live or review)"
+      tags:
+        - Seller Centre · Listings
+  /api/v1/seller/shops/{shopId}/listings/{listingId}:
+    get:
+      operationId: sellerGetListing
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: listingId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingDetail"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: A listing with its moderation history
+      tags:
+        - Seller Centre · Listings
+    put:
+      operationId: sellerResubmitListing
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: listingId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ListingEdit"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingResult"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Fix a draft or a listing with changes requested, and resubmit
+      tags:
+        - Seller Centre · Listings
+  /api/v1/seller/shops/{shopId}/listings/{listingId}/pause:
+    post:
+      operationId: sellerPauseListing
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: listingId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Listing"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Take a live listing off sale
+      tags:
+        - Seller Centre · Listings
+  /api/v1/seller/shops/{shopId}/listings/{listingId}/price:
+    patch:
+      operationId: sellerSetListingPrice
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: listingId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SellerSetListingPriceRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Listing"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Change the price (a deep cut sends a live listing back to review)
+      tags:
+        - Seller Centre · Listings
+  /api/v1/seller/shops/{shopId}/listings/{listingId}/resume:
+    post:
+      operationId: sellerResumeListing
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: listingId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Listing"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Put a paused listing back on sale
+      tags:
+        - Seller Centre · Listings
+  /api/v1/seller/shops/{shopId}/listings/{listingId}/stock:
+    put:
+      operationId: sellerSetListingStock
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: listingId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SellerSetListingStockRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Listing"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Set how many you have in stock
+      tags:
+        - Seller Centre · Listings
+  /api/v1/seller/shops/{shopId}/onboarding:
+    get:
+      operationId: sellerOnboarding
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Onboarding"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Verification and payout setup, with the next step
+      tags:
+        - Seller Centre
+  /api/v1/seller/shops/{shopId}/orders:
+    get:
+      operationId: sellerListOrders
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+        - explode: false
+          in: query
+          name: status
+          schema:
+            enum:
+              - pending
+              - accepted
+              - packed
+              - handed_over
+              - in_transit
+              - delivered
+              - failed
+              - returned
+              - cancelled
+              - ""
+            type: string
+        - explode: false
+          in: query
+          name: cursor
+          schema:
+            type: string
+        - explode: false
+          in: query
+          name: limit
+          schema:
+            format: int64
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListSellerOrder"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Orders to ship, newest first
+      tags:
+        - Seller Centre · Orders
+  /api/v1/seller/shops/{shopId}/orders/{orderId}:
+    get:
+      operationId: sellerGetOrder
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+        - description: The fulfilment ID
+          in: path
+          name: orderId
+          required: true
+          schema:
+            description: The fulfilment ID
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SellerOrder"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: An order with its items
+      tags:
+        - Seller Centre · Orders
+  /api/v1/seller/shops/{shopId}/orders/{orderId}/accept:
+    post:
+      operationId: sellerAcceptOrder
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: orderId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SellerOrder"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Accept (starts the packing deadline)
+      tags:
+        - Seller Centre · Orders
+  /api/v1/seller/shops/{shopId}/orders/{orderId}/cancel:
+    post:
+      operationId: sellerCancelOrder
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: orderId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SellerCancelOrderRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SellerOrder"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Cancel before packing (refunds the customer; counts against the shop)
+      tags:
+        - Seller Centre · Orders
+  /api/v1/seller/shops/{shopId}/orders/{orderId}/pack:
+    post:
+      operationId: sellerPackOrder
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: orderId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SellerOrder"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Mark as packed and ready to hand over
+      tags:
+        - Seller Centre · Orders
+  /api/v1/seller/shops/{shopId}/reviews:
+    get:
+      operationId: sellerListReviews
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+        - explode: false
+          in: query
+          name: cursor
+          schema:
+            type: string
+        - explode: false
+          in: query
+          name: limit
+          schema:
+            format: int64
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListSellerReview"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Reviews of items you shipped, newest first
+      tags:
+        - Seller Centre · Reviews
+  /api/v1/seller/shops/{shopId}/reviews/{reviewId}/response:
+    post:
+      operationId: sellerRespondToReview
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: reviewId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SellerRespondToReviewRequest"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Answer a review publicly (once)
+      tags:
+        - Seller Centre · Reviews
   /api/v1/staff/admin/audit-log:
     get:
       description: Requires permission `admin.audit_view`.
@@ -13997,6 +16638,273 @@ paths:
       summary: Cancel one line (e.g. seller out of stock)
       tags:
         - Staff · Orders
+  /api/v1/staff/returns:
+    get:
+      description: Requires permission `returns.manage`.
+      operationId: staffListReturns
+      parameters:
+        - explode: false
+          in: query
+          name: status
+          schema:
+            enum:
+              - requested
+              - approved
+              - rejected
+              - awaiting_pickup
+              - received
+              - inspected
+              - refunded
+              - replaced
+              - closed
+              - ""
+            type: string
+        - explode: false
+          in: query
+          name: cursor
+          schema:
+            type: string
+        - explode: false
+          in: query
+          name: limit
+          schema:
+            format: int64
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListReturnRow"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Returns, newest first
+      tags:
+        - Staff · Returns
+  /api/v1/staff/returns/{rma}:
+    get:
+      description: Requires permission `returns.manage`.
+      operationId: staffGetReturn
+      parameters:
+        - in: path
+          name: rma
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Return"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: A return with its items and inspections
+      tags:
+        - Staff · Returns
+  /api/v1/staff/returns/{rma}/decision:
+    post:
+      description: Requires permission `returns.manage`.
+      operationId: staffDecideReturn
+      parameters:
+        - in: path
+          name: rma
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffDecideReturnRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Return"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Approve or reject a return waiting for support
+      tags:
+        - Staff · Returns
+  /api/v1/staff/returns/{rma}/items/{itemId}/inspection:
+    post:
+      description: Requires permission `returns.manage`.
+      operationId: staffInspectReturnItem
+      parameters:
+        - in: path
+          name: rma
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: itemId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InspectInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Return"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Grade an item and decide where it goes (IMEI must match the unit sold)
+      tags:
+        - Staff · Returns
+  /api/v1/staff/returns/{rma}/receive:
+    post:
+      description: Requires permission `returns.manage`.
+      operationId: staffReceiveReturn
+      parameters:
+        - in: path
+          name: rma
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Return"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: The item arrived (warehouse or store)
+      tags:
+        - Staff · Returns
+  /api/v1/staff/returns/{rma}/refund:
+    post:
+      description: Requires permission `returns.manage`.
+      operationId: staffRefundReturn
+      parameters:
+        - in: path
+          name: rma
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Return"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Raise the refund for an inspected return (finance approves it)
+      tags:
+        - Staff · Returns
+  /api/v1/staff/reviews/queue:
+    get:
+      description: Requires permission `catalog.moderate`.
+      operationId: staffReviewQueue
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/QueueItem"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Held reviews and reviews with open reports, oldest first
+      tags:
+        - Staff · Reviews
+  /api/v1/staff/reviews/{id}/decision:
+    post:
+      description: Requires permission `catalog.moderate`.
+      operationId: staffDecideReview
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffDecideReviewRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffDecideReviewResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Publish, hide or reject a review (settles its reports)
+      tags:
+        - Staff · Reviews
   /api/v1/staff/search/gaps/{query}:
     put:
       description: Requires permission `search.manage`.
@@ -14192,6 +17100,165 @@ paths:
       summary: Deactivate a synonym
       tags:
         - Staff · Search
+  /api/v1/staff/vendors:
+    get:
+      description: Requires permission `vendors.view`.
+      operationId: staffListVendors
+      parameters:
+        - explode: false
+          in: query
+          name: status
+          schema:
+            enum:
+              - pending_kyc
+              - active
+              - suspended
+              - closed
+              - ""
+            type: string
+        - explode: false
+          in: query
+          name: kycStatus
+          schema:
+            enum:
+              - submitted
+              - in_review
+              - approved
+              - rejected
+              - needs_more_info
+              - ""
+            type: string
+        - explode: false
+          in: query
+          name: q
+          schema:
+            maxLength: 60
+            type: string
+        - explode: false
+          in: query
+          name: cursor
+          schema:
+            type: string
+        - explode: false
+          in: query
+          name: limit
+          schema:
+            format: int64
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListVendorRow"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Marketplace sellers, newest first
+      tags:
+        - Staff · Vendors
+  /api/v1/staff/vendors/kyc/{id}/reveal:
+    post:
+      description: Requires permission `vendors.reveal_id`.
+      operationId: staffRevealKycId
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffRevealKycIdRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffRevealKycIdResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Show the full ID number (reason required; audited)
+      tags:
+        - Staff · Vendors
+  /api/v1/staff/vendors/kyc/{id}/review:
+    post:
+      description: Requires permission `vendors.kyc_review`.
+      operationId: staffReviewKyc
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KycDecision"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Kyc"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Approve, reject or ask for more information
+      tags:
+        - Staff · Vendors
+  /api/v1/staff/vendors/{id}:
+    get:
+      description: Requires permission `vendors.view`.
+      operationId: staffGetVendor
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vendor"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: A seller with KYC, bank accounts and duplicate signals
+      tags:
+        - Staff · Vendors
   /api/v1/staff/wms/carriers:
     get:
       description: Requires permission `fulfilment.pick`.

@@ -13,6 +13,24 @@ import (
 )
 
 type Querier interface {
+	AftersalesAddItem(ctx context.Context, arg AftersalesAddItemParams) error
+	AftersalesCreateReturn(ctx context.Context, arg AftersalesCreateReturnParams) (AftersalesReturnRequest, error)
+	AftersalesDecide(ctx context.Context, arg AftersalesDecideParams) (AftersalesReturnRequest, error)
+	AftersalesGetReturn(ctx context.Context, rmaNumber string) (AftersalesGetReturnRow, error)
+	AftersalesGetReturnForUpdate(ctx context.Context, rmaNumber string) (AftersalesReturnRequest, error)
+	AftersalesInsertInspection(ctx context.Context, arg AftersalesInsertInspectionParams) (AftersalesReturnInspection, error)
+	AftersalesItems(ctx context.Context, returnRequestID uuid.UUID) ([]AftersalesItemsRow, error)
+	AftersalesOpenRiskCase(ctx context.Context, arg AftersalesOpenRiskCaseParams) (uuid.UUID, error)
+	// After-sales: returns (RMA). Plan: orders-fulfilment.md §7.
+	// The order's lines with what a return needs: delivery state, who shipped it, the unit sold and
+	// how many are already in an open (not rejected) return.
+	AftersalesReturnableLines(ctx context.Context, orderID uuid.UUID) ([]AftersalesReturnableLinesRow, error)
+	AftersalesReturnsForUser(ctx context.Context, requestedBy uuid.UUID) ([]AftersalesReturnsForUserRow, error)
+	AftersalesSetStatus(ctx context.Context, arg AftersalesSetStatusParams) (AftersalesReturnRequest, error)
+	AftersalesSetUnitCondition(ctx context.Context, arg AftersalesSetUnitConditionParams) error
+	AftersalesStaffList(ctx context.Context, arg AftersalesStaffListParams) ([]AftersalesStaffListRow, error)
+	// Returns vs delivered orders in the last 90 days, and open risk cases: "good standing" for auto-approval.
+	AftersalesStanding(ctx context.Context, userID uuid.UUID) (AftersalesStandingRow, error)
 	CatalogAddCompatibility(ctx context.Context, arg CatalogAddCompatibilityParams) error
 	CatalogAddImage(ctx context.Context, arg CatalogAddImageParams) (CatalogProductImage, error)
 	CatalogAddStockAlert(ctx context.Context, arg CatalogAddStockAlertParams) error
@@ -57,6 +75,9 @@ type Querier interface {
 	CatalogMaxPrice30d(ctx context.Context, listingID uuid.UUID) (int64, error)
 	// Median active price for a variant and condition (price-outlier check).
 	CatalogMedianPrice(ctx context.Context, arg CatalogMedianPriceParams) (int64, error)
+	// Median active price for a variant and condition, leaving one listing out (its own new price
+	// must not pull the median it is compared with).
+	CatalogMedianPriceOthers(ctx context.Context, arg CatalogMedianPriceOthersParams) (int64, error)
 	CatalogModerationQueue(ctx context.Context, limit int32) ([]CatalogModerationQueueRow, error)
 	CatalogProductIDForListing(ctx context.Context, id uuid.UUID) (uuid.UUID, error)
 	CatalogProductIDForVariant(ctx context.Context, id uuid.UUID) (uuid.UUID, error)
@@ -65,6 +86,10 @@ type Querier interface {
 	// promotions. Called by the outbox subscriber within seconds of a change (and nightly).
 	CatalogRefreshOfferSummary(ctx context.Context, arg CatalogRefreshOfferSummaryParams) error
 	CatalogSellerListingCount(ctx context.Context, sellerID uuid.UUID) (int32, error)
+	// A shop's own listings for Seller Centre, newest first (keyset by created_at).
+	CatalogSellerListingsPage(ctx context.Context, arg CatalogSellerListingsPageParams) ([]CatalogSellerListingsPageRow, error)
+	// Enforcement: a seller's live listings go back to moderation (e.g. 3 SLA breaches in 30 days).
+	CatalogSendSellerListingsToReview(ctx context.Context, sellerID uuid.UUID) ([]uuid.UUID, error)
 	CatalogSetAttributeValue(ctx context.Context, arg CatalogSetAttributeValueParams) error
 	CatalogSetListingStatus(ctx context.Context, arg CatalogSetListingStatusParams) (CatalogListing, error)
 	CatalogSetListingStock(ctx context.Context, arg CatalogSetListingStockParams) (CatalogListing, error)
@@ -72,6 +97,8 @@ type Querier interface {
 	CatalogSuggestProducts(ctx context.Context, prefix *string) ([]CatalogSuggestProductsRow, error)
 	CatalogSuggestQueries(ctx context.Context, prefix string) ([]string, error)
 	CatalogSummaryByProduct(ctx context.Context, arg CatalogSummaryByProductParams) (CatalogProductOfferSummary, error)
+	// Seller edits while a listing is a draft or has changes requested.
+	CatalogUpdateListingDetails(ctx context.Context, arg CatalogUpdateListingDetailsParams) (CatalogListing, error)
 	CatalogUpdateListingPrice(ctx context.Context, arg CatalogUpdateListingPriceParams) (CatalogListing, error)
 	CatalogUpdateProduct(ctx context.Context, arg CatalogUpdateProductParams) (CatalogProduct, error)
 	CatalogUpsertAttributeDefinition(ctx context.Context, arg CatalogUpsertAttributeDefinitionParams) (CatalogAttributeDefinition, error)
@@ -137,6 +164,7 @@ type Querier interface {
 	FulfilmentParcelsForFulfilment(ctx context.Context, fulfilmentID uuid.UUID) ([]FulfilmentParcel, error)
 	FulfilmentPickItems(ctx context.Context, pickListID uuid.UUID) ([]FulfilmentPickItemsRow, error)
 	FulfilmentPickListOpenItems(ctx context.Context, pickListID uuid.UUID) (int32, error)
+	FulfilmentSLABreaches30d(ctx context.Context, sellerID uuid.UUID) (int32, error)
 	// Conditional: never picks more than ordered.
 	FulfilmentScanItem(ctx context.Context, arg FulfilmentScanItemParams) (FulfilmentPickListItem, error)
 	FulfilmentSellerSLAStats(ctx context.Context, sellerID uuid.UUID) (FulfilmentSellerSLAStatsRow, error)
@@ -511,6 +539,36 @@ type Querier interface {
 	PlatformPing(ctx context.Context) (int32, error)
 	PlatformReleaseIdempotencyKey(ctx context.Context, arg PlatformReleaseIdempotencyKeyParams) error
 	PlatformSetFeatureFlag(ctx context.Context, arg PlatformSetFeatureFlagParams) (PlatformFeatureFlag, error)
+	// A delivered fulfilment of the caller's own order (the only thing a customer may rate).
+	RatingsDeliveredFulfilment(ctx context.Context, arg RatingsDeliveredFulfilmentParams) (RatingsDeliveredFulfilmentRow, error)
+	RatingsInsert(ctx context.Context, arg RatingsInsertParams) (CatalogSellerRating, error)
+	RatingsRecomputeSeller(ctx context.Context, id uuid.UUID) error
+	ReviewsByUserLast24h(ctx context.Context, userID uuid.UUID) (int32, error)
+	ReviewsDecideReports(ctx context.Context, arg ReviewsDecideReportsParams) error
+	// Product reviews, reports and seller ratings (M4 slice 4). Plan: trust-safety.md §6.
+	// The caller's delivered, not-cancelled order line for this product (a verified purchase).
+	ReviewsDeliveredLine(ctx context.Context, arg ReviewsDeliveredLineParams) (ReviewsDeliveredLineRow, error)
+	// Published reviews of items this seller shipped (the reviews it may answer).
+	ReviewsForSeller(ctx context.Context, arg ReviewsForSellerParams) ([]ReviewsForSellerRow, error)
+	ReviewsGet(ctx context.Context, id uuid.UUID) (CatalogProductReview, error)
+	ReviewsGetForUpdate(ctx context.Context, id uuid.UUID) (CatalogProductReview, error)
+	ReviewsInsert(ctx context.Context, arg ReviewsInsertParams) (CatalogProductReview, error)
+	ReviewsInsertImage(ctx context.Context, arg ReviewsInsertImageParams) error
+	ReviewsInsertReport(ctx context.Context, arg ReviewsInsertReportParams) (RiskReviewReport, error)
+	// The product slug of one of the caller's order lines (to review it from the order page).
+	ReviewsLineProductSlug(ctx context.Context, arg ReviewsLineProductSlugParams) (string, error)
+	ReviewsPublished(ctx context.Context, arg ReviewsPublishedParams) ([]ReviewsPublishedRow, error)
+	// Staff moderation: held reviews, oldest first, and published ones with open reports.
+	ReviewsQueue(ctx context.Context, limit int32) ([]ReviewsQueueRow, error)
+	ReviewsReportedBy(ctx context.Context, arg ReviewsReportedByParams) (bool, error)
+	// Another account already posted this text (normalised): a sign of copied or bought reviews.
+	ReviewsSameTextByOthers(ctx context.Context, arg ReviewsSameTextByOthersParams) (bool, error)
+	// The seller that shipped the reviewed item (null for unverified reviews).
+	ReviewsSellerOf(ctx context.Context, id uuid.UUID) (uuid.UUID, error)
+	ReviewsSetSellerResponse(ctx context.Context, arg ReviewsSetSellerResponseParams) (int64, error)
+	ReviewsSetStatus(ctx context.Context, arg ReviewsSetStatusParams) (CatalogProductReview, error)
+	// Star counts and the weighted average (verified reviews count 1, unverified 0.5).
+	ReviewsSummary(ctx context.Context, productID uuid.UUID) (ReviewsSummaryRow, error)
 	// The exact device sold (IMEI/serial), bound when the unit is picked.
 	SalesBindDeviceUnit(ctx context.Context, arg SalesBindDeviceUnitParams) (SalesOrderLine, error)
 	SalesCancelLine(ctx context.Context, arg SalesCancelLineParams) (SalesOrderLine, error)
@@ -527,6 +585,11 @@ type Querier interface {
 	SalesCreateOrder(ctx context.Context, arg SalesCreateOrderParams) (SalesOrder, error)
 	SalesCustomerOrderByNumber(ctx context.Context, arg SalesCustomerOrderByNumberParams) (SalesOrder, error)
 	SalesDeleteCartItem(ctx context.Context, arg SalesDeleteCartItemParams) (int64, error)
+	// Development only (dev route): moves a seller fulfilment's deadline into the past so the SLA
+	// job can be tested without waiting a day.
+	SalesDevExpireDeadline(ctx context.Context, arg SalesDevExpireDeadlineParams) error
+	// The longest handling time among the fulfilment's listings: the seller's packing deadline.
+	SalesFulfilmentHandlingDays(ctx context.Context, fulfilmentID uuid.UUID) (int32, error)
 	SalesFulfilmentLines(ctx context.Context, fulfilmentID uuid.UUID) ([]SalesOrderLine, error)
 	SalesGetFulfilment(ctx context.Context, id uuid.UUID) (SalesFulfilment, error)
 	SalesGetFulfilmentForUpdate(ctx context.Context, id uuid.UUID) (SalesFulfilment, error)
@@ -535,6 +598,7 @@ type Querier interface {
 	SalesGetOrder(ctx context.Context, id uuid.UUID) (SalesOrder, error)
 	SalesGetOrderByNumber(ctx context.Context, orderNumber string) (SalesOrder, error)
 	SalesGetOrderForUpdate(ctx context.Context, id uuid.UUID) (SalesOrder, error)
+	SalesGetSellerFulfilment(ctx context.Context, arg SalesGetSellerFulfilmentParams) (SalesGetSellerFulfilmentRow, error)
 	// Sales: carts, orders, fulfilments, lines, status history (docs/orders-fulfilment.md §2).
 	SalesGetUserCart(ctx context.Context, userID *uuid.UUID) (SalesCart, error)
 	SalesInsertHistory(ctx context.Context, arg SalesInsertHistoryParams) error
@@ -549,7 +613,10 @@ type Querier interface {
 	SalesOrderLines(ctx context.Context, orderID uuid.UUID) ([]SalesOrderLine, error)
 	SalesPaidOrdersCount(ctx context.Context, customerUserID *uuid.UUID) (int32, error)
 	SalesPendingAcceptBreaches(ctx context.Context) ([]SalesPendingAcceptBreachesRow, error)
+	SalesPendingPackBreaches(ctx context.Context) ([]SalesPendingPackBreachesRow, error)
 	SalesSellerFulfilments(ctx context.Context, arg SalesSellerFulfilmentsParams) ([]SalesSellerFulfilmentsRow, error)
+	// ---- Seller-shipped fulfilment (M4 slice 3, orders-fulfilment.md §4 "Seller SLAs")
+	SalesSellerFulfilmentsPage(ctx context.Context, arg SalesSellerFulfilmentsPageParams) ([]SalesSellerFulfilmentsPageRow, error)
 	// Was this listing's discount seller-funded when the order was placed? (Seller-funded
 	// promotions always target the seller's own listings and never carry coupons.)
 	SalesSellerFundedAt(ctx context.Context, arg SalesSellerFundedAtParams) (bool, error)
@@ -560,6 +627,7 @@ type Querier interface {
 	SalesSetFulfilmentStatus(ctx context.Context, arg SalesSetFulfilmentStatusParams) (SalesFulfilment, error)
 	SalesSetFulfilmentWarehouse(ctx context.Context, arg SalesSetFulfilmentWarehouseParams) error
 	SalesSetOrderStatus(ctx context.Context, arg SalesSetOrderStatusParams) (SalesOrder, error)
+	SalesSetPackBy(ctx context.Context, arg SalesSetPackByParams) error
 	SalesStaffListOrders(ctx context.Context, arg SalesStaffListOrdersParams) ([]SalesStaffListOrdersRow, error)
 	// Best wholesale tier unit price for a quantity (null when no tier applies).
 	SalesTierPrice(ctx context.Context, arg SalesTierPriceParams) (int64, error)
@@ -584,11 +652,36 @@ type Querier interface {
 	SearchUpsertRedirect(ctx context.Context, arg SearchUpsertRedirectParams) (SearchSearchRedirect, error)
 	SearchZeroResults(ctx context.Context, limit int32) ([]SearchZeroResultsRow, error)
 	SellersAddMember(ctx context.Context, arg SellersAddMemberParams) error
+	SellersBankAccountExists(ctx context.Context, arg SellersBankAccountExistsParams) (bool, error)
+	SellersBankAccounts(ctx context.Context, sellerID uuid.UUID) ([]SellersSellerBankAccount, error)
+	SellersClearDefaultBank(ctx context.Context, sellerID uuid.UUID) error
+	SellersCountOwnedByUser(ctx context.Context, ownerUserID *uuid.UUID) (int64, error)
 	SellersCreate(ctx context.Context, arg SellersCreateParams) (SellersSeller, error)
+	SellersDeleteBankAccount(ctx context.Context, arg SellersDeleteBankAccountParams) (int64, error)
 	SellersGet(ctx context.Context, id uuid.UUID) (SellersSeller, error)
 	SellersGetBySlug(ctx context.Context, slug string) (SellersSeller, error)
 	// Sellers (marketplace shops, members, KYC, bank accounts). Plan: trust-safety.md §2.
 	SellersGetFirstParty(ctx context.Context) (SellersSeller, error)
+	SellersGetKyc(ctx context.Context, id uuid.UUID) (SellersSellerKycSubmission, error)
+	SellersGetKycForUpdate(ctx context.Context, id uuid.UUID) (SellersSellerKycSubmission, error)
+	SellersInsertBankAccount(ctx context.Context, arg SellersInsertBankAccountParams) (SellersSellerBankAccount, error)
+	SellersInsertKyc(ctx context.Context, arg SellersInsertKycParams) (SellersSellerKycSubmission, error)
+	SellersInsertKycDocument(ctx context.Context, arg SellersInsertKycDocumentParams) error
+	SellersKycDocuments(ctx context.Context, submissionID uuid.UUID) ([]SellersKycDocumentsRow, error)
+	SellersLatestKyc(ctx context.Context, sellerID uuid.UUID) (SellersSellerKycSubmission, error)
+	SellersMemberRole(ctx context.Context, arg SellersMemberRoleParams) (string, error)
+	SellersMembers(ctx context.Context, sellerID uuid.UUID) ([]SellersMembersRow, error)
+	SellersOtherSellersWithAccount(ctx context.Context, arg SellersOtherSellersWithAccountParams) (int64, error)
+	SellersOtherSellersWithIDNumber(ctx context.Context, arg SellersOtherSellersWithIDNumberParams) (int64, error)
+	// ---- Seller Centre (M4): shops, KYC, bank accounts. Seller requests run with app.seller_id set,
+	// so row-level security (00025) also scopes these tables to the caller's shop.
+	SellersRegisterShop(ctx context.Context, arg SellersRegisterShopParams) (SellersSeller, error)
+	SellersReviewKyc(ctx context.Context, arg SellersReviewKycParams) (SellersSellerKycSubmission, error)
+	SellersSetDefaultBank(ctx context.Context, arg SellersSetDefaultBankParams) (int64, error)
+	SellersSetStatus(ctx context.Context, arg SellersSetStatusParams) (SellersSeller, error)
+	SellersShopsForUser(ctx context.Context, userID uuid.UUID) ([]SellersShopsForUserRow, error)
+	SellersSlugTaken(ctx context.Context, slug string) (bool, error)
+	SellersStaffList(ctx context.Context, arg SellersStaffListParams) ([]SellersStaffListRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

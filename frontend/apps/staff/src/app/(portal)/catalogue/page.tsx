@@ -1,17 +1,21 @@
 import Link from "next/link";
 import { connection } from "next/server";
 
+import { Table, Status, humanise } from "@techshop/ui/components";
 import { sites } from "@techshop/ui/sites";
 
 import { ActionButton } from "@/components/ActionButton";
 import { PageHead } from "@/components/PageHead";
-import { Status, humanise } from "@/components/Status";
-import { Table } from "@/components/Table";
 import { Tabs } from "@/components/Tabs";
 import { decideSuggestion, reindex } from "@/features/catalogue/actions";
 import { ModerationActions } from "@/features/catalogue/components/ModerationActions";
 import {
+  ReviewActions,
+  ReviewText,
+} from "@/features/catalogue/components/ReviewActions";
+import {
   moderationQueue,
+  reviewQueue,
   searchProducts,
   suggestions,
 } from "@/features/catalogue/server";
@@ -24,6 +28,7 @@ const TABS = [
   { key: "products", label: "Products" },
   { key: "moderation", label: "Moderation" },
   { key: "suggestions", label: "Seller suggestions" },
+  { key: "reviews", label: "Reviews" },
 ];
 
 export default async function CataloguePage(props: PageProps<"/catalogue">) {
@@ -38,7 +43,7 @@ export default async function CataloguePage(props: PageProps<"/catalogue">) {
     <div className="stack stack--lg">
       <PageHead
         title="Catalogue"
-        description="Products, listing moderation and seller change requests."
+        description="Products, listing and review moderation, and seller change requests."
         actions={
           <>
             {can(me, "catalog.edit") ? (
@@ -74,6 +79,15 @@ export default async function CataloguePage(props: PageProps<"/catalogue">) {
       ) : null}
       {tab === "suggestions" ? (
         <Suggestions canDecide={can(me, "catalog.moderate")} />
+      ) : null}
+      {tab === "reviews" ? (
+        can(me, "catalog.moderate") ? (
+          <Reviews />
+        ) : (
+          <p className="text-muted">
+            Review moderation needs the catalogue moderator role.
+          </p>
+        )
       ) : null}
     </div>
   );
@@ -222,6 +236,52 @@ async function Suggestions({ canDecide }: { canDecide: boolean }) {
               </div>
             ) : null,
         },
+      ]}
+    />
+  );
+}
+
+async function Reviews() {
+  const rows = await reviewQueue();
+  return (
+    <Table
+      caption="Reviews held back or reported"
+      rows={rows}
+      rowKey={(r) => r.id}
+      empty={{
+        title: "Nothing to review",
+        body: "Reviews the automatic checks hold back, and reported reviews, appear here.",
+      }}
+      columns={[
+        { label: "Product", cell: (r) => r.productName },
+        { label: "Rating", cell: (r) => `${r.rating}/5`, numeric: true },
+        {
+          label: "Review",
+          cell: (r) => (
+            <ReviewText>
+              {[r.title, r.body].filter(Boolean).join(" — ") || "—"}
+            </ReviewText>
+          ),
+        },
+        {
+          label: "By",
+          cell: (r) =>
+            `${r.reviewer}${r.verified ? " (verified purchase)" : ""}`,
+        },
+        {
+          label: "Why here",
+          cell: (r) =>
+            [
+              ...(r.reasons ?? []),
+              ...(r.openReports
+                ? [
+                    `${r.openReports} open report${r.openReports === 1 ? "" : "s"}`,
+                  ]
+                : []),
+            ].join("; ") || "—",
+        },
+        { label: "Posted", cell: (r) => formatDateTime(r.createdAt) },
+        { label: "Decision", cell: (r) => <ReviewActions id={r.id} /> },
       ]}
     />
   );

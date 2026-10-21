@@ -8,12 +8,15 @@ import { fileURLToPath } from "node:url";
 
 import {
   API_URL,
+  api,
   account,
+  deliveredOrder,
   form,
   latestCode,
   peekCode,
   seed,
   textOf,
+  tokenForPhone,
   WebClient,
 } from "@techshop/testing";
 
@@ -445,7 +448,7 @@ describe("security", () => {
 
 describe("content from the CMS", () => {
   test("legal page shows the outline, then the published text once staff publish it", async () => {
-    const { api, staffToken } = await import("@techshop/testing");
+    const { staffToken } = await import("@techshop/testing");
     const before = textOf((await browser().get("/legal/cookies")).html);
     const marker = `E2E cookie policy ${Date.now().toString(36)}`;
     const editor = await staffToken("content_editor");
@@ -474,5 +477,129 @@ describe("content from the CMS", () => {
     }
     assert.match(after, new RegExp(marker));
     assert.notEqual(before, after);
+  });
+});
+
+describe("reviews", () => {
+  test("review a delivered item, rate the seller, see it on the product page and report one", async () => {
+    // A fresh customer with a delivered TechShop order (fake carrier), signed in on the web too.
+    const phone = freshPhone();
+    const token = await tokenForPhone(phone, "market", "Chidi");
+    const { orderNumber, fulfilmentId, lineId } = await deliveredOrder(
+      token,
+      listing(21),
+    );
+    // The API allows one code per number per minute, so the web session signs in with a
+    // password set through the API instead of a second code.
+    const password = `Pw-${randomInt(1e9, 9e9)}-${Date.now().toString(36)}`;
+    await api.post("/api/v1/me/password", {
+      token,
+      body: { newPassword: password },
+    });
+    const b = browser();
+    const next = `/orders/${orderNumber}`;
+    await b.get(`/sign-in?next=${encodeURIComponent(next)}`);
+    const signed = await b.action("/sign-in", "signInStep", [
+      { step: "start" },
+      form({ intent: "password", identifier: phone, password, next }),
+    ]);
+    assert.equal(signed.redirect, next, signed.raw.slice(-300));
+
+    const orderPage = textOf((await b.get(`/orders/${orderNumber}`)).html);
+    assert.match(orderPage, /Review/);
+    assert.match(orderPage, /Rate TechShop/);
+
+    const reviewPath = `/orders/${orderNumber}/review/${lineId}`;
+    assert.match(textOf((await b.get(reviewPath)).html), /Write a review/);
+    const noStars = await b.action<{
+      ok: boolean;
+      errors?: Record<string, string>;
+    }>(
+      "/orders/[number]/review/[lineId]",
+      "reviewItem",
+      [lineId, {}, form({ rating: "" })],
+      { url: reviewPath },
+    );
+    assert.equal(noStars.value.ok, false);
+    assert.ok(noStars.value.errors?.rating);
+    const marker = `Bright bulbs ${Date.now().toString(36)}`;
+    const posted = await b.action<{ ok: boolean; message: string }>(
+      "/orders/[number]/review/[lineId]",
+      "reviewItem",
+      [
+        lineId,
+        {},
+        form({
+          rating: "5",
+          title: "Great",
+          body: `${marker}, easy to pair with the app.`,
+        }),
+      ],
+      { url: reviewPath },
+    );
+    assert.equal(posted.value.ok, true, posted.value.message);
+    assert.match(posted.value.message, /live/);
+
+    const rated = await b.action<{ ok: boolean; message: string }>(
+      "/orders/[number]",
+      "rateSeller",
+      [fulfilmentId, {}, form({ rating: "4", comment: "Quick" })],
+      { url: `/orders/${orderNumber}` },
+    );
+    assert.equal(rated.value.ok, true, rated.value.message);
+    const again = await b.action<{ ok: boolean; message: string }>(
+      "/orders/[number]",
+      "rateSeller",
+      [fulfilmentId, {}, form({ rating: "4" })],
+      { url: `/orders/${orderNumber}` },
+    );
+    assert.equal(again.value.ok, false);
+    assert.match(again.value.message, /already rated/);
+
+    // The review shows on the product page as a verified purchase.
+    const product = textOf(
+      (await browser().get("/p/lumen-smart-bulb-4-pack")).html,
+    );
+    assert.match(product, new RegExp(marker));
+    assert.match(product, /Verified purchase/);
+
+    // Someone else reports it; once is enough.
+    const other = browser();
+    const step = await signIn(
+      other,
+      freshPhone(),
+      "/p/lumen-smart-bulb-4-pack",
+    );
+    assert.equal(step.value.step, "profile"); // a new number: finish sign-up
+    await other.action("/sign-in", "signInStep", [
+      { step: "profile" },
+      form({
+        intent: "profile",
+        firstName: "Eze",
+        lastName: "Reporter",
+        next: "/p/lumen-smart-bulb-4-pack",
+      }),
+    ]);
+    const reviews = await api.get("/api/v1/products/{slug}/reviews", {
+      path: { slug: "lumen-smart-bulb-4-pack" },
+    });
+    const mine = (reviews.reviews.items ?? []).find((r) =>
+      (r.body ?? "").includes(marker),
+    )!;
+    await other.get("/p/lumen-smart-bulb-4-pack");
+    const report = await other.action<{ ok: boolean; message: string }>(
+      "/p/[slug]",
+      "reportReview",
+      [mine.id, {}, form({ reason: "fake" })],
+      { url: "/p/lumen-smart-bulb-4-pack" },
+    );
+    assert.equal(report.value.ok, true, report.value.message);
+    const twice = await other.action<{ ok: boolean; message: string }>(
+      "/p/[slug]",
+      "reportReview",
+      [mine.id, {}, form({ reason: "fake" })],
+      { url: "/p/lumen-smart-bulb-4-pack" },
+    );
+    assert.equal(twice.value.ok, false);
   });
 });

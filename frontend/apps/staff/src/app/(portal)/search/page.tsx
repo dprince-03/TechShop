@@ -1,10 +1,9 @@
 import { connection } from "next/server";
 
+import { Table, Status, humanise } from "@techshop/ui/components";
 import { sites } from "@techshop/ui/sites";
 
 import { PageHead } from "@/components/PageHead";
-import { Status, humanise } from "@/components/Status";
-import { Table } from "@/components/Table";
 import { orderTone } from "@/features/orders/status";
 import { can, requireStaff } from "@/features/session/server";
 import { bff } from "@/lib/bff";

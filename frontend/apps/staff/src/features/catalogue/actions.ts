@@ -181,3 +181,27 @@ export async function createProduct(
   }
   redirect(`/catalogue?created=${encodeURIComponent(productSlug)}`);
 }
+
+/** Publish (dismisses reports), hide or reject (upholds reports) a review. */
+export async function decideReview(
+  id: string,
+  decision: "publish" | "hide" | "reject",
+): Promise<StaffResult> {
+  if (!UUID.test(id) || !["publish", "hide", "reject"].includes(decision))
+    return { ok: false, message: "Unknown review or decision." };
+  return runStaffAction(
+    async () =>
+      (await bff.api({ refresh: true })).post(
+        "/api/v1/staff/reviews/{id}/decision",
+        {
+          path: { id },
+          body: { decision },
+        },
+      ),
+    decision === "publish"
+      ? "Published."
+      : decision === "hide"
+        ? "Hidden."
+        : "Rejected.",
+  );
+}

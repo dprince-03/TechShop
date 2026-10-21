@@ -7,6 +7,7 @@ package store
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -25,6 +26,82 @@ type SellersAddMemberParams struct {
 func (q *Queries) SellersAddMember(ctx context.Context, arg SellersAddMemberParams) error {
 	_, err := q.db.Exec(ctx, sellersAddMember, arg.SellerID, arg.UserID, arg.Role)
 	return err
+}
+
+const sellersBankAccountExists = `-- name: SellersBankAccountExists :one
+select exists (select 1 from sellers.seller_bank_accounts where seller_id = $1 and account_number_hmac = $2)
+`
+
+type SellersBankAccountExistsParams struct {
+	SellerID          uuid.UUID `json:"sellerId"`
+	AccountNumberHmac []byte    `json:"accountNumberHmac"`
+}
+
+func (q *Queries) SellersBankAccountExists(ctx context.Context, arg SellersBankAccountExistsParams) (bool, error) {
+	row := q.db.QueryRow(ctx, sellersBankAccountExists, arg.SellerID, arg.AccountNumberHmac)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const sellersBankAccounts = `-- name: SellersBankAccounts :many
+select id, seller_id, bank_code, account_name, resolved_account_name, account_number_encrypted, account_number_hmac, account_number_last4, encryption_key_id, provider, provider_recipient_code, verified_at, is_default, created_at, updated_at from sellers.seller_bank_accounts where seller_id = $1 order by is_default desc, created_at
+`
+
+func (q *Queries) SellersBankAccounts(ctx context.Context, sellerID uuid.UUID) ([]SellersSellerBankAccount, error) {
+	rows, err := q.db.Query(ctx, sellersBankAccounts, sellerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []SellersSellerBankAccount{}
+	for rows.Next() {
+		var i SellersSellerBankAccount
+		if err := rows.Scan(
+			&i.ID,
+			&i.SellerID,
+			&i.BankCode,
+			&i.AccountName,
+			&i.ResolvedAccountName,
+			&i.AccountNumberEncrypted,
+			&i.AccountNumberHmac,
+			&i.AccountNumberLast4,
+			&i.EncryptionKeyID,
+			&i.Provider,
+			&i.ProviderRecipientCode,
+			&i.VerifiedAt,
+			&i.IsDefault,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const sellersClearDefaultBank = `-- name: SellersClearDefaultBank :exec
+update sellers.seller_bank_accounts set is_default = false where seller_id = $1 and is_default
+`
+
+func (q *Queries) SellersClearDefaultBank(ctx context.Context, sellerID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, sellersClearDefaultBank, sellerID)
+	return err
+}
+
+const sellersCountOwnedByUser = `-- name: SellersCountOwnedByUser :one
+select count(*) from sellers.sellers where owner_user_id = $1 and status <> 'closed'
+`
+
+func (q *Queries) SellersCountOwnedByUser(ctx context.Context, ownerUserID *uuid.UUID) (int64, error) {
+	row := q.db.QueryRow(ctx, sellersCountOwnedByUser, ownerUserID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
 }
 
 const sellersCreate = `-- name: SellersCreate :one
@@ -75,6 +152,23 @@ func (q *Queries) SellersCreate(ctx context.Context, arg SellersCreateParams) (S
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const sellersDeleteBankAccount = `-- name: SellersDeleteBankAccount :execrows
+delete from sellers.seller_bank_accounts where id = $1 and seller_id = $2 and not is_default
+`
+
+type SellersDeleteBankAccountParams struct {
+	ID       uuid.UUID `json:"id"`
+	SellerID uuid.UUID `json:"sellerId"`
+}
+
+func (q *Queries) SellersDeleteBankAccount(ctx context.Context, arg SellersDeleteBankAccountParams) (int64, error) {
+	result, err := q.db.Exec(ctx, sellersDeleteBankAccount, arg.ID, arg.SellerID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const sellersGet = `-- name: SellersGet :one
@@ -152,4 +246,632 @@ func (q *Queries) SellersGetFirstParty(ctx context.Context) (SellersSeller, erro
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const sellersGetKyc = `-- name: SellersGetKyc :one
+select id, seller_id, status, id_type, id_number_encrypted, id_number_hmac, id_number_last4, encryption_key_id, cac_rc_number, tin, verification_provider, verification_ref, verified_at, reviewed_by, reviewed_at, rejection_reason, created_at, updated_at from sellers.seller_kyc_submissions where id = $1
+`
+
+func (q *Queries) SellersGetKyc(ctx context.Context, id uuid.UUID) (SellersSellerKycSubmission, error) {
+	row := q.db.QueryRow(ctx, sellersGetKyc, id)
+	var i SellersSellerKycSubmission
+	err := row.Scan(
+		&i.ID,
+		&i.SellerID,
+		&i.Status,
+		&i.IDType,
+		&i.IDNumberEncrypted,
+		&i.IDNumberHmac,
+		&i.IDNumberLast4,
+		&i.EncryptionKeyID,
+		&i.CacRcNumber,
+		&i.Tin,
+		&i.VerificationProvider,
+		&i.VerificationRef,
+		&i.VerifiedAt,
+		&i.ReviewedBy,
+		&i.ReviewedAt,
+		&i.RejectionReason,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const sellersGetKycForUpdate = `-- name: SellersGetKycForUpdate :one
+select id, seller_id, status, id_type, id_number_encrypted, id_number_hmac, id_number_last4, encryption_key_id, cac_rc_number, tin, verification_provider, verification_ref, verified_at, reviewed_by, reviewed_at, rejection_reason, created_at, updated_at from sellers.seller_kyc_submissions where id = $1 for update
+`
+
+func (q *Queries) SellersGetKycForUpdate(ctx context.Context, id uuid.UUID) (SellersSellerKycSubmission, error) {
+	row := q.db.QueryRow(ctx, sellersGetKycForUpdate, id)
+	var i SellersSellerKycSubmission
+	err := row.Scan(
+		&i.ID,
+		&i.SellerID,
+		&i.Status,
+		&i.IDType,
+		&i.IDNumberEncrypted,
+		&i.IDNumberHmac,
+		&i.IDNumberLast4,
+		&i.EncryptionKeyID,
+		&i.CacRcNumber,
+		&i.Tin,
+		&i.VerificationProvider,
+		&i.VerificationRef,
+		&i.VerifiedAt,
+		&i.ReviewedBy,
+		&i.ReviewedAt,
+		&i.RejectionReason,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const sellersInsertBankAccount = `-- name: SellersInsertBankAccount :one
+insert into sellers.seller_bank_accounts (seller_id, bank_code, account_name, resolved_account_name, account_number_encrypted,
+  account_number_hmac, account_number_last4, provider, verified_at, is_default)
+values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+returning id, seller_id, bank_code, account_name, resolved_account_name, account_number_encrypted, account_number_hmac, account_number_last4, encryption_key_id, provider, provider_recipient_code, verified_at, is_default, created_at, updated_at
+`
+
+type SellersInsertBankAccountParams struct {
+	SellerID               uuid.UUID  `json:"sellerId"`
+	BankCode               string     `json:"bankCode"`
+	AccountName            string     `json:"accountName"`
+	ResolvedAccountName    *string    `json:"resolvedAccountName"`
+	AccountNumberEncrypted []byte     `json:"accountNumberEncrypted"`
+	AccountNumberHmac      []byte     `json:"accountNumberHmac"`
+	AccountNumberLast4     string     `json:"accountNumberLast4"`
+	Provider               *string    `json:"provider"`
+	VerifiedAt             *time.Time `json:"verifiedAt"`
+	IsDefault              bool       `json:"isDefault"`
+}
+
+func (q *Queries) SellersInsertBankAccount(ctx context.Context, arg SellersInsertBankAccountParams) (SellersSellerBankAccount, error) {
+	row := q.db.QueryRow(ctx, sellersInsertBankAccount,
+		arg.SellerID,
+		arg.BankCode,
+		arg.AccountName,
+		arg.ResolvedAccountName,
+		arg.AccountNumberEncrypted,
+		arg.AccountNumberHmac,
+		arg.AccountNumberLast4,
+		arg.Provider,
+		arg.VerifiedAt,
+		arg.IsDefault,
+	)
+	var i SellersSellerBankAccount
+	err := row.Scan(
+		&i.ID,
+		&i.SellerID,
+		&i.BankCode,
+		&i.AccountName,
+		&i.ResolvedAccountName,
+		&i.AccountNumberEncrypted,
+		&i.AccountNumberHmac,
+		&i.AccountNumberLast4,
+		&i.EncryptionKeyID,
+		&i.Provider,
+		&i.ProviderRecipientCode,
+		&i.VerifiedAt,
+		&i.IsDefault,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const sellersInsertKyc = `-- name: SellersInsertKyc :one
+insert into sellers.seller_kyc_submissions (seller_id, id_type, id_number_encrypted, id_number_hmac, id_number_last4, cac_rc_number, tin, verification_provider)
+values ($1, $2, $3, $4, $5, $6, $7, 'manual')
+returning id, seller_id, status, id_type, id_number_encrypted, id_number_hmac, id_number_last4, encryption_key_id, cac_rc_number, tin, verification_provider, verification_ref, verified_at, reviewed_by, reviewed_at, rejection_reason, created_at, updated_at
+`
+
+type SellersInsertKycParams struct {
+	SellerID          uuid.UUID `json:"sellerId"`
+	IDType            string    `json:"idType"`
+	IDNumberEncrypted []byte    `json:"idNumberEncrypted"`
+	IDNumberHmac      []byte    `json:"idNumberHmac"`
+	IDNumberLast4     string    `json:"idNumberLast4"`
+	CacRcNumber       *string   `json:"cacRcNumber"`
+	Tin               *string   `json:"tin"`
+}
+
+func (q *Queries) SellersInsertKyc(ctx context.Context, arg SellersInsertKycParams) (SellersSellerKycSubmission, error) {
+	row := q.db.QueryRow(ctx, sellersInsertKyc,
+		arg.SellerID,
+		arg.IDType,
+		arg.IDNumberEncrypted,
+		arg.IDNumberHmac,
+		arg.IDNumberLast4,
+		arg.CacRcNumber,
+		arg.Tin,
+	)
+	var i SellersSellerKycSubmission
+	err := row.Scan(
+		&i.ID,
+		&i.SellerID,
+		&i.Status,
+		&i.IDType,
+		&i.IDNumberEncrypted,
+		&i.IDNumberHmac,
+		&i.IDNumberLast4,
+		&i.EncryptionKeyID,
+		&i.CacRcNumber,
+		&i.Tin,
+		&i.VerificationProvider,
+		&i.VerificationRef,
+		&i.VerifiedAt,
+		&i.ReviewedBy,
+		&i.ReviewedAt,
+		&i.RejectionReason,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const sellersInsertKycDocument = `-- name: SellersInsertKycDocument :exec
+insert into sellers.kyc_documents (submission_id, kind, file_id) values ($1, $2, $3)
+`
+
+type SellersInsertKycDocumentParams struct {
+	SubmissionID uuid.UUID `json:"submissionId"`
+	Kind         string    `json:"kind"`
+	FileID       uuid.UUID `json:"fileId"`
+}
+
+func (q *Queries) SellersInsertKycDocument(ctx context.Context, arg SellersInsertKycDocumentParams) error {
+	_, err := q.db.Exec(ctx, sellersInsertKycDocument, arg.SubmissionID, arg.Kind, arg.FileID)
+	return err
+}
+
+const sellersKycDocuments = `-- name: SellersKycDocuments :many
+select d.id, d.kind, d.file_id, f.content_type, f.original_name, d.created_at
+from sellers.kyc_documents d join platform.files f on f.id = d.file_id
+where d.submission_id = $1 order by d.created_at
+`
+
+type SellersKycDocumentsRow struct {
+	ID           uuid.UUID `json:"id"`
+	Kind         string    `json:"kind"`
+	FileID       uuid.UUID `json:"fileId"`
+	ContentType  string    `json:"contentType"`
+	OriginalName *string   `json:"originalName"`
+	CreatedAt    time.Time `json:"createdAt"`
+}
+
+func (q *Queries) SellersKycDocuments(ctx context.Context, submissionID uuid.UUID) ([]SellersKycDocumentsRow, error) {
+	rows, err := q.db.Query(ctx, sellersKycDocuments, submissionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []SellersKycDocumentsRow{}
+	for rows.Next() {
+		var i SellersKycDocumentsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Kind,
+			&i.FileID,
+			&i.ContentType,
+			&i.OriginalName,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const sellersLatestKyc = `-- name: SellersLatestKyc :one
+select id, seller_id, status, id_type, id_number_encrypted, id_number_hmac, id_number_last4, encryption_key_id, cac_rc_number, tin, verification_provider, verification_ref, verified_at, reviewed_by, reviewed_at, rejection_reason, created_at, updated_at from sellers.seller_kyc_submissions where seller_id = $1 order by created_at desc limit 1
+`
+
+func (q *Queries) SellersLatestKyc(ctx context.Context, sellerID uuid.UUID) (SellersSellerKycSubmission, error) {
+	row := q.db.QueryRow(ctx, sellersLatestKyc, sellerID)
+	var i SellersSellerKycSubmission
+	err := row.Scan(
+		&i.ID,
+		&i.SellerID,
+		&i.Status,
+		&i.IDType,
+		&i.IDNumberEncrypted,
+		&i.IDNumberHmac,
+		&i.IDNumberLast4,
+		&i.EncryptionKeyID,
+		&i.CacRcNumber,
+		&i.Tin,
+		&i.VerificationProvider,
+		&i.VerificationRef,
+		&i.VerifiedAt,
+		&i.ReviewedBy,
+		&i.ReviewedAt,
+		&i.RejectionReason,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const sellersMemberRole = `-- name: SellersMemberRole :one
+select role from sellers.seller_members where seller_id = $1 and user_id = $2
+`
+
+type SellersMemberRoleParams struct {
+	SellerID uuid.UUID `json:"sellerId"`
+	UserID   uuid.UUID `json:"userId"`
+}
+
+func (q *Queries) SellersMemberRole(ctx context.Context, arg SellersMemberRoleParams) (string, error) {
+	row := q.db.QueryRow(ctx, sellersMemberRole, arg.SellerID, arg.UserID)
+	var role string
+	err := row.Scan(&role)
+	return role, err
+}
+
+const sellersMembers = `-- name: SellersMembers :many
+select m.user_id, m.role, m.created_at, u.first_name, u.last_name
+from sellers.seller_members m join identity.users u on u.id = m.user_id
+where m.seller_id = $1 order by m.created_at
+`
+
+type SellersMembersRow struct {
+	UserID    uuid.UUID `json:"userId"`
+	Role      string    `json:"role"`
+	CreatedAt time.Time `json:"createdAt"`
+	FirstName string    `json:"firstName"`
+	LastName  string    `json:"lastName"`
+}
+
+func (q *Queries) SellersMembers(ctx context.Context, sellerID uuid.UUID) ([]SellersMembersRow, error) {
+	rows, err := q.db.Query(ctx, sellersMembers, sellerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []SellersMembersRow{}
+	for rows.Next() {
+		var i SellersMembersRow
+		if err := rows.Scan(
+			&i.UserID,
+			&i.Role,
+			&i.CreatedAt,
+			&i.FirstName,
+			&i.LastName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const sellersOtherSellersWithAccount = `-- name: SellersOtherSellersWithAccount :one
+select count(distinct seller_id) from sellers.seller_bank_accounts where account_number_hmac = $1 and seller_id <> $2
+`
+
+type SellersOtherSellersWithAccountParams struct {
+	AccountNumberHmac []byte    `json:"accountNumberHmac"`
+	SellerID          uuid.UUID `json:"sellerId"`
+}
+
+func (q *Queries) SellersOtherSellersWithAccount(ctx context.Context, arg SellersOtherSellersWithAccountParams) (int64, error) {
+	row := q.db.QueryRow(ctx, sellersOtherSellersWithAccount, arg.AccountNumberHmac, arg.SellerID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const sellersOtherSellersWithIDNumber = `-- name: SellersOtherSellersWithIDNumber :one
+select count(distinct seller_id) from sellers.seller_kyc_submissions where id_number_hmac = $1 and seller_id <> $2
+`
+
+type SellersOtherSellersWithIDNumberParams struct {
+	IDNumberHmac []byte    `json:"idNumberHmac"`
+	SellerID     uuid.UUID `json:"sellerId"`
+}
+
+func (q *Queries) SellersOtherSellersWithIDNumber(ctx context.Context, arg SellersOtherSellersWithIDNumberParams) (int64, error) {
+	row := q.db.QueryRow(ctx, sellersOtherSellersWithIDNumber, arg.IDNumberHmac, arg.SellerID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const sellersRegisterShop = `-- name: SellersRegisterShop :one
+
+insert into sellers.sellers (type, display_name, slug, owner_user_id, status, state_code, city)
+values ($1, $2, $3, $4, 'pending_kyc', $5, $6)
+returning id, type, display_name, slug, owner_user_id, status, state_code, city, rating_avg, rating_count, commission_override_bps, created_at, updated_at
+`
+
+type SellersRegisterShopParams struct {
+	Type        string     `json:"type"`
+	DisplayName string     `json:"displayName"`
+	Slug        string     `json:"slug"`
+	OwnerUserID *uuid.UUID `json:"ownerUserId"`
+	StateCode   *string    `json:"stateCode"`
+	City        *string    `json:"city"`
+}
+
+// ---- Seller Centre (M4): shops, KYC, bank accounts. Seller requests run with app.seller_id set,
+// so row-level security (00025) also scopes these tables to the caller's shop.
+func (q *Queries) SellersRegisterShop(ctx context.Context, arg SellersRegisterShopParams) (SellersSeller, error) {
+	row := q.db.QueryRow(ctx, sellersRegisterShop,
+		arg.Type,
+		arg.DisplayName,
+		arg.Slug,
+		arg.OwnerUserID,
+		arg.StateCode,
+		arg.City,
+	)
+	var i SellersSeller
+	err := row.Scan(
+		&i.ID,
+		&i.Type,
+		&i.DisplayName,
+		&i.Slug,
+		&i.OwnerUserID,
+		&i.Status,
+		&i.StateCode,
+		&i.City,
+		&i.RatingAvg,
+		&i.RatingCount,
+		&i.CommissionOverrideBps,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const sellersReviewKyc = `-- name: SellersReviewKyc :one
+update sellers.seller_kyc_submissions
+set status = $2, reviewed_by = $3, reviewed_at = now(), rejection_reason = $4
+where id = $1
+returning id, seller_id, status, id_type, id_number_encrypted, id_number_hmac, id_number_last4, encryption_key_id, cac_rc_number, tin, verification_provider, verification_ref, verified_at, reviewed_by, reviewed_at, rejection_reason, created_at, updated_at
+`
+
+type SellersReviewKycParams struct {
+	ID              uuid.UUID  `json:"id"`
+	Status          string     `json:"status"`
+	ReviewedBy      *uuid.UUID `json:"reviewedBy"`
+	RejectionReason *string    `json:"rejectionReason"`
+}
+
+func (q *Queries) SellersReviewKyc(ctx context.Context, arg SellersReviewKycParams) (SellersSellerKycSubmission, error) {
+	row := q.db.QueryRow(ctx, sellersReviewKyc,
+		arg.ID,
+		arg.Status,
+		arg.ReviewedBy,
+		arg.RejectionReason,
+	)
+	var i SellersSellerKycSubmission
+	err := row.Scan(
+		&i.ID,
+		&i.SellerID,
+		&i.Status,
+		&i.IDType,
+		&i.IDNumberEncrypted,
+		&i.IDNumberHmac,
+		&i.IDNumberLast4,
+		&i.EncryptionKeyID,
+		&i.CacRcNumber,
+		&i.Tin,
+		&i.VerificationProvider,
+		&i.VerificationRef,
+		&i.VerifiedAt,
+		&i.ReviewedBy,
+		&i.ReviewedAt,
+		&i.RejectionReason,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const sellersSetDefaultBank = `-- name: SellersSetDefaultBank :execrows
+update sellers.seller_bank_accounts set is_default = true where id = $1 and seller_id = $2
+`
+
+type SellersSetDefaultBankParams struct {
+	ID       uuid.UUID `json:"id"`
+	SellerID uuid.UUID `json:"sellerId"`
+}
+
+func (q *Queries) SellersSetDefaultBank(ctx context.Context, arg SellersSetDefaultBankParams) (int64, error) {
+	result, err := q.db.Exec(ctx, sellersSetDefaultBank, arg.ID, arg.SellerID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const sellersSetStatus = `-- name: SellersSetStatus :one
+update sellers.sellers set status = $2 where id = $1 returning id, type, display_name, slug, owner_user_id, status, state_code, city, rating_avg, rating_count, commission_override_bps, created_at, updated_at
+`
+
+type SellersSetStatusParams struct {
+	ID     uuid.UUID `json:"id"`
+	Status string    `json:"status"`
+}
+
+func (q *Queries) SellersSetStatus(ctx context.Context, arg SellersSetStatusParams) (SellersSeller, error) {
+	row := q.db.QueryRow(ctx, sellersSetStatus, arg.ID, arg.Status)
+	var i SellersSeller
+	err := row.Scan(
+		&i.ID,
+		&i.Type,
+		&i.DisplayName,
+		&i.Slug,
+		&i.OwnerUserID,
+		&i.Status,
+		&i.StateCode,
+		&i.City,
+		&i.RatingAvg,
+		&i.RatingCount,
+		&i.CommissionOverrideBps,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const sellersShopsForUser = `-- name: SellersShopsForUser :many
+select s.id, s.type, s.display_name, s.slug, s.owner_user_id, s.status, s.state_code, s.city, s.rating_avg, s.rating_count, s.commission_override_bps, s.created_at, s.updated_at, m.role as member_role from sellers.sellers s
+join sellers.seller_members m on m.seller_id = s.id
+where m.user_id = $1 and s.status <> 'closed'
+order by s.created_at
+`
+
+type SellersShopsForUserRow struct {
+	ID                    uuid.UUID  `json:"id"`
+	Type                  string     `json:"type"`
+	DisplayName           string     `json:"displayName"`
+	Slug                  string     `json:"slug"`
+	OwnerUserID           *uuid.UUID `json:"ownerUserId"`
+	Status                string     `json:"status"`
+	StateCode             *string    `json:"stateCode"`
+	City                  *string    `json:"city"`
+	RatingAvg             *float64   `json:"ratingAvg"`
+	RatingCount           int32      `json:"ratingCount"`
+	CommissionOverrideBps *int32     `json:"commissionOverrideBps"`
+	CreatedAt             time.Time  `json:"createdAt"`
+	UpdatedAt             time.Time  `json:"updatedAt"`
+	MemberRole            string     `json:"memberRole"`
+}
+
+func (q *Queries) SellersShopsForUser(ctx context.Context, userID uuid.UUID) ([]SellersShopsForUserRow, error) {
+	rows, err := q.db.Query(ctx, sellersShopsForUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []SellersShopsForUserRow{}
+	for rows.Next() {
+		var i SellersShopsForUserRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Type,
+			&i.DisplayName,
+			&i.Slug,
+			&i.OwnerUserID,
+			&i.Status,
+			&i.StateCode,
+			&i.City,
+			&i.RatingAvg,
+			&i.RatingCount,
+			&i.CommissionOverrideBps,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.MemberRole,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const sellersSlugTaken = `-- name: SellersSlugTaken :one
+select exists (select 1 from sellers.sellers where slug = $1)
+`
+
+func (q *Queries) SellersSlugTaken(ctx context.Context, slug string) (bool, error) {
+	row := q.db.QueryRow(ctx, sellersSlugTaken, slug)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const sellersStaffList = `-- name: SellersStaffList :many
+select s.id, s.type, s.display_name, s.slug, s.owner_user_id, s.status, s.state_code, s.city, s.rating_avg, s.rating_count, s.commission_override_bps, s.created_at, s.updated_at, k.status as kyc_status, k.created_at as kyc_submitted_at
+from sellers.sellers s
+left join sellers.seller_kyc_submissions k on k.seller_id = s.id
+  and k.created_at = (select max(created_at) from sellers.seller_kyc_submissions x where x.seller_id = s.id)
+where s.type <> 'first_party'
+  and ($2::text is null or s.status = $2)
+  and ($3::text is null or k.status = $3)
+  and ($4::text is null or s.display_name ilike '%' || $4 || '%' or s.slug ilike '%' || $4 || '%')
+  and ($5::timestamptz is null or s.created_at < $5)
+order by s.created_at desc limit $1
+`
+
+type SellersStaffListParams struct {
+	Limit     int32      `json:"limit"`
+	Status    *string    `json:"status"`
+	KycStatus *string    `json:"kycStatus"`
+	Q         *string    `json:"q"`
+	Before    *time.Time `json:"before"`
+}
+
+type SellersStaffListRow struct {
+	ID                    uuid.UUID  `json:"id"`
+	Type                  string     `json:"type"`
+	DisplayName           string     `json:"displayName"`
+	Slug                  string     `json:"slug"`
+	OwnerUserID           *uuid.UUID `json:"ownerUserId"`
+	Status                string     `json:"status"`
+	StateCode             *string    `json:"stateCode"`
+	City                  *string    `json:"city"`
+	RatingAvg             *float64   `json:"ratingAvg"`
+	RatingCount           int32      `json:"ratingCount"`
+	CommissionOverrideBps *int32     `json:"commissionOverrideBps"`
+	CreatedAt             time.Time  `json:"createdAt"`
+	UpdatedAt             time.Time  `json:"updatedAt"`
+	KycStatus             *string    `json:"kycStatus"`
+	KycSubmittedAt        *time.Time `json:"kycSubmittedAt"`
+}
+
+func (q *Queries) SellersStaffList(ctx context.Context, arg SellersStaffListParams) ([]SellersStaffListRow, error) {
+	rows, err := q.db.Query(ctx, sellersStaffList,
+		arg.Limit,
+		arg.Status,
+		arg.KycStatus,
+		arg.Q,
+		arg.Before,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []SellersStaffListRow{}
+	for rows.Next() {
+		var i SellersStaffListRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Type,
+			&i.DisplayName,
+			&i.Slug,
+			&i.OwnerUserID,
+			&i.Status,
+			&i.StateCode,
+			&i.City,
+			&i.RatingAvg,
+			&i.RatingCount,
+			&i.CommissionOverrideBps,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.KycStatus,
+			&i.KycSubmittedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

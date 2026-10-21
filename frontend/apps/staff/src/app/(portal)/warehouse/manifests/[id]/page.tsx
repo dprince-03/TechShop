@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
+import { Table } from "@techshop/ui/components";
 import { connection } from "next/server";
 
 import { PageHead } from "@/components/PageHead";
-import { Table } from "@/components/Table";
 import { can, requireStaff } from "@/features/session/server";
 import { SignManifest } from "@/features/warehouse/components/SignManifest";
 import { manifest } from "@/features/warehouse/server";

@@ -493,3 +493,87 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
 - New in `docs/database/`: `DATA-MODEL.md`, `SCHEMA.md`, `MIGRATIONS.md`, `RLS-POLICIES.md`, `SEED-DATA.md`. Short, linking to the existing `erd.md`, `states.md`, `access.md` instead of duplicating them.
 - Facts checked against the code: 205 tables in 22 schemas + `river` (counted from migrations); token audiences from `platform/auth/tokens.go`; CI runs migrations up only; seed roles from the seed output; vendors and warehouses from `seed/commerce.go`.
 - `RLS-POLICIES.md` states the truth: **no RLS today**; access is enforced in the API. It flags a real gap (one DB user owns everything, against rule 01 §6) and recommends a role split, then RLS on seller-scoped tables. Owner decision needed.
+
+## 2026-10-21 — M4 step 0: least-privilege database users (owner approved RLS in M4)
+
+- Migration `00024_database_roles`: group roles `techshop_rw` (DML on all app schemas incl. future tables via default privileges; update/delete revoked on audit log, ledger, stock movements, delivery events) and `techshop_ro` (select on non-personal schemas). `ensure_monthly_partitions` made `security definer` with a pinned `search_path`.
+- Config `DATABASE_MIGRATE_URL` (owner, migrations only); `cmd/migrate`, startup migrations and `make migrate-*` use it. `CheckAppRole` refuses a superuser/owner login outside development, warns locally. `make db-users` + `infra/docker/postgres/app-users.sql` create `techshop_app` (password via env, never stored).
+- **Verified** on a throwaway stack (migrate as owner, seed + API as `techshop_app`): app login cannot create/drop tables or change history (permission denied), can read and insert; full backend e2e suite passes as `techshop_app`; no permission errors in API logs.
+- Owner action for local setup: run `make db-users APP_DB_PASSWORD=…`, then set `DATABASE_URL` to `techshop_app` and `DATABASE_MIGRATE_URL` to the owner (see `backend/.env.example`). Until then it still works with a warning.
+
+## 2026-10-21 — M4 slice 1: seller onboarding (shops, KYC, bank accounts, KYC review) + RLS
+
+- New module `internal/modules/sellers` (`service.go`, `routes.go`, `dto.go`, `rules.go` + tests). 11 endpoints: Seller Centre `POST/GET /seller/shops`, `GET …/onboarding`, `POST …/kyc`, `GET /seller/banks`, `POST/DELETE …/bank-accounts`, `POST …/default`; staff `GET /staff/vendors`, `GET /staff/vendors/{id}`, `POST /staff/vendors/kyc/{id}/review`, `POST …/reveal`.
+- `payments/banks.go`: name enquiry (`ResolveAccount`) and bank list via Paystack (`/bank/resolve`, `/bank` with cursor paging; checked against Paystack API references found by web search, official page returned 403); dev fake documented in code.
+- Migration `00025_seller_rls`: RLS on `sellers.sellers`, `seller_members`, `seller_kyc_submissions`, `kyc_documents`, `seller_bank_accounts`.
+- **Tests:** unit (ID formats, slugs, name matching); e2e `TestSellerOnboardingAndKycReview`, `TestSellerKycRejectAndResubmit` (validation, file ownership, fake name enquiry match/mismatch/not-found, defaults and deletes, 404 for another seller, audience separation, permission refusal, approve/reject/resubmit, reveal with reason, no full numbers or hmac/encrypted fields in responses). Full backend e2e suite passes as `techshop_app` (20 tests). `golangci-lint`: 0 issues. API: 200 paths; TS types regenerated; api-client typecheck passes.
+- **RLS proved in Postgres** as `techshop_app` with `app.seller_id` = shop B: shop A's bank and KYC rows invisible (0), only 1 shop row visible, `UPDATE` of shop A affects 0 rows, `INSERT` into shop A refused by policy.
+
+## 2026-10-21 — M4 slices 2–3: seller listings and seller-shipped orders
+
+- **Listings:** `sellers/listings.go` (create, list, detail with moderation history, price, stock, pause/resume, edit and resubmit); `catalog/listings.go` (reprice with bait-price guard, pause, edit-and-resubmit); `validateListing` gives clear errors for missing condition notes or stock. Migration `00026_listing_moderation` (`auto_flagged`, listings RLS).
+- **Orders:** `sales/seller.go` (accept with handling-time deadline, cancel with refund and restock, SLA job every 5 min, 3-strike enforcement, new-order message, dev-only `/dev/sla/{id}/accept|pack` trigger); `sellers/fulfilment.go` (queue, detail, accept, pack, cancel). Migration `00027_fulfilment_rls`.
+- **Bugs found by tests and fixed:** Huma ignores path params in embedded structs (inputs now declare them explicitly); the bait-price guard included the listing's own new price in the median it compared against (now `CatalogMedianPriceOthers`); seller listing input no longer requires `fulfilledBy`.
+- **Tests:** e2e `TestSellerListingsAndModeration`, `TestSellerOrdersAcceptPackCancelAndSLA` (queue, privacy of the address, accept/pack/cancel transitions, refund request, stock release, late accept, late pack, 3-strike review, ledger balanced). RLS checked in Postgres as `techshop_app`: another shop's active listing visible, in-review hidden, update/delete 0 rows, insert refused; another shop's fulfilment readable but `UPDATE` 0 rows. `golangci-lint` 0 issues; API 211 paths; TS types regenerated.
+- **Blocked:** hand-over/delivery of seller-shipped orders (owner questions in `plan.md`).
+
+## 2026-10-21 — M4 slice 4: reviews, reports, seller ratings
+
+- `internal/modules/reviews` (`service.go`, `routes.go`, `dto.go`, `rules.go` + tests); `sellers/reviews.go` (Seller Centre list and answer, in the shop-scoped transaction); `db/queries/reviews.sql`; migration `00028_review_responses`; search read model weights unverified reviews at 0.5.
+- **Bugs found and fixed:**
+  - existing catalogue refresh job deduplicated by args within 2 s **including finished and running jobs**, so a second change to a product inside that window (review then publication; price then stock) was dropped until the nightly rebuild. Uniqueness removed (a refresh rebuilds one row; River requires running jobs in any unique set, so a narrower set couldn't fix it).
+  - two request types named `ReviewInput` crashed schema registration at boot; the KYC one is now `KycDecision`.
+- **Tests:** unit (hold rules incl. Nigerian and +234 phone formats, links, incentive phrases, normalisation); e2e `TestReviewsRatingsAndModeration` (verified purchase via a real carrier delivery, one per product, claim of another's purchase refused, held review hidden publicly with reason visible to staff, publish, weighted average checked against the previous summary, verified filter, read model updated, reports once/not own/settled, seller rating once and only own delivery, seller can't answer reviews of items it didn't ship). Test made re-runnable on a used database.
+- Web and mobile typecheck pass against the regenerated types; API 218 paths.
+- **Not covered yet:** a seller answering a review end to end needs a delivered seller-shipped order, which waits for the hand-over decision.
+
+## 2026-10-21 — M4 slice 7a: Seller Centre web app wired to the API
+
+- **Seller app** (`frontend/apps/seller`), grouped by feature: `features/{auth,session,shops,kyc,payouts,listings,orders,reviews}`, `lib/{bff,actions,format}.ts`, `components/RowAction.tsx`, `proxy.ts`. Pages under `/centre`: shop chooser, open a shop, overview checklist (next step from the API), verification (KYC with document upload), payout accounts, listings (filter, new = search → choose product → offer, detail with price/stock/pause/resubmit and moderation history), orders (queue with deadlines, accept, pack, cancel with reason), reviews (answer once). Real sign-in (phone OTP + new-device code) replaces the preview form; `/register` explains the steps and starts sign-in. Header shows "Your shop / Sign out" when signed in.
+- **KYC uploads:** files post to a Server Action, which uploads them server-side to the presigned URL (with the signed Content-Type) and completes them; the browser never talks to the API or storage. `serverActions.bodySizeLimit` = 41 MB (four 10 MB documents; checked in the bundled Next 16 docs). **Deployment note:** nginx `client_max_body_size` for the seller host must allow this, and is the place to cap it.
+- **Shared code moved, not copied** (reusables in one place): `SignInForm` (market → `@techshop/ui`, takes the action as a prop), `Table`/`Status` (staff → `@techshop/ui`), new `ActionForm`/`Field` in `@techshop/ui`, `failure()`/`ActionState` and `createAuthFlow().handle(form)` in `@techshop/bff` (market's sign-in action now uses it). Follow-up: market and staff still have their own form-error helpers; fold them into `failure()`.
+- **Tests:** new `apps/seller/test/seller.test.ts` (2/2): sign-up via OTP, open shop, KYC validation then real upload, ID shown only as last 4, bank validation and name match, staff approval via API, product search/choose/offer with validation, moderation via API, price and stock, other seller gets 404, pages need a session. Market e2e 15/15 and staff e2e 13/13 re-run after the moves. Frontend format, lint, typecheck and build pass.
+- **Correction to the slice 2–3 entry:** "Huma ignores path params in embedded structs" was too strong — other routes embed a query-param struct and it works. Verified only: declaring the path fields explicitly in those handlers fixed the requests; the cause was not confirmed.
+
+## 2026-10-21 — M4 slice 7b: staff screens for vendors and review moderation
+
+- **Vendors module is live** (`/vendors`, `/vendors/[id]`): to-review / all / active / suspended tabs with search and paging; detail shows verification (ID as last 4 only), duplicate-ID and shared-bank-account warnings, payout accounts with the bank-name check against the legal holder, and members. Actions: approve / ask for more information / reject (note required unless approving), and reveal the full ID with a reason (the API demands a fresh authenticator check; the existing step-up button handles it; every reveal audited).
+- **KYC documents** open through `/vendors/[id]/documents/[fileId]`, which asks the API for the 5-minute link only on click, so the API's KYC-view audit records real openings, not page loads (`no-store`, `no-referrer`).
+- **Review moderation** is a "Reviews" tab in Catalogue (catalog.moderate): held and reported reviews with the reasons, publish / hide / reject.
+- Staff test helpers moved to `apps/staff/test/helpers.ts` (shared by both test files). New `test/vendors.test.ts` (3/3): list → detail (no full ID in the page) → document opens via link → reveal refused without a reason, then shown → decision needs a note unless approving → approve; dispatcher turned away; held review appears with its reason and is hidden. The old preview-module assertion now uses `/b2b` (Vendors went live). Staff e2e 16/16; frontend format, lint, typecheck, build pass.
+
+## 2026-10-21 — M4 slice 7c: reviews on the market
+
+- **API:** `POST /api/v1/me/order-lines/{lineId}/review` reviews the product of the caller's delivered order line (verified purchase), so order pages don't need product slugs. Backend e2e reviews test now uses it for the verified review, plus 409 for a second review through it and 404 for someone else's line.
+- **Market** (`features/reviews`): product pages show the rating summary (weighted, with the verified count), up to 10 reviews (verified first, filter to verified only), seller answers, and a "Report this review" form for signed-in shoppers. Delivered parcels on the order page get "Review" per item (→ `/orders/[number]/review/[lineId]`) and "Rate {seller}". All forms use the shared `ActionForm`.
+- **Test kit:** `tokenForPhone` and `deliveredOrder` (Kano address → fake carrier → delivered) in `shared/api-client/test/kit.ts`, exported by `@techshop/testing`.
+- **Tests:** market e2e "reviews" (fresh customer with a delivered order; the web session signs in with a password set through the API because the API allows one code per number per minute; star rating required; review goes live; seller rated once, second refused; review shows on the product page as verified; another shopper reports it once, second refused). Market e2e 16/16; frontend format, lint, typecheck, build; api-client unit 5/5; backend unit and lint pass.
+
+## 2026-10-21 — M4 slice 7d: reviews in the customer app
+
+- `@techshop/mobile-ui`: new `StarPicker` (five 44 px buttons, announced as a radio group, `rating` token for the stars).
+- Customer app `features/reviews`: product screen shows the weighted summary and latest reviews (verified first, seller answers) with "Report this review" (reasons) for signed-in shoppers; delivered parcels on the order screen get "Review {item}" (→ `/review/[lineId]`, uses the order-line endpoint) and "Rate {seller}".
+- **Verified on the Android emulator (Pixel_8, Expo Go)** against the local stack: product screen shows the reviews section; signed in by phone code as a fresh customer with a delivered order (prepared with the kit's `deliveredOrder`); order screen shows the review and rating controls; seller rated ("Thanks for rating the seller."); posting with no stars says "Choose 1 to 5 stars."; review posted live; another shopper's review reported ("A moderator will look at it."). Screenshot checked.
+- Mobile lint, typecheck (after regenerating Expo Router's typed routes), unit tests (5 + 4), Expo doctor 21/21, Android bundle export pass. Metro and the emulator stopped afterwards.
+
+## 2026-10-21 — Cleanup: one form-error helper
+
+- Market account actions and staff `runStaffAction` now use `failure()` from `@techshop/bff` (staff keeps its own wording for refusal codes such as `separation_of_duties` on top). Step-up, session-ended and field-error handling behave as before; field errors now come with "Check the highlighted fields." in staff too. Market e2e 16/16, staff e2e 16/16 after the change.
+
+## 2026-10-21 — Payments: cached bank list, Paystack adapter tests
+
+- The provider bank list (live mode) is cached in memory for 24 hours, and a stale list is served if the provider is down; before, each Seller Centre page fetched every page of Paystack's list.
+- Unit tests for the live Paystack calls against a local stand-in with the documented shapes: the bank list follows `meta.next` and skips inactive banks; name enquiry returns the account name and maps a failed lookup to `ErrAccountNotFound`.
+
+## 2026-10-21 — Full regression on fresh stacks (after M4 work)
+
+- **Run 1** (fresh stack): backend e2e ok (23 tests); api-client contract 46/46; market 15/16 (**1 failure**, test name not captured); staff 16/16; seller 2/2. Market re-run on the same stack: 16/16.
+- **Run 2** (fresh stack, same order, full market log kept): backend e2e ok; contract 46/46; market 16/16.
+- **Open:** one intermittent market e2e failure, cause unknown (not reproduced in two further runs). If it comes back, the full log in the run will name it.
+
+## 2026-10-21 — M5 slice 1: returns (RMA)
+
+- New module `internal/modules/aftersales` (`service.go`, `routes.go`, `dto.go`, `rules.go` + tests), `db/queries/aftersales.sql`. 9 endpoints: customer `POST /me/orders/{number}/returns`, `GET /me/returns`, `GET /me/returns/{rma}`; staff (`returns.manage`) list, detail, decision, receive, inspect an item, raise the refund. Payments gained `RequestReturnRefund` (refund linked to the return, same dual control).
+- **Tests:** unit (7-day window, good standing, refund share, serial match, restock condition); e2e `TestReturnInspectRestockRefund` (change-of-mind refused, quantity limits, auto-approval, only your own return, no re-decision, refund only after inspection, receive → inspect → open-box stock +1, no double inspection, refund request reaches finance, ledger balanced) and `TestReturnSerialMismatchOpensRiskCase` (phone with a real IMEI delivered by carrier; pickup return; wrong IMEI → 409, return rejected and visible to the customer).
+- **Test harness fixes found on the way:** each Go e2e test now uses its own client address (`X-Forwarded-For` from the test name), because the suite outgrew the API's 20-codes-an-hour per-network limit; tests that pick in the warehouse take turns (a wave takes every waiting paid line, so parallel tests could steal each other's orders); the delivery helper accepts IMEIs (`"*"` for any serialised line).
+- Full backend e2e on a fresh stack: 25 passed. Lint 0 issues; API 228 paths; web and mobile typecheck against the new types.

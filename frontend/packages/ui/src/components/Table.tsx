@@ -1,9 +1,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { EmptyState } from "@techshop/ui/components";
+import { EmptyState } from "./EmptyState";
 
-import styles from "./DataTable.module.css";
+import styles from "./Table.module.css";
 
 export type Column<T> = {
   label: string;

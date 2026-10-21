@@ -1397,6 +1397,26 @@ func (q *Queries) CatalogMedianPrice(ctx context.Context, arg CatalogMedianPrice
 	return column_1, err
 }
 
+const catalogMedianPriceOthers = `-- name: CatalogMedianPriceOthers :one
+select coalesce(percentile_cont(0.5) within group (order by price_kobo), 0)::bigint
+from catalog.listings where variant_id = $1 and condition = $2 and status = 'active' and id <> $3
+`
+
+type CatalogMedianPriceOthersParams struct {
+	VariantID uuid.UUID `json:"variantId"`
+	Condition string    `json:"condition"`
+	ID        uuid.UUID `json:"id"`
+}
+
+// Median active price for a variant and condition, leaving one listing out (its own new price
+// must not pull the median it is compared with).
+func (q *Queries) CatalogMedianPriceOthers(ctx context.Context, arg CatalogMedianPriceOthersParams) (int64, error) {
+	row := q.db.QueryRow(ctx, catalogMedianPriceOthers, arg.VariantID, arg.Condition, arg.ID)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const catalogModerationQueue = `-- name: CatalogModerationQueue :many
 select l.id, l.seller_id, l.variant_id, l.condition, l.grade, l.price_kobo, l.compare_at_kobo, l.currency, l.fulfilled_by, l.seller_stock, l.min_order_quantity, l.handling_days, l.warranty_provider, l.warranty_months, l.condition_notes, l.battery_health_pct, l.status, l.risk_score, l.published_at, l.created_at, l.updated_at, v.name as variant_name, p.name as product_name, p.slug as product_slug, s.display_name as seller_name,
        (select r.reasons from catalog.listing_reviews r where r.listing_id = l.id order by r.created_at desc limit 1)::text[] as reasons
@@ -1538,7 +1558,9 @@ with recursive up as (
   from catalog.product_attribute_values v join catalog.attribute_definitions d on d.id = v.attribute_id
   where v.product_id = $2
 ), ratings as (
-  select avg(rating)::numeric(3, 2) as avg, count(*)::int as cnt from catalog.product_reviews where product_id = $2 and status = 'published'
+  -- Verified purchases count fully, unverified reviews half (trust-safety.md §6).
+  select (sum(rating * case when is_verified then 1.0 else 0.5 end) / nullif(sum(case when is_verified then 1.0 else 0.5 end), 0))::numeric(3, 2) as avg,
+         count(*)::int as cnt from catalog.product_reviews where product_id = $2 and status = 'published'
 ), sales as (
   select coalesce(sum(ol.quantity), 0)::int as qty from sales.order_lines ol
   join sales.orders o on o.id = ol.order_id
@@ -1600,6 +1622,131 @@ func (q *Queries) CatalogSellerListingCount(ctx context.Context, sellerID uuid.U
 	var column_1 int32
 	err := row.Scan(&column_1)
 	return column_1, err
+}
+
+const catalogSellerListingsPage = `-- name: CatalogSellerListingsPage :many
+select l.id, l.seller_id, l.variant_id, l.condition, l.grade, l.price_kobo, l.compare_at_kobo, l.currency, l.fulfilled_by, l.seller_stock, l.min_order_quantity, l.handling_days, l.warranty_provider, l.warranty_months, l.condition_notes, l.battery_health_pct, l.status, l.risk_score, l.published_at, l.created_at, l.updated_at, v.name as variant_name, v.sku, p.name as product_name, p.slug as product_slug
+from catalog.listings l
+join catalog.product_variants v on v.id = l.variant_id
+join catalog.products p on p.id = v.product_id
+where l.seller_id = $1
+  and ($2::text is null or l.status = $2)
+  and ($3::timestamptz is null or l.created_at < $3)
+order by l.created_at desc limit $4
+`
+
+type CatalogSellerListingsPageParams struct {
+	SellerID uuid.UUID  `json:"sellerId"`
+	Status   *string    `json:"status"`
+	Before   *time.Time `json:"before"`
+	Lim      int32      `json:"lim"`
+}
+
+type CatalogSellerListingsPageRow struct {
+	ID               uuid.UUID  `json:"id"`
+	SellerID         uuid.UUID  `json:"sellerId"`
+	VariantID        uuid.UUID  `json:"variantId"`
+	Condition        string     `json:"condition"`
+	Grade            *string    `json:"grade"`
+	PriceKobo        int64      `json:"priceKobo"`
+	CompareAtKobo    *int64     `json:"compareAtKobo"`
+	Currency         string     `json:"currency"`
+	FulfilledBy      string     `json:"fulfilledBy"`
+	SellerStock      *int32     `json:"sellerStock"`
+	MinOrderQuantity *int32     `json:"minOrderQuantity"`
+	HandlingDays     int16      `json:"handlingDays"`
+	WarrantyProvider string     `json:"warrantyProvider"`
+	WarrantyMonths   int16      `json:"warrantyMonths"`
+	ConditionNotes   *string    `json:"conditionNotes"`
+	BatteryHealthPct *int16     `json:"batteryHealthPct"`
+	Status           string     `json:"status"`
+	RiskScore        *int16     `json:"riskScore"`
+	PublishedAt      *time.Time `json:"publishedAt"`
+	CreatedAt        time.Time  `json:"createdAt"`
+	UpdatedAt        time.Time  `json:"updatedAt"`
+	VariantName      string     `json:"variantName"`
+	Sku              string     `json:"sku"`
+	ProductName      string     `json:"productName"`
+	ProductSlug      string     `json:"productSlug"`
+}
+
+// A shop's own listings for Seller Centre, newest first (keyset by created_at).
+func (q *Queries) CatalogSellerListingsPage(ctx context.Context, arg CatalogSellerListingsPageParams) ([]CatalogSellerListingsPageRow, error) {
+	rows, err := q.db.Query(ctx, catalogSellerListingsPage,
+		arg.SellerID,
+		arg.Status,
+		arg.Before,
+		arg.Lim,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []CatalogSellerListingsPageRow{}
+	for rows.Next() {
+		var i CatalogSellerListingsPageRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.SellerID,
+			&i.VariantID,
+			&i.Condition,
+			&i.Grade,
+			&i.PriceKobo,
+			&i.CompareAtKobo,
+			&i.Currency,
+			&i.FulfilledBy,
+			&i.SellerStock,
+			&i.MinOrderQuantity,
+			&i.HandlingDays,
+			&i.WarrantyProvider,
+			&i.WarrantyMonths,
+			&i.ConditionNotes,
+			&i.BatteryHealthPct,
+			&i.Status,
+			&i.RiskScore,
+			&i.PublishedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.VariantName,
+			&i.Sku,
+			&i.ProductName,
+			&i.ProductSlug,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const catalogSendSellerListingsToReview = `-- name: CatalogSendSellerListingsToReview :many
+update catalog.listings set status = 'in_review', risk_score = greatest(coalesce(risk_score, 0), 70)
+where seller_id = $1 and status = 'active'
+returning id
+`
+
+// Enforcement: a seller's live listings go back to moderation (e.g. 3 SLA breaches in 30 days).
+func (q *Queries) CatalogSendSellerListingsToReview(ctx context.Context, sellerID uuid.UUID) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, catalogSendSellerListingsToReview, sellerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []uuid.UUID{}
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const catalogSetAttributeValue = `-- name: CatalogSetAttributeValue :exec
@@ -1831,6 +1978,61 @@ func (q *Queries) CatalogSummaryByProduct(ctx context.Context, arg CatalogSummar
 		&i.FacetKeys,
 		&i.SearchVector,
 		&i.RefreshedAt,
+	)
+	return i, err
+}
+
+const catalogUpdateListingDetails = `-- name: CatalogUpdateListingDetails :one
+update catalog.listings
+set grade = $2, condition_notes = $3, battery_health_pct = $4, warranty_provider = $5, warranty_months = $6, handling_days = $7
+where id = $1
+returning id, seller_id, variant_id, condition, grade, price_kobo, compare_at_kobo, currency, fulfilled_by, seller_stock, min_order_quantity, handling_days, warranty_provider, warranty_months, condition_notes, battery_health_pct, status, risk_score, published_at, created_at, updated_at
+`
+
+type CatalogUpdateListingDetailsParams struct {
+	ID               uuid.UUID `json:"id"`
+	Grade            *string   `json:"grade"`
+	ConditionNotes   *string   `json:"conditionNotes"`
+	BatteryHealthPct *int16    `json:"batteryHealthPct"`
+	WarrantyProvider string    `json:"warrantyProvider"`
+	WarrantyMonths   int16     `json:"warrantyMonths"`
+	HandlingDays     int16     `json:"handlingDays"`
+}
+
+// Seller edits while a listing is a draft or has changes requested.
+func (q *Queries) CatalogUpdateListingDetails(ctx context.Context, arg CatalogUpdateListingDetailsParams) (CatalogListing, error) {
+	row := q.db.QueryRow(ctx, catalogUpdateListingDetails,
+		arg.ID,
+		arg.Grade,
+		arg.ConditionNotes,
+		arg.BatteryHealthPct,
+		arg.WarrantyProvider,
+		arg.WarrantyMonths,
+		arg.HandlingDays,
+	)
+	var i CatalogListing
+	err := row.Scan(
+		&i.ID,
+		&i.SellerID,
+		&i.VariantID,
+		&i.Condition,
+		&i.Grade,
+		&i.PriceKobo,
+		&i.CompareAtKobo,
+		&i.Currency,
+		&i.FulfilledBy,
+		&i.SellerStock,
+		&i.MinOrderQuantity,
+		&i.HandlingDays,
+		&i.WarrantyProvider,
+		&i.WarrantyMonths,
+		&i.ConditionNotes,
+		&i.BatteryHealthPct,
+		&i.Status,
+		&i.RiskScore,
+		&i.PublishedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }

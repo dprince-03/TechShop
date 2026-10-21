@@ -245,7 +245,9 @@ with recursive up as (
   from catalog.product_attribute_values v join catalog.attribute_definitions d on d.id = v.attribute_id
   where v.product_id = @product_id
 ), ratings as (
-  select avg(rating)::numeric(3, 2) as avg, count(*)::int as cnt from catalog.product_reviews where product_id = @product_id and status = 'published'
+  -- Verified purchases count fully, unverified reviews half (trust-safety.md §6).
+  select (sum(rating * case when is_verified then 1.0 else 0.5 end) / nullif(sum(case when is_verified then 1.0 else 0.5 end), 0))::numeric(3, 2) as avg,
+         count(*)::int as cnt from catalog.product_reviews where product_id = @product_id and status = 'published'
 ), sales as (
   select coalesce(sum(ol.quantity), 0)::int as qty from sales.order_lines ol
   join sales.orders o on o.id = ol.order_id
@@ -316,3 +318,33 @@ on conflict (listing_id, min_quantity) do update set unit_price_kobo = excluded.
 
 -- name: CatalogListTiers :many
 select * from catalog.price_tiers where listing_id = $1 order by min_quantity;
+
+-- name: CatalogSellerListingsPage :many
+-- A shop's own listings for Seller Centre, newest first (keyset by created_at).
+select l.*, v.name as variant_name, v.sku, p.name as product_name, p.slug as product_slug
+from catalog.listings l
+join catalog.product_variants v on v.id = l.variant_id
+join catalog.products p on p.id = v.product_id
+where l.seller_id = @seller_id
+  and (sqlc.narg('status')::text is null or l.status = sqlc.narg('status'))
+  and (sqlc.narg('before')::timestamptz is null or l.created_at < sqlc.narg('before'))
+order by l.created_at desc limit @lim;
+
+-- name: CatalogUpdateListingDetails :one
+-- Seller edits while a listing is a draft or has changes requested.
+update catalog.listings
+set grade = $2, condition_notes = $3, battery_health_pct = $4, warranty_provider = $5, warranty_months = $6, handling_days = $7
+where id = $1
+returning *;
+
+-- name: CatalogSendSellerListingsToReview :many
+-- Enforcement: a seller's live listings go back to moderation (e.g. 3 SLA breaches in 30 days).
+update catalog.listings set status = 'in_review', risk_score = greatest(coalesce(risk_score, 0), 70)
+where seller_id = $1 and status = 'active'
+returning id;
+
+-- name: CatalogMedianPriceOthers :one
+-- Median active price for a variant and condition, leaving one listing out (its own new price
+-- must not pull the median it is compared with).
+select coalesce(percentile_cont(0.5) within group (order by price_kobo), 0)::bigint
+from catalog.listings where variant_id = $1 and condition = $2 and status = 'active' and id <> $3;

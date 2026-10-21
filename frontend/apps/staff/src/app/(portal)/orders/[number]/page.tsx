@@ -1,10 +1,9 @@
 import { notFound } from "next/navigation";
+import { Table, Status, humanise } from "@techshop/ui/components";
 import { connection } from "next/server";
 
 import { ActionButton } from "@/components/ActionButton";
 import { PageHead } from "@/components/PageHead";
-import { Status, humanise } from "@/components/Status";
-import { Table } from "@/components/Table";
 import { verifyPayment } from "@/features/orders/actions";
 import { CancelOrder } from "@/features/orders/components/CancelOrder";
 import { getOrder } from "@/features/orders/server";

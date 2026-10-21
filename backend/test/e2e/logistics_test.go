@@ -61,6 +61,9 @@ func pickAndPack(t *testing.T, number string, serialFor map[string]string) resp 
 			body["serial"] = "359999999999999"
 			expectCode(t, post(t, "/api/v1/staff/wms/pick-lists/"+listID+"/scan", wh, body), 409, "unknown_device", "unknown IMEI")
 			body["serial"] = serialFor[m["sku"].(string)]
+			if body["serial"] == "" {
+				body["serial"] = serialFor["*"] // "*": the IMEI for any serialised line
+			}
 		}
 		expect(t, post(t, "/api/v1/staff/wms/pick-lists/"+listID+"/scan", wh, body), 200, "scan line")
 		over := map[string]any{"orderLineId": lineID, "quantity": 1}

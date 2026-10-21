@@ -1,9 +1,8 @@
 import { connection } from "next/server";
 
+import { Table, Status, humanise } from "@techshop/ui/components";
 import { ActionButton } from "@/components/ActionButton";
 import { PageHead } from "@/components/PageHead";
-import { Status, humanise } from "@/components/Status";
-import { Table } from "@/components/Table";
 import { exitStaff } from "@/features/hr/actions";
 import { InviteForm } from "@/features/hr/components/InviteForm";
 import { can, requireStaff } from "@/features/session/server";

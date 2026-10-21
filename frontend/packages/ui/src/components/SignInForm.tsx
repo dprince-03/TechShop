@@ -2,17 +2,38 @@
 
 import { useActionState, useState } from "react";
 
-import type { AuthStep } from "@techshop/bff";
-
-import { signInStep } from "../actions";
-
 import styles from "./SignInForm.module.css";
 
+/**
+ * A step of the shared sign-in flow. Mirrors `AuthStep` from `@techshop/bff` (kept structural so
+ * the design system doesn't depend on the server package).
+ */
+export type SignInStep =
+  | { step: "start"; error?: string }
+  | { step: "code"; hint: string; resendAfter: number; error?: string }
+  | { step: "profile"; error?: string }
+  | { step: "device"; hint: string; error?: string }
+  | { step: "totp"; error?: string }
+  | { step: "done"; next: string };
+
+type Props = {
+  /** Where to go after signing in (already validated by the page). */
+  next: string;
+  /** The app's Server Action that runs one step (each app has its own session). */
+  action: (prev: SignInStep, form: FormData) => Promise<SignInStep>;
+  /** Shown above the name fields when a new account is created. */
+  welcome?: string;
+};
+
 /** Phone-first sign-in (OTP), with email + password as the alternative. */
-export function SignInForm({ next }: { next: string }) {
-  const [state, action, pending] = useActionState(signInStep, {
+export function SignInForm({
+  next,
+  action: step,
+  welcome = "Welcome to TechShop! What should we call you?",
+}: Props) {
+  const [state, action, pending] = useActionState(step, {
     step: "start",
-  } as AuthStep);
+  } as SignInStep);
   const [method, setMethod] = useState<"phone" | "password">("phone");
   const error = "error" in state ? state.error : undefined;
 
@@ -88,7 +109,7 @@ export function SignInForm({ next }: { next: string }) {
     return (
       <form action={action} className={styles.form}>
         {hidden}
-        <p>Welcome to TechShop! What should we call you?</p>
+        <p>{welcome}</p>
         {errorBox}
         <label className="field">
           <span className="field__label">First name</span>

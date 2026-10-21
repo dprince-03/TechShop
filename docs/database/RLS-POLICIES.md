@@ -1,8 +1,20 @@
 # Row-level security (RLS)
 
-## Current state: no RLS policies
+## Current state (2026-10-21)
 
-TechShop has **no Postgres row-level security policies today** (no `enable row level security` or `create policy` in any migration). This is deliberate, not an oversight: access control is enforced in the Go API, the only thing that connects to the database.
+Row-level security is **on for seller-scoped tables** (M4), as defence in depth behind the API's own checks. Seller Centre requests run in a transaction that sets `app.seller_id` (`set_config(..., true)`); requests without it (staff, customers, jobs) are unaffected.
+
+| Table | Migration | Seller requests can read | Seller requests can write |
+|---|---|---|---|
+| `sellers.sellers`, `seller_members`, `seller_kyc_submissions`, `kyc_documents`, `seller_bank_accounts` | 00025 | own shop only | own shop only |
+| `catalog.listings` | 00026 | own + every **active** listing (public on the market; needed by the price-outlier check) | own only |
+| `sales.fulfilments` | 00027 | all (the order status is derived from every fulfilment of an order; seller queries filter by shop) | own only |
+
+Policy shape: `coalesce(current_setting('app.seller_id', true), '') = '' or seller_id = nullif(current_setting('app.seller_id', true), '')::uuid`.
+
+Verified in Postgres as `techshop_app` with another shop's ID set: other shops' private rows invisible, `UPDATE`/`DELETE` affect 0 rows, `INSERT` refused by policy (`docs/log.md`, 2026-10-21).
+
+The rest of this page describes how access is enforced everywhere else, and what's left.
 
 ## How access is enforced instead
 
@@ -18,33 +30,20 @@ TechShop has **no Postgres row-level security policies today** (no `enable row l
 
 Per-table data classification and who may see what: [`access.md`](access.md).
 
-## Known gap
+## Database users (done, 2026-10-21, migration 00024)
 
-Locally and in the current deploy plan, the API and the migrations use **one database user** that owns every table. That breaks least privilege (`.claude/rules/01` §6: separate users for the app, migrations and read-only analytics). It should be fixed before production, and it is a prerequisite for RLS anyway: table owners bypass RLS.
+| Login / role | Used by | Can do |
+|---|---|---|
+| table owner (e.g. `techshop`) | `cmd/migrate` only, via `DATABASE_MIGRATE_URL` | Everything, including DDL |
+| `techshop_app` (member of `techshop_rw`) | API and worker, via `DATABASE_URL` | Read and write rows; **no DDL**; **cannot update or delete** `platform.audit_log`, ledger journals and entries, stock movements, delivery events |
+| `techshop_ro` (group, no login yet) | Future reporting | `select` on `catalog`, `search`, `inventory`, `purchasing`, `content` only (no personal data) |
 
-## Recommendation
+- Locally: `make db-users APP_DB_PASSWORD=…` (repo root) after migrating creates `techshop_app`.
+- Outside development the API and worker **refuse to start** if `DATABASE_URL` is a superuser or owns the tables (`internal/platform/database/roles.go`).
+- `platform.ensure_monthly_partitions` runs as its owner (`security definer`, pinned `search_path`) so the worker can add partitions without DDL rights.
 
-Use RLS as **defence in depth** for the few places where a missed `where` clause would leak another party's data. Don't put it everywhere: it adds a per-request setup step and makes queries harder to reason about.
+## Next candidates
 
-1. **First, split database roles** (one migration):
-   - `techshop_owner`: owns tables, used only by `cmd/migrate`;
-   - `techshop_app`: `select/insert/update/delete` on application tables, no DDL, used by the API and worker;
-   - `techshop_readonly`: `select` on non-personal tables, for analytics.
-2. **Then RLS on seller-scoped tables** (marketplace, M4 onwards), because sellers are separate businesses:
-   - `sellers.*`, `catalog.listings`, `sales.fulfilments`, `finance.payouts` / `payout_items`;
-   - the API sets `set local app.seller_id = '<uuid>'` inside each seller request's transaction;
-   - policy: `using (seller_id = current_setting('app.seller_id', true)::uuid or current_setting('app.role', true) = 'staff')`.
-3. **Optionally on customer personal data** (`identity.addresses`, `sales.orders`) the same way with `app.user_id`.
+- Customer personal data (`identity.addresses`, `sales.orders` for customers) with an `app.user_id` setting, the same way.
+- Business buyers (`b2b.*`) when M6 starts.
 
-Example policy (not applied):
-
-```sql
-alter table catalog.listings enable row level security;
-create policy listings_seller_scope on catalog.listings
-  using (
-    current_setting('app.role', true) in ('staff', 'system', 'public_read')
-    or seller_id = nullif(current_setting('app.seller_id', true), '')::uuid
-  );
-```
-
-**Decision needed from the owner** before any of this is built: approve step 1 (role split) now, and step 2 as part of M4 or later.

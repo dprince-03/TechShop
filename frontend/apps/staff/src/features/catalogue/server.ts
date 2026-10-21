@@ -34,3 +34,12 @@ export async function categories() {
       .get("/api/v1/categories", { init: { next: { revalidate: 300 } } })) ?? []
   );
 }
+
+/** Held reviews and reviews with open reports, oldest first. */
+export async function reviewQueue() {
+  return (
+    (await (
+      await bff.api()
+    ).get("/api/v1/staff/reviews/queue", { init: NO_STORE })) ?? []
+  );
+}

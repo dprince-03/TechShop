@@ -8,6 +8,7 @@ import { Body, Button, Card, Notice, Screen, Title, tokens, useColors } from "@t
 import { useCart } from "@/features/cart/CartProvider";
 
 import { useLoad } from "@/features/catalogue/useLoad";
+import { ProductReviews } from "@/features/reviews/ProductReviews";
 import { api } from "@/lib/api";
 
 const CONDITION: Record<string, string> = { new: "New", uk_used: "UK-used", refurbished: "Refurbished", open_box: "Open box" };
@@ -61,6 +62,7 @@ export default function Product() {
           ))}
         </View>
       ) : null}
+      <ProductReviews slug={p.slug} />
     </Screen>
   );
 }

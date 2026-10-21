@@ -1,0 +1,6 @@
+/* Review text wraps inside the (otherwise no-wrap) staff table, at a readable width. */
+.text {
+  display: block;
+  white-space: normal;
+  max-width: var(--measure);
+}

@@ -2,7 +2,8 @@
 
 import { refresh } from "next/cache";
 
-import { ApiError, normaliseNigerianPhone } from "@techshop/api-client";
+import { normaliseNigerianPhone } from "@techshop/api-client";
+import { failure } from "@techshop/bff";
 
 import { bff } from "@/lib/bff";
 
@@ -18,23 +19,6 @@ const text = (form: FormData, name: string, max = 120) =>
   String(form.get(name) ?? "")
     .trim()
     .slice(0, max);
-
-/** API field errors ("body.line1") → our field names ("line1"). */
-function apiErrors(e: unknown, fallback: string): FormState {
-  if (e instanceof ApiError) {
-    if (e.status === 401)
-      return { ok: false, message: "Your session ended. Sign in again." };
-    const errors: Record<string, string> = {};
-    for (const f of e.fieldErrors) {
-      const name = (f.location ?? "").replace(/^body\./, "");
-      if (name) errors[name] = f.message ?? "Check this field.";
-    }
-    if (Object.keys(errors).length)
-      return { ok: false, message: "Check the highlighted fields.", errors };
-    if (e.status < 500 && e.detail) return { ok: false, message: e.detail };
-  }
-  return { ok: false, message: fallback };
-}
 
 async function signedInApi() {
   const session = await bff.getSession({ refresh: true });
@@ -66,7 +50,7 @@ export async function updateProfile(
     refresh();
     return { ok: true, message: "Profile saved." };
   } catch (e) {
-    return apiErrors(e, "We couldn’t save your profile.");
+    return failure(e, "We couldn’t save your profile.");
   }
 }
 
@@ -107,7 +91,7 @@ export async function saveAddress(
     refresh();
     return { ok: true, message: id ? "Address updated." : "Address added." };
   } catch (e) {
-    return apiErrors(e, "We couldn’t save the address.");
+    return failure(e, "We couldn’t save the address.");
   }
 }
 
@@ -120,7 +104,7 @@ export async function deleteAddress(id: string): Promise<FormState> {
     refresh();
     return { ok: true, message: "Address removed." };
   } catch (e) {
-    return apiErrors(e, "We couldn’t remove the address.");
+    return failure(e, "We couldn’t remove the address.");
   }
 }
 
@@ -133,7 +117,7 @@ export async function revokeSession(id: string): Promise<FormState> {
     refresh();
     return { ok: true, message: "Signed out of that device." };
   } catch (e) {
-    return apiErrors(e, "We couldn’t sign that device out.");
+    return failure(e, "We couldn’t sign that device out.");
   }
 }
 
@@ -148,6 +132,6 @@ export async function revokeOtherSessions(): Promise<FormState> {
       message: `Signed out of ${r.revoked} other device${r.revoked === 1 ? "" : "s"}.`,
     };
   } catch (e) {
-    return apiErrors(e, "We couldn’t sign the other devices out.");
+    return failure(e, "We couldn’t sign the other devices out.");
   }
 }

@@ -16,6 +16,8 @@ import { artFor, conditionLabel, toCard } from "@/features/catalogue/mappers";
 import { savedProductIds } from "@/features/saved/server";
 
 import { BuyBox } from "./components/BuyBox";
+import { ReviewsSection } from "@/features/reviews/components/ReviewsSection";
+
 import styles from "./ProductDetail.module.css";
 
 type Detail = Schema<"ProductDetail">;
@@ -41,7 +43,13 @@ async function placeInTree(slug: string) {
   return { parent: undefined, sub: undefined };
 }
 
-export async function ProductDetail({ product }: { product: Detail }) {
+export async function ProductDetail({
+  product,
+  verifiedReviews = false,
+}: {
+  product: Detail;
+  verifiedReviews?: boolean;
+}) {
   const offers = product.offers ?? [];
   const best = offers.find((o) => o.buyBox) ?? offers[0];
   const { parent, sub } = await placeInTree(product.category.Slug);
@@ -316,6 +324,8 @@ export async function ProductDetail({ product }: { product: Detail }) {
             </ul>
           </section>
         ) : null}
+
+        <ReviewsSection slug={product.slug} verifiedOnly={verifiedReviews} />
 
         {relatedCards.length && parent ? (
           <section aria-labelledby="related-title">

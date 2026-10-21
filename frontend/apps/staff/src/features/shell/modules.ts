@@ -70,7 +70,7 @@ export const moduleGroups: ModuleGroup[] = [
         href: "/vendors",
         icon: "store",
         permission: "vendors.view",
-        live: false,
+        live: true,
       },
       {
         label: "B2B accounts",

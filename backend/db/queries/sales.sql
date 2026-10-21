@@ -199,3 +199,40 @@ update sales.fulfilments set warehouse_id = $2 where id = $1;
 
 -- name: SalesSetFulfilmentMethod :exec
 update sales.fulfilments set method = $2, collection_store_id = $3 where id = $1;
+
+-- ---- Seller-shipped fulfilment (M4 slice 3, orders-fulfilment.md §4 "Seller SLAs")
+
+-- name: SalesSellerFulfilmentsPage :many
+select f.*, o.order_number, o.ship_to, o.placed_at from sales.fulfilments f join sales.orders o on o.id = f.order_id
+where f.seller_id = @seller_id and f.fulfilled_by = 'seller'
+  and (sqlc.narg('status')::text is null or f.status = sqlc.narg('status'))
+  and (sqlc.narg('before')::timestamptz is null or f.created_at < sqlc.narg('before'))
+order by f.created_at desc limit @lim;
+
+-- name: SalesGetSellerFulfilment :one
+select f.*, o.order_number, o.ship_to, o.placed_at from sales.fulfilments f join sales.orders o on o.id = f.order_id
+where f.id = $1 and f.seller_id = $2;
+
+-- name: SalesFulfilmentHandlingDays :one
+-- The longest handling time among the fulfilment's listings: the seller's packing deadline.
+select coalesce(max(l.handling_days), 1)::int from sales.order_lines ol join catalog.listings l on l.id = ol.listing_id
+where ol.fulfilment_id = $1 and ol.cancelled_at is null;
+
+-- name: SalesSetPackBy :exec
+update sales.fulfilments set pack_by = $2 where id = $1;
+
+-- name: SalesPendingPackBreaches :many
+select f.*, o.order_number from sales.fulfilments f join sales.orders o on o.id = f.order_id
+where f.status = 'accepted' and f.fulfilled_by = 'seller' and f.pack_by < now() limit 50;
+
+-- name: FulfilmentSLABreaches30d :one
+select count(*)::int from fulfilment.seller_sla_events
+where seller_id = $1 and kind in ('late_accept', 'late_pack', 'late_handover') and created_at > now() - interval '30 days';
+
+-- name: SalesDevExpireDeadline :exec
+-- Development only (dev route): moves a seller fulfilment's deadline into the past so the SLA
+-- job can be tested without waiting a day.
+update sales.fulfilments
+set accept_by = case when @which::text = 'accept' then now() - interval '1 minute' else accept_by end,
+    pack_by = case when @which::text = 'pack' then now() - interval '1 minute' else pack_by end
+where id = @id;
