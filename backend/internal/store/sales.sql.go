@@ -261,7 +261,7 @@ func (q *Queries) SalesCreateCart(ctx context.Context, arg SalesCreateCartParams
 const salesCreateFulfilment = `-- name: SalesCreateFulfilment :one
 insert into sales.fulfilments (order_id, seller_id, fulfilled_by, method, warehouse_id, collection_store_id, delivery_fee_kobo)
 values ($1, $2, $3, $4, $5, $6, $7)
-returning id, order_id, seller_id, fulfilled_by, method, warehouse_id, collection_store_id, status, delivery_fee_kobo, accept_by, pack_by, delivered_at, cancelled_reason, created_at, updated_at
+returning id, order_id, seller_id, fulfilled_by, method, warehouse_id, collection_store_id, status, delivery_fee_kobo, accept_by, pack_by, delivered_at, cancelled_reason, created_at, updated_at, handover_by
 `
 
 type SalesCreateFulfilmentParams struct {
@@ -301,6 +301,7 @@ func (q *Queries) SalesCreateFulfilment(ctx context.Context, arg SalesCreateFulf
 		&i.CancelledReason,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.HandoverBy,
 	)
 	return i, err
 }
@@ -505,7 +506,8 @@ func (q *Queries) SalesDeleteCartItem(ctx context.Context, arg SalesDeleteCartIt
 const salesDevExpireDeadline = `-- name: SalesDevExpireDeadline :exec
 update sales.fulfilments
 set accept_by = case when $1::text = 'accept' then now() - interval '1 minute' else accept_by end,
-    pack_by = case when $1::text = 'pack' then now() - interval '1 minute' else pack_by end
+    pack_by = case when $1::text = 'pack' then now() - interval '1 minute' else pack_by end,
+    handover_by = case when $1::text = 'handover' then now() - interval '1 minute' else handover_by end
 where id = $2
 `
 
@@ -579,7 +581,7 @@ func (q *Queries) SalesFulfilmentLines(ctx context.Context, fulfilmentID uuid.UU
 }
 
 const salesGetFulfilment = `-- name: SalesGetFulfilment :one
-select id, order_id, seller_id, fulfilled_by, method, warehouse_id, collection_store_id, status, delivery_fee_kobo, accept_by, pack_by, delivered_at, cancelled_reason, created_at, updated_at from sales.fulfilments where id = $1
+select id, order_id, seller_id, fulfilled_by, method, warehouse_id, collection_store_id, status, delivery_fee_kobo, accept_by, pack_by, delivered_at, cancelled_reason, created_at, updated_at, handover_by from sales.fulfilments where id = $1
 `
 
 func (q *Queries) SalesGetFulfilment(ctx context.Context, id uuid.UUID) (SalesFulfilment, error) {
@@ -601,12 +603,13 @@ func (q *Queries) SalesGetFulfilment(ctx context.Context, id uuid.UUID) (SalesFu
 		&i.CancelledReason,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.HandoverBy,
 	)
 	return i, err
 }
 
 const salesGetFulfilmentForUpdate = `-- name: SalesGetFulfilmentForUpdate :one
-select id, order_id, seller_id, fulfilled_by, method, warehouse_id, collection_store_id, status, delivery_fee_kobo, accept_by, pack_by, delivered_at, cancelled_reason, created_at, updated_at from sales.fulfilments where id = $1 for update
+select id, order_id, seller_id, fulfilled_by, method, warehouse_id, collection_store_id, status, delivery_fee_kobo, accept_by, pack_by, delivered_at, cancelled_reason, created_at, updated_at, handover_by from sales.fulfilments where id = $1 for update
 `
 
 func (q *Queries) SalesGetFulfilmentForUpdate(ctx context.Context, id uuid.UUID) (SalesFulfilment, error) {
@@ -628,6 +631,7 @@ func (q *Queries) SalesGetFulfilmentForUpdate(ctx context.Context, id uuid.UUID)
 		&i.CancelledReason,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.HandoverBy,
 	)
 	return i, err
 }
@@ -788,7 +792,7 @@ func (q *Queries) SalesGetOrderForUpdate(ctx context.Context, id uuid.UUID) (Sal
 }
 
 const salesGetSellerFulfilment = `-- name: SalesGetSellerFulfilment :one
-select f.id, f.order_id, f.seller_id, f.fulfilled_by, f.method, f.warehouse_id, f.collection_store_id, f.status, f.delivery_fee_kobo, f.accept_by, f.pack_by, f.delivered_at, f.cancelled_reason, f.created_at, f.updated_at, o.order_number, o.ship_to, o.placed_at from sales.fulfilments f join sales.orders o on o.id = f.order_id
+select f.id, f.order_id, f.seller_id, f.fulfilled_by, f.method, f.warehouse_id, f.collection_store_id, f.status, f.delivery_fee_kobo, f.accept_by, f.pack_by, f.delivered_at, f.cancelled_reason, f.created_at, f.updated_at, f.handover_by, o.order_number, o.ship_to, o.placed_at from sales.fulfilments f join sales.orders o on o.id = f.order_id
 where f.id = $1 and f.seller_id = $2
 `
 
@@ -813,6 +817,7 @@ type SalesGetSellerFulfilmentRow struct {
 	CancelledReason   *string         `json:"cancelledReason"`
 	CreatedAt         time.Time       `json:"createdAt"`
 	UpdatedAt         time.Time       `json:"updatedAt"`
+	HandoverBy        *time.Time      `json:"handoverBy"`
 	OrderNumber       string          `json:"orderNumber"`
 	ShipTo            json.RawMessage `json:"shipTo"`
 	PlacedAt          time.Time       `json:"placedAt"`
@@ -837,6 +842,7 @@ func (q *Queries) SalesGetSellerFulfilment(ctx context.Context, arg SalesGetSell
 		&i.CancelledReason,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.HandoverBy,
 		&i.OrderNumber,
 		&i.ShipTo,
 		&i.PlacedAt,
@@ -1045,7 +1051,7 @@ func (q *Queries) SalesMergeCartItems(ctx context.Context, arg SalesMergeCartIte
 }
 
 const salesOrderFulfilments = `-- name: SalesOrderFulfilments :many
-select f.id, f.order_id, f.seller_id, f.fulfilled_by, f.method, f.warehouse_id, f.collection_store_id, f.status, f.delivery_fee_kobo, f.accept_by, f.pack_by, f.delivered_at, f.cancelled_reason, f.created_at, f.updated_at, s.display_name as seller_name, s.type as seller_type from sales.fulfilments f join sellers.sellers s on s.id = f.seller_id
+select f.id, f.order_id, f.seller_id, f.fulfilled_by, f.method, f.warehouse_id, f.collection_store_id, f.status, f.delivery_fee_kobo, f.accept_by, f.pack_by, f.delivered_at, f.cancelled_reason, f.created_at, f.updated_at, f.handover_by, s.display_name as seller_name, s.type as seller_type from sales.fulfilments f join sellers.sellers s on s.id = f.seller_id
 where f.order_id = $1 order by f.created_at
 `
 
@@ -1065,6 +1071,7 @@ type SalesOrderFulfilmentsRow struct {
 	CancelledReason   *string    `json:"cancelledReason"`
 	CreatedAt         time.Time  `json:"createdAt"`
 	UpdatedAt         time.Time  `json:"updatedAt"`
+	HandoverBy        *time.Time `json:"handoverBy"`
 	SellerName        string     `json:"sellerName"`
 	SellerType        string     `json:"sellerType"`
 }
@@ -1094,6 +1101,7 @@ func (q *Queries) SalesOrderFulfilments(ctx context.Context, orderID uuid.UUID) 
 			&i.CancelledReason,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.HandoverBy,
 			&i.SellerName,
 			&i.SellerType,
 		); err != nil {
@@ -1196,7 +1204,7 @@ func (q *Queries) SalesPaidOrdersCount(ctx context.Context, customerUserID *uuid
 }
 
 const salesPendingAcceptBreaches = `-- name: SalesPendingAcceptBreaches :many
-select f.id, f.order_id, f.seller_id, f.fulfilled_by, f.method, f.warehouse_id, f.collection_store_id, f.status, f.delivery_fee_kobo, f.accept_by, f.pack_by, f.delivered_at, f.cancelled_reason, f.created_at, f.updated_at, o.order_number from sales.fulfilments f join sales.orders o on o.id = f.order_id
+select f.id, f.order_id, f.seller_id, f.fulfilled_by, f.method, f.warehouse_id, f.collection_store_id, f.status, f.delivery_fee_kobo, f.accept_by, f.pack_by, f.delivered_at, f.cancelled_reason, f.created_at, f.updated_at, f.handover_by, o.order_number from sales.fulfilments f join sales.orders o on o.id = f.order_id
 where f.status = 'pending' and f.fulfilled_by = 'seller' and f.accept_by < now() limit 50
 `
 
@@ -1216,6 +1224,7 @@ type SalesPendingAcceptBreachesRow struct {
 	CancelledReason   *string    `json:"cancelledReason"`
 	CreatedAt         time.Time  `json:"createdAt"`
 	UpdatedAt         time.Time  `json:"updatedAt"`
+	HandoverBy        *time.Time `json:"handoverBy"`
 	OrderNumber       string     `json:"orderNumber"`
 }
 
@@ -1244,6 +1253,70 @@ func (q *Queries) SalesPendingAcceptBreaches(ctx context.Context) ([]SalesPendin
 			&i.CancelledReason,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.HandoverBy,
+			&i.OrderNumber,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const salesPendingHandoverBreaches = `-- name: SalesPendingHandoverBreaches :many
+select f.id, f.order_id, f.seller_id, f.fulfilled_by, f.method, f.warehouse_id, f.collection_store_id, f.status, f.delivery_fee_kobo, f.accept_by, f.pack_by, f.delivered_at, f.cancelled_reason, f.created_at, f.updated_at, f.handover_by, o.order_number from sales.fulfilments f join sales.orders o on o.id = f.order_id
+where f.status = 'packed' and f.fulfilled_by = 'seller' and f.handover_by < now() limit 50
+`
+
+type SalesPendingHandoverBreachesRow struct {
+	ID                uuid.UUID  `json:"id"`
+	OrderID           uuid.UUID  `json:"orderId"`
+	SellerID          uuid.UUID  `json:"sellerId"`
+	FulfilledBy       string     `json:"fulfilledBy"`
+	Method            string     `json:"method"`
+	WarehouseID       *uuid.UUID `json:"warehouseId"`
+	CollectionStoreID *uuid.UUID `json:"collectionStoreId"`
+	Status            string     `json:"status"`
+	DeliveryFeeKobo   int64      `json:"deliveryFeeKobo"`
+	AcceptBy          *time.Time `json:"acceptBy"`
+	PackBy            *time.Time `json:"packBy"`
+	DeliveredAt       *time.Time `json:"deliveredAt"`
+	CancelledReason   *string    `json:"cancelledReason"`
+	CreatedAt         time.Time  `json:"createdAt"`
+	UpdatedAt         time.Time  `json:"updatedAt"`
+	HandoverBy        *time.Time `json:"handoverBy"`
+	OrderNumber       string     `json:"orderNumber"`
+}
+
+func (q *Queries) SalesPendingHandoverBreaches(ctx context.Context) ([]SalesPendingHandoverBreachesRow, error) {
+	rows, err := q.db.Query(ctx, salesPendingHandoverBreaches)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []SalesPendingHandoverBreachesRow{}
+	for rows.Next() {
+		var i SalesPendingHandoverBreachesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.OrderID,
+			&i.SellerID,
+			&i.FulfilledBy,
+			&i.Method,
+			&i.WarehouseID,
+			&i.CollectionStoreID,
+			&i.Status,
+			&i.DeliveryFeeKobo,
+			&i.AcceptBy,
+			&i.PackBy,
+			&i.DeliveredAt,
+			&i.CancelledReason,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.HandoverBy,
 			&i.OrderNumber,
 		); err != nil {
 			return nil, err
@@ -1257,7 +1330,7 @@ func (q *Queries) SalesPendingAcceptBreaches(ctx context.Context) ([]SalesPendin
 }
 
 const salesPendingPackBreaches = `-- name: SalesPendingPackBreaches :many
-select f.id, f.order_id, f.seller_id, f.fulfilled_by, f.method, f.warehouse_id, f.collection_store_id, f.status, f.delivery_fee_kobo, f.accept_by, f.pack_by, f.delivered_at, f.cancelled_reason, f.created_at, f.updated_at, o.order_number from sales.fulfilments f join sales.orders o on o.id = f.order_id
+select f.id, f.order_id, f.seller_id, f.fulfilled_by, f.method, f.warehouse_id, f.collection_store_id, f.status, f.delivery_fee_kobo, f.accept_by, f.pack_by, f.delivered_at, f.cancelled_reason, f.created_at, f.updated_at, f.handover_by, o.order_number from sales.fulfilments f join sales.orders o on o.id = f.order_id
 where f.status = 'accepted' and f.fulfilled_by = 'seller' and f.pack_by < now() limit 50
 `
 
@@ -1277,6 +1350,7 @@ type SalesPendingPackBreachesRow struct {
 	CancelledReason   *string    `json:"cancelledReason"`
 	CreatedAt         time.Time  `json:"createdAt"`
 	UpdatedAt         time.Time  `json:"updatedAt"`
+	HandoverBy        *time.Time `json:"handoverBy"`
 	OrderNumber       string     `json:"orderNumber"`
 }
 
@@ -1305,6 +1379,7 @@ func (q *Queries) SalesPendingPackBreaches(ctx context.Context) ([]SalesPendingP
 			&i.CancelledReason,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.HandoverBy,
 			&i.OrderNumber,
 		); err != nil {
 			return nil, err
@@ -1318,7 +1393,7 @@ func (q *Queries) SalesPendingPackBreaches(ctx context.Context) ([]SalesPendingP
 }
 
 const salesSellerFulfilments = `-- name: SalesSellerFulfilments :many
-select f.id, f.order_id, f.seller_id, f.fulfilled_by, f.method, f.warehouse_id, f.collection_store_id, f.status, f.delivery_fee_kobo, f.accept_by, f.pack_by, f.delivered_at, f.cancelled_reason, f.created_at, f.updated_at, o.order_number, o.ship_to, o.placed_at from sales.fulfilments f join sales.orders o on o.id = f.order_id
+select f.id, f.order_id, f.seller_id, f.fulfilled_by, f.method, f.warehouse_id, f.collection_store_id, f.status, f.delivery_fee_kobo, f.accept_by, f.pack_by, f.delivered_at, f.cancelled_reason, f.created_at, f.updated_at, f.handover_by, o.order_number, o.ship_to, o.placed_at from sales.fulfilments f join sales.orders o on o.id = f.order_id
 where f.seller_id = $1 and ($3::text is null or f.status = $3)
 order by f.created_at desc limit $2
 `
@@ -1345,6 +1420,7 @@ type SalesSellerFulfilmentsRow struct {
 	CancelledReason   *string         `json:"cancelledReason"`
 	CreatedAt         time.Time       `json:"createdAt"`
 	UpdatedAt         time.Time       `json:"updatedAt"`
+	HandoverBy        *time.Time      `json:"handoverBy"`
 	OrderNumber       string          `json:"orderNumber"`
 	ShipTo            json.RawMessage `json:"shipTo"`
 	PlacedAt          time.Time       `json:"placedAt"`
@@ -1375,6 +1451,7 @@ func (q *Queries) SalesSellerFulfilments(ctx context.Context, arg SalesSellerFul
 			&i.CancelledReason,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.HandoverBy,
 			&i.OrderNumber,
 			&i.ShipTo,
 			&i.PlacedAt,
@@ -1391,7 +1468,7 @@ func (q *Queries) SalesSellerFulfilments(ctx context.Context, arg SalesSellerFul
 
 const salesSellerFulfilmentsPage = `-- name: SalesSellerFulfilmentsPage :many
 
-select f.id, f.order_id, f.seller_id, f.fulfilled_by, f.method, f.warehouse_id, f.collection_store_id, f.status, f.delivery_fee_kobo, f.accept_by, f.pack_by, f.delivered_at, f.cancelled_reason, f.created_at, f.updated_at, o.order_number, o.ship_to, o.placed_at from sales.fulfilments f join sales.orders o on o.id = f.order_id
+select f.id, f.order_id, f.seller_id, f.fulfilled_by, f.method, f.warehouse_id, f.collection_store_id, f.status, f.delivery_fee_kobo, f.accept_by, f.pack_by, f.delivered_at, f.cancelled_reason, f.created_at, f.updated_at, f.handover_by, o.order_number, o.ship_to, o.placed_at from sales.fulfilments f join sales.orders o on o.id = f.order_id
 where f.seller_id = $1 and f.fulfilled_by = 'seller'
   and ($2::text is null or f.status = $2)
   and ($3::timestamptz is null or f.created_at < $3)
@@ -1421,6 +1498,7 @@ type SalesSellerFulfilmentsPageRow struct {
 	CancelledReason   *string         `json:"cancelledReason"`
 	CreatedAt         time.Time       `json:"createdAt"`
 	UpdatedAt         time.Time       `json:"updatedAt"`
+	HandoverBy        *time.Time      `json:"handoverBy"`
 	OrderNumber       string          `json:"orderNumber"`
 	ShipTo            json.RawMessage `json:"shipTo"`
 	PlacedAt          time.Time       `json:"placedAt"`
@@ -1457,6 +1535,7 @@ func (q *Queries) SalesSellerFulfilmentsPage(ctx context.Context, arg SalesSelle
 			&i.CancelledReason,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.HandoverBy,
 			&i.OrderNumber,
 			&i.ShipTo,
 			&i.PlacedAt,
@@ -1558,7 +1637,7 @@ update sales.fulfilments
 set status = $2, delivered_at = case when $2 = 'delivered' then now() else delivered_at end,
     cancelled_reason = coalesce($3, cancelled_reason),
     accept_by = coalesce($4, accept_by), pack_by = coalesce($5, pack_by)
-where id = $1 returning id, order_id, seller_id, fulfilled_by, method, warehouse_id, collection_store_id, status, delivery_fee_kobo, accept_by, pack_by, delivered_at, cancelled_reason, created_at, updated_at
+where id = $1 returning id, order_id, seller_id, fulfilled_by, method, warehouse_id, collection_store_id, status, delivery_fee_kobo, accept_by, pack_by, delivered_at, cancelled_reason, created_at, updated_at, handover_by
 `
 
 type SalesSetFulfilmentStatusParams struct {
@@ -1594,6 +1673,7 @@ func (q *Queries) SalesSetFulfilmentStatus(ctx context.Context, arg SalesSetFulf
 		&i.CancelledReason,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.HandoverBy,
 	)
 	return i, err
 }
@@ -1609,6 +1689,20 @@ type SalesSetFulfilmentWarehouseParams struct {
 
 func (q *Queries) SalesSetFulfilmentWarehouse(ctx context.Context, arg SalesSetFulfilmentWarehouseParams) error {
 	_, err := q.db.Exec(ctx, salesSetFulfilmentWarehouse, arg.ID, arg.WarehouseID)
+	return err
+}
+
+const salesSetHandoverBy = `-- name: SalesSetHandoverBy :exec
+update sales.fulfilments set handover_by = $2 where id = $1
+`
+
+type SalesSetHandoverByParams struct {
+	ID         uuid.UUID  `json:"id"`
+	HandoverBy *time.Time `json:"handoverBy"`
+}
+
+func (q *Queries) SalesSetHandoverBy(ctx context.Context, arg SalesSetHandoverByParams) error {
+	_, err := q.db.Exec(ctx, salesSetHandoverBy, arg.ID, arg.HandoverBy)
 	return err
 }
 

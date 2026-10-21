@@ -47,3 +47,13 @@ func TestLineRefundAndSerial(t *testing.T) {
 		t.Fatal("write_off isn't restocked")
 	}
 }
+
+func TestChangeOfMindAndDeliveryRefund(t *testing.T) {
+	if !changeOfMindAllowed("lighting", "smart-home", true) || changeOfMindAllowed("lighting", "smart-home", false) ||
+		changeOfMindAllowed("audio", "accessories", true) {
+		t.Fatal("changeOfMindAllowed")
+	}
+	if deliveryRefund("faulty", 2500, 1, 1) != 2500 || deliveryRefund("faulty", 2500, 1, 2) != 0 || deliveryRefund("change_of_mind", 2500, 1, 1) != 0 {
+		t.Fatal("deliveryRefund")
+	}
+}

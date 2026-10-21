@@ -687,3 +687,21 @@ Owner asked for the next milestone after M4. M5 slices: 1 returns (RMA) → 2 wa
 - Methods: `store_dropoff` or `pickup` (status `awaiting_pickup`). **Not built:** creating the rider return-pickup job; staff mark the item received when it arrives.
 - Inspection per item: grade A/B/C/faulty and disposition. Serialised devices must be scanned: **a mismatched IMEI or serial rejects the whole return and opens a risk case (`kind = return`) — both committed**, the inspector gets 409 `serial_mismatch`. `restock_new` / `restock_open_box` put the unit back in stock (movement reason `return`; device unit back `in_stock` with the new condition).
 - **Refund** = the price paid for the returned units (line total share, so discounts are respected); faulty returns have no restocking fee; the delivery fee is not refunded (not stated in the plan; flag for the owner). It's a refund request linked to the return, approved by finance as usual.
+
+## 2026-10-21 — Open M4/M5 questions decided by research (supersedes the "open question" entries above)
+
+Owner: "research and pick the best options" (standing instruction; don't wait on these). Decisions:
+
+1. **Seller hand-over: seller drop-off at a TechShop hub** (Ikeja warehouse, Wuse hub to start). Hub staff scan the packed parcel in (`handed_over`), then it follows TechShop's own path: rider in delivery zones, carrier elsewhere. Delivery is confirmed only by TechShop (customer code or carrier tracking), never by the seller, because delivery releases the seller's money. Rider pickup from seller addresses is a later addition (needs a seller pickup address table). Source: Jumia's vendor drop-off model (Moveee 2025 guide; Jumia/Businesswire on Jumia Delivery).
+2. **Change-of-mind returns: allowed within 7 days**, unopened with seals intact; excluded categories: hygiene items (underwear, cosmetics, in-ear audio); no restocking fee; customer pays return delivery. Source: Jumia vendor help (change of mind allowed with hygiene exclusions; sealed mobiles). FCCPA s.122 only mandates refunds for defective/wrong goods, so this is goodwill policy.
+3. **Delivery fee refunded for our-fault returns** (faulty, damaged, wrong, not as described), not for change of mind. Source: FCCPA s.122 "full refund" (Templars 2025; Dubawa); no-refund terms held void (s.129). Delivery isn't addressed explicitly, so read in the customer's favour.
+4. **Seller team invites expire after 7 days** (re-sendable); finance members must enrol an authenticator before seeing payouts or changing bank accounts. Source: Shopify staff invites (7 days); identity-access.md §7.3.
+5. **Monnify and OPay:** adapters built from public docs and tested against local stand-ins; live keys are the owner's to provide.
+
+Build order: 2–3 (returns) → 1 (hand-over, unblocks delivery, payouts, seller returns, seller review replies) → payouts → 4 → 5.
+
+## 2026-10-21 — Seller hand-over deadline (decision 1, detail)
+
+A packed seller parcel must be dropped at a TechShop warehouse or hub (not a retail store) within **24 hours of packing**. A deadline that falls on a Sunday (WAT) moves to Monday. If it's missed, the SLA job cancels the order as `late_handover`, refunds the customer, and the breach counts toward the three-strike rule. Source: Jumia Nigeria vendor FAQ, which gives 24 hours to drop off after ready-to-ship (vendor.jumia.com/black-friday-ops-faq; dated 2018). Senegal and Egypt allow 48 hours from the order (vendorhub.jumia.sn/?p=146, sell.jumia.com). 24 hours after packing sits inside both. Sunday is skipped because Jumia's own SLA excludes Sundays.
+
+Later: rider pickup from the seller's address (needs seller pickup addresses), and a seller notification when the hub scans a parcel in.

@@ -169,3 +169,45 @@ export async function signManifest(
     "Signed. The parcels have left the warehouse.",
   );
 }
+
+export type DropoffState = { ok?: boolean; message?: string };
+
+/** Receives a seller's packed parcel at this hub: the label is scanned, then a rider job or carrier booking follows. */
+export async function receiveDropoff(
+  warehouseId: string,
+  _prev: DropoffState,
+  form: FormData,
+): Promise<DropoffState> {
+  const label = String(form.get("label") ?? "")
+    .trim()
+    .toUpperCase();
+  if (!UUID.test(warehouseId))
+    return { ok: false, message: "Choose a warehouse." };
+  if (!/^TSS-[0-9A-Z]{4,}$/.test(label))
+    return {
+      ok: false,
+      message: "Scan or type the seller label (it starts with TSS-).",
+    };
+  try {
+    const d = await (
+      await api()
+    ).post("/api/v1/staff/wms/dropoffs", { body: { warehouseId, label } });
+    return {
+      ok: true,
+      message:
+        d.handoff === "rider"
+          ? `Received ${label} for order ${d.orderNumber}: a rider job was created.`
+          : `Received ${label} for order ${d.orderNumber}: booked with the carrier.`,
+    };
+  } catch (e) {
+    return {
+      ok: false,
+      message:
+        e instanceof ApiError && e.status === 404
+          ? `No parcel has the label ${label}. Check the code with the seller.`
+          : e instanceof ApiError && e.detail
+            ? e.detail
+            : "We couldn’t receive it. Try again.",
+    };
+  }
+}

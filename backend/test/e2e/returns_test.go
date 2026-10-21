@@ -29,13 +29,19 @@ func TestReturnInspectRestockRefund(t *testing.T) {
 	base := "/api/v1/me/orders/" + number + "/returns"
 	item := func(qty int) []any { return []any{map[string]any{"orderLineId": line, "quantity": qty}} }
 
-	expectCode(t, post(t, base, cust, map[string]any{"items": item(1), "reason": "change_of_mind", "method": "store_dropoff"}), 422, "change_of_mind_unavailable", "change of mind")
+	expectCode(t, post(t, base, cust, map[string]any{"items": item(1), "reason": "change_of_mind", "method": "pickup", "unopened": true}), 422, "dropoff_only", "change of mind by pickup")
+	expectCode(t, post(t, base, cust, map[string]any{"items": item(1), "reason": "change_of_mind", "method": "store_dropoff"}), 422, "must_be_unopened", "change of mind, opened")
 	expectCode(t, post(t, base, cust, map[string]any{"items": item(2), "reason": "faulty", "method": "store_dropoff"}), 422, "too_many", "more than bought")
 	r := post(t, base, cust, map[string]any{"items": item(1), "reason": "faulty", "details": "Two bulbs won't pair", "method": "store_dropoff"})
 	expect(t, r, 201, "return")
 	rma := r.str("rma")
 	if r.str("status") != "approved" || r.get("autoApproved") != true || !strings.HasPrefix(rma, "RMA-") || r.num("refund") <= 0 {
 		t.Fatalf("faulty return within 7 days should be auto-approved: %s", r.Raw)
+	}
+	// The whole parcel comes back for a fault, so the delivery fee is refunded too.
+	itemRefund := r.get("items").([]any)[0].(map[string]any)["refund"].(float64)
+	if r.num("refund") <= itemRefund {
+		t.Fatalf("our-fault return of a whole parcel should refund delivery: total %v, item %v", r.num("refund"), itemRefund)
 	}
 	expectCode(t, post(t, base, cust, map[string]any{"items": item(1), "reason": "faulty", "method": "store_dropoff"}), 422, "too_many", "returned twice")
 	if l := get(t, "/api/v1/me/returns", cust); !strings.Contains(string(l.Raw), rma) {
@@ -98,5 +104,32 @@ func TestReturnSerialMismatchOpensRiskCase(t *testing.T) {
 	back := get(t, "/api/v1/me/returns/"+rma, cust)
 	if back.str("status") != "rejected" || !strings.Contains(back.str("rejectionReason"), "doesn’t match") {
 		t.Fatalf("customer should see the rejection: %s", back.Raw)
+	}
+}
+
+// Change of mind: sealed items only, brought to a store, always checked by support; an item that
+// arrives opened is rejected at receipt. The delivery fee isn't refunded.
+func TestReturnChangeOfMind(t *testing.T) {
+	t.Parallel()
+	cust := newCustomer(t, "Dayo")
+	number, _, line := deliveredByCarrier(t, cust, seed.Extra["listing_p21"], nil)
+	r := post(t, "/api/v1/me/orders/"+number+"/returns", cust, map[string]any{"items": []any{map[string]any{"orderLineId": line, "quantity": 1}},
+		"reason": "change_of_mind", "method": "store_dropoff", "unopened": true})
+	expect(t, r, 201, "change-of-mind return")
+	if r.str("status") != "requested" || r.get("autoApproved") != false {
+		t.Fatalf("change of mind waits for support: %s", r.Raw)
+	}
+	if itemRefund := r.get("items").([]any)[0].(map[string]any)["refund"].(float64); r.num("refund") != itemRefund {
+		t.Fatalf("change of mind refunds the item only: %s", r.Raw)
+	}
+	rma := r.str("rma")
+	expect(t, post(t, "/api/v1/staff/returns/"+rma+"/decision", staffLogin(t, "support_lead"), map[string]any{"decision": "approve"}), 200, "approve")
+	wh := staffLogin(t, "warehouse_lead")
+	expect(t, post(t, "/api/v1/staff/returns/"+rma+"/receive", wh, nil), 200, "receive")
+	expectCode(t, post(t, "/api/v1/staff/returns/"+rma+"/decision", wh, map[string]any{"decision": "reject"}), 422, "reason_required", "reject without reason")
+	rej := post(t, "/api/v1/staff/returns/"+rma+"/decision", wh, map[string]any{"decision": "reject", "reason": "The box seal is broken, so it isn't a change-of-mind return."})
+	expect(t, rej, 200, "reject opened item at receipt")
+	if rej.str("status") != "rejected" {
+		t.Fatalf("late reject: %s", rej.Raw)
 	}
 }

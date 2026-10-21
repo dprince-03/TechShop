@@ -240,6 +240,21 @@ describe("operations modules", () => {
     await b.get("/inventory");
     await b.get("/warehouse");
 
+    // The hub desk takes in seller parcels by label; bad or unknown labels are explained.
+    assert.match(textOf((await b.get("/warehouse")).html), /Seller drop-offs/);
+    const badLabel = await b.action<{ ok: boolean; message: string }>(
+      "/warehouse",
+      "receiveDropoff",
+      [warehouseId, {}, form({ label: "12345" })],
+    );
+    assert.match(badLabel.value.message, /starts with TSS-/);
+    const unknown = await b.action<{ ok: boolean; message: string }>(
+      "/warehouse",
+      "receiveDropoff",
+      [warehouseId, {}, form({ label: "tss-zzzz9999" })],
+    );
+    assert.match(unknown.value.message, /No parcel has the label TSS-ZZZZ9999/);
+
     // A fresh paid order guarantees something to pick in this run.
     const ct = await customerToken("customer_b");
     const cart = await api.get("/api/v1/cart", { token: ct });

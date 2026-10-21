@@ -218,6 +218,48 @@ func (q *Queries) FulfilmentCreateShipment(ctx context.Context, arg FulfilmentCr
 	return i, err
 }
 
+const fulfilmentDropoffPoints = `-- name: FulfilmentDropoffPoints :many
+select id, code, name, address, city, state_code from inventory.warehouses
+where kind in ('warehouse', 'hub') and is_active order by name
+`
+
+type FulfilmentDropoffPointsRow struct {
+	ID        uuid.UUID `json:"id"`
+	Code      string    `json:"code"`
+	Name      string    `json:"name"`
+	Address   string    `json:"address"`
+	City      string    `json:"city"`
+	StateCode string    `json:"stateCode"`
+}
+
+// Where sellers can drop packed parcels: active warehouses and hubs (not retail stores).
+func (q *Queries) FulfilmentDropoffPoints(ctx context.Context) ([]FulfilmentDropoffPointsRow, error) {
+	rows, err := q.db.Query(ctx, fulfilmentDropoffPoints)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []FulfilmentDropoffPointsRow{}
+	for rows.Next() {
+		var i FulfilmentDropoffPointsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Code,
+			&i.Name,
+			&i.Address,
+			&i.City,
+			&i.StateCode,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const fulfilmentExpectedWeight = `-- name: FulfilmentExpectedWeight :one
 select coalesce(sum(coalesce(v.weight_grams, 0) * ol.quantity), 0)::int
 from sales.order_lines ol join catalog.product_variants v on v.id = ol.variant_id

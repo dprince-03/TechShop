@@ -141,3 +141,8 @@ insert into fulfilment.seller_sla_events (seller_id, fulfilment_id, kind) values
 select count(*) filter (where kind = 'late_accept')::int as late_accept, count(*) filter (where kind = 'late_pack')::int as late_pack,
        count(*) filter (where kind = 'seller_cancel')::int as seller_cancel, count(*) filter (where kind = 'late_handover')::int as late_handover
 from fulfilment.seller_sla_events where seller_id = $1 and created_at > now() - interval '90 days';
+
+-- name: FulfilmentDropoffPoints :many
+-- Where sellers can drop packed parcels: active warehouses and hubs (not retail stores).
+select id, code, name, address, city, state_code from inventory.warehouses
+where kind in ('warehouse', 'hub') and is_active order by name;

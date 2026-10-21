@@ -7,6 +7,7 @@ import { PageHead } from "@/components/PageHead";
 import { riders } from "@/features/dispatch/server";
 import { can, requireStaff } from "@/features/session/server";
 import { releaseWave } from "@/features/warehouse/actions";
+import { DropoffForm } from "@/features/warehouse/components/DropoffForm";
 import { ManifestForm } from "@/features/warehouse/components/ManifestForm";
 import {
   carriers,
@@ -42,7 +43,7 @@ export default async function WarehousePage(props: PageProps<"/warehouse">) {
     <div className="stack stack--lg">
       <PageHead
         title="Warehouse"
-        description="Pick, pack and hand over TechShop’s own orders."
+        description="Pick, pack and hand over orders, and take in sellers’ parcels."
         actions={
           manage ? (
             <ActionButton
@@ -108,6 +109,21 @@ export default async function WarehousePage(props: PageProps<"/warehouse">) {
           ]}
         />
       </section>
+
+      {chosen.kind === "warehouse" || chosen.kind === "hub" ? (
+        <section className="stack" aria-labelledby="dropoff-title">
+          <h2 id="dropoff-title" className="text-xl">
+            Seller drop-offs
+          </h2>
+          <p className="text-sm text-muted">
+            Sellers bring packed parcels here. Scanning one in sends it on by
+            rider or carrier, like our own parcels.
+          </p>
+          <div className="card card--roomy">
+            <DropoffForm warehouseId={chosen.id} />
+          </div>
+        </section>
+      ) : null}
 
       <section className="stack" aria-labelledby="manifests-title">
         <h2 id="manifests-title" className="text-xl">

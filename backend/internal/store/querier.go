@@ -146,6 +146,8 @@ type Querier interface {
 	FulfilmentCreateParcel(ctx context.Context, arg FulfilmentCreateParcelParams) (FulfilmentParcel, error)
 	FulfilmentCreatePickList(ctx context.Context, arg FulfilmentCreatePickListParams) (FulfilmentPickList, error)
 	FulfilmentCreateShipment(ctx context.Context, arg FulfilmentCreateShipmentParams) (FulfilmentShipment, error)
+	// Where sellers can drop packed parcels: active warehouses and hubs (not retail stores).
+	FulfilmentDropoffPoints(ctx context.Context) ([]FulfilmentDropoffPointsRow, error)
 	FulfilmentExpectedWeight(ctx context.Context, fulfilmentID uuid.UUID) (int32, error)
 	FulfilmentGetCarrierByCode(ctx context.Context, code string) (FulfilmentCarrier, error)
 	FulfilmentGetManifest(ctx context.Context, id uuid.UUID) (FulfilmentManifest, error)
@@ -613,6 +615,7 @@ type Querier interface {
 	SalesOrderLines(ctx context.Context, orderID uuid.UUID) ([]SalesOrderLine, error)
 	SalesPaidOrdersCount(ctx context.Context, customerUserID *uuid.UUID) (int32, error)
 	SalesPendingAcceptBreaches(ctx context.Context) ([]SalesPendingAcceptBreachesRow, error)
+	SalesPendingHandoverBreaches(ctx context.Context) ([]SalesPendingHandoverBreachesRow, error)
 	SalesPendingPackBreaches(ctx context.Context) ([]SalesPendingPackBreachesRow, error)
 	SalesSellerFulfilments(ctx context.Context, arg SalesSellerFulfilmentsParams) ([]SalesSellerFulfilmentsRow, error)
 	// ---- Seller-shipped fulfilment (M4 slice 3, orders-fulfilment.md §4 "Seller SLAs")
@@ -626,6 +629,7 @@ type Querier interface {
 	SalesSetFulfilmentMethod(ctx context.Context, arg SalesSetFulfilmentMethodParams) error
 	SalesSetFulfilmentStatus(ctx context.Context, arg SalesSetFulfilmentStatusParams) (SalesFulfilment, error)
 	SalesSetFulfilmentWarehouse(ctx context.Context, arg SalesSetFulfilmentWarehouseParams) error
+	SalesSetHandoverBy(ctx context.Context, arg SalesSetHandoverByParams) error
 	SalesSetOrderStatus(ctx context.Context, arg SalesSetOrderStatusParams) (SalesOrder, error)
 	SalesSetPackBy(ctx context.Context, arg SalesSetPackByParams) error
 	SalesStaffListOrders(ctx context.Context, arg SalesStaffListOrdersParams) ([]SalesStaffListOrdersRow, error)

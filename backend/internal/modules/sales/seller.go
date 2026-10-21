@@ -26,6 +26,35 @@ import (
 // slaStrikeLimit is the number of breaches in 30 days that triggers listing review.
 const slaStrikeLimit = 3
 
+// handoverWindow is how long a seller has to drop a packed parcel at a TechShop hub (Jumia
+// Nigeria's vendor rule: drop off within 24 hours of ready-to-ship; docs/plan.md 2026-10-21).
+const handoverWindow = 24 * time.Hour
+
+// wat is Nigeria's time zone (UTC+1, no daylight saving), fixed so no tzdata is needed.
+var wat = time.FixedZone("WAT", 60*60)
+
+// handoverDeadline is packedAt plus the window; a deadline falling on a Sunday (WAT), when
+// hubs don't receive, moves to the same time on Monday.
+func handoverDeadline(packedAt time.Time) time.Time {
+	d := packedAt.Add(handoverWindow)
+	if d.In(wat).Weekday() == time.Sunday {
+		d = d.Add(24 * time.Hour)
+	}
+	return d
+}
+
+// PackSellerFulfilment marks an accepted seller fulfilment packed and starts the hand-over
+// deadline.
+func (s *Service) PackSellerFulfilment(ctx context.Context, tx *uow.Tx, fulfilmentID, actor uuid.UUID, note string) (store.SalesFulfilment, error) {
+	out, err := s.Move(ctx, tx, fulfilmentID, "packed", &actor, note)
+	if err != nil {
+		return out, err
+	}
+	by := handoverDeadline(time.Now())
+	out.HandoverBy = &by
+	return out, tx.Q.SalesSetHandoverBy(ctx, store.SalesSetHandoverByParams{ID: fulfilmentID, HandoverBy: &by})
+}
+
 // AcceptFulfilment records the seller's acceptance and sets the packing deadline from the
 // longest handling time among the fulfilment's listings.
 func (s *Service) AcceptFulfilment(ctx context.Context, tx *uow.Tx, f store.SalesFulfilment, actor uuid.UUID) (store.SalesFulfilment, error) {
@@ -45,13 +74,15 @@ func (s *Service) AcceptFulfilment(ctx context.Context, tx *uow.Tx, f store.Sale
 // CancelFulfilment cancels a seller-shipped fulfilment that hasn't been packed: every open line
 // is cancelled and its stock released, and one refund request covers the lines and the delivery
 // fee (the payments module listens for order.line_cancelled). slaKind records why it counts
-// against the seller ("seller_cancel", "late_accept", "late_pack").
+// against the seller ("seller_cancel", "late_accept", "late_pack", "late_handover"). A packed
+// parcel can only be cancelled for a missed hand-over: it never reached TechShop.
 func (s *Service) CancelFulfilment(ctx context.Context, tx *uow.Tx, fulfilmentID uuid.UUID, actor *uuid.UUID, reason, slaKind string) error {
 	f, err := tx.Q.SalesGetFulfilmentForUpdate(ctx, fulfilmentID)
 	if err != nil {
 		return httpx.NotFound("Fulfilment")
 	}
-	if f.Status != "pending" && f.Status != "accepted" {
+	lateHandover := f.Status == "packed" && f.FulfilledBy == "seller" && slaKind == "late_handover"
+	if f.Status != "pending" && f.Status != "accepted" && !lateHandover {
 		return httpx.Conflict("too_late_to_cancel", "Only orders that haven't been packed can be cancelled.")
 	}
 	o, err := tx.Q.SalesGetOrderForUpdate(ctx, f.OrderID)
@@ -132,7 +163,7 @@ func (w *slaWorker) Work(ctx context.Context, _ *river.Job[slaArgs]) error {
 	return w.s.EnforceSellerSLAs(ctx)
 }
 
-// EnforceSellerSLAs cancels seller fulfilments that missed the accept or pack deadline. Each
+// EnforceSellerSLAs cancels seller fulfilments that missed the accept, pack or hand-over deadline. Each
 // breach is its own transaction, so one failure doesn't block the rest.
 func (s *Service) EnforceSellerSLAs(ctx context.Context) error {
 	late, err := s.d.Q.SalesPendingAcceptBreaches(ctx)
@@ -150,6 +181,15 @@ func (s *Service) EnforceSellerSLAs(ctx context.Context) error {
 	}
 	for _, f := range unpacked {
 		if err := s.breach(ctx, f.ID, f.SellerID, "late_pack", "The seller didn't pack the order in time."); err != nil {
+			s.d.Logger.Error("seller SLA cancel failed", "fulfilment", f.ID, "error", err)
+		}
+	}
+	undelivered, err := s.d.Q.SalesPendingHandoverBreaches(ctx)
+	if err != nil {
+		return err
+	}
+	for _, f := range undelivered {
+		if err := s.breach(ctx, f.ID, f.SellerID, "late_handover", "The seller didn't bring the parcel to a TechShop hub in time."); err != nil {
 			s.d.Logger.Error("seller SLA cancel failed", "fulfilment", f.ID, "error", err)
 		}
 	}
@@ -195,8 +235,8 @@ func (s *Service) devSLARoutes(r *kit.Routes) {
 	r.Gin.POST("/dev/sla/:fulfilment/:which", func(c *gin.Context) {
 		id, err := uuid.Parse(c.Param("fulfilment"))
 		which := c.Param("which")
-		if err != nil || (which != "accept" && which != "pack") {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "use /dev/sla/{fulfilmentId}/accept|pack"})
+		if err != nil || (which != "accept" && which != "pack" && which != "handover") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "use /dev/sla/{fulfilmentId}/accept|pack|handover"})
 			return
 		}
 		if err := s.d.Q.SalesDevExpireDeadline(c.Request.Context(), store.SalesDevExpireDeadlineParams{ID: id, Which: which}); err != nil {

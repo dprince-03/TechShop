@@ -6,6 +6,7 @@ import { Status, Table } from "@techshop/ui/components";
 import { RowAction } from "@/components/RowAction";
 import { acceptOrder, packOrder } from "@/features/orders/actions";
 import { CancelOrderForm } from "@/features/orders/components/CancelOrderForm";
+import { DropoffPanel } from "@/features/orders/components/DropoffPanel";
 import { orderStatus } from "@/features/orders/status";
 import { requireShop, sellerApi } from "@/features/session/server";
 import { ShopPage } from "@/features/shops/components/ShopPage";
@@ -30,6 +31,12 @@ export default async function OrderPage(
     tone: "neutral" as const,
   };
   const manage = shop.role !== "finance";
+  const points =
+    o.status === "packed"
+      ? await api.get("/api/v1/seller/dropoff-points", {
+          init: { cache: "no-store" },
+        })
+      : [];
   return (
     <ShopPage
       shop={shop}
@@ -100,11 +107,12 @@ export default async function OrderPage(
           </details>
         </section>
       ) : null}
-      {o.status === "packed" ? (
-        <p className="alert alert--warning">
-          Packed. Hand-over (rider pickup or courier) is being set up; we’ll
-          contact you about collection.
-        </p>
+      {o.status === "packed" && o.label ? (
+        <DropoffPanel
+          label={o.label}
+          handoverBy={o.handoverBy}
+          points={points ?? []}
+        />
       ) : null}
     </ShopPage>
   );

@@ -577,3 +577,28 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
 - **Tests:** unit (7-day window, good standing, refund share, serial match, restock condition); e2e `TestReturnInspectRestockRefund` (change-of-mind refused, quantity limits, auto-approval, only your own return, no re-decision, refund only after inspection, receive → inspect → open-box stock +1, no double inspection, refund request reaches finance, ledger balanced) and `TestReturnSerialMismatchOpensRiskCase` (phone with a real IMEI delivered by carrier; pickup return; wrong IMEI → 409, return rejected and visible to the customer).
 - **Test harness fixes found on the way:** each Go e2e test now uses its own client address (`X-Forwarded-For` from the test name), because the suite outgrew the API's 20-codes-an-hour per-network limit; tests that pick in the warehouse take turns (a wave takes every waiting paid line, so parallel tests could steal each other's orders); the delivery helper accepts IMEIs (`"*"` for any serialised line).
 - Full backend e2e on a fresh stack: 25 passed. Lint 0 issues; API 228 paths; web and mobile typecheck against the new types.
+
+## 2026-10-21 — Returns policy from the researched decisions (plan 2026-10-21, items 2–3)
+
+- Change-of-mind returns now allowed within 7 days: the customer confirms the item is unopened, brings it to a store (`dropoff_only` otherwise), hygiene categories refused (`audio`; `underwear`/`cosmetics` if added). Never auto-approved; support can reject at receipt if it arrives opened.
+- Our-fault returns (faulty, damaged, wrong, not as described) refund the delivery fee when the whole parcel comes back; partial returns and change of mind don't.
+- Tests: unit (change-of-mind eligibility, delivery refund); e2e `TestReturnChangeOfMind` (waits for support, item-only refund, approve → receive → reject without reason refused → reject with reason) and the existing returns test now checks delivery is included and the new change-of-mind refusals. Full backend e2e on a fresh stack: 26 passed; lint 0 issues; web and mobile typecheck.
+
+## 2026-10-21 — Seller hand-over at a TechShop hub (branch feat/m4-returns-handover, PR #5)
+
+- Moved work off `feat/m4-marketplace` after finding PR #4 already merged. Two stranded commits (84896ab, 0b729a9) are now on `feat/m4-returns-handover`.
+- **Backend:**
+  - Migration 00029 adds `sales.fulfilments.handover_by`.
+  - The seller pack action now creates a `TSS-` parcel label and sets the deadline (`sales.PackSellerFulfilment`, `wms.SellerParcel`).
+  - New `POST /api/v1/staff/wms/dropoffs` (`wms.ReceiveDropoff`). It takes the label and moves the parcel to handed_over, then raises a rider job or carrier booking through a shared `handoff` that pack also uses now.
+  - New `GET /api/v1/seller/dropoff-points`.
+  - The SLA job now enforces the hand-over deadline, and the dev route gains `/dev/sla/{id}/handover`.
+  - `packed → cancelled` is now allowed in the flow, but only `CancelFulfilment` uses it, for seller late hand-over.
+- **Web:**
+  - The Seller Centre order page shows the drop-off panel (code, deadline, hubs) and plain status labels.
+  - The staff Warehouse page gains a "Seller drop-offs" desk at warehouses and hubs.
+  - `@techshop/testing` now exports `placePaidOrder`.
+- **Verification (fresh throwaway stack):**
+  - Backend e2e: 27/27 pass, including the new `TestSellerDropoffToDelivery`. It covers the Lagos rider job, Kano carrier delivery, late hand-over cancel and refund, store refusal, unknown label, double scan, and the seller token refused. `go test ./internal/modules/sales` passes, including the deadline unit test. Lint: 0 issues.
+  - Seller web e2e: 2/2. Staff web e2e: 16/16. Seller and staff typecheck and lint pass.
+  - Screenshots of the new panels were not taken this session.

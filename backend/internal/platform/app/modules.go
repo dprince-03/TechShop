@@ -59,8 +59,8 @@ func buildModules(d *kit.Deps) []kit.Module {
 	lg := logistics.New(d, sl, n)      // also plugs zone pricing into sales
 	wh := wms.New(d, sl, lg)
 	rv := reviews.New(d)
-	as := aftersales.New(d, pay, inv)          // refunds through payments, restock through inventory
-	sel := sellers.New(d, pay, n, cat, sl, rv) // payments answers bank name enquiries; catalog owns listing rules
+	as := aftersales.New(d, pay, inv)              // refunds through payments, restock through inventory
+	sel := sellers.New(d, pay, n, cat, sl, wh, rv) // payments: bank name enquiries; catalog: listing rules; wms: drop-off labels
 	Mods = Registry{Notify: n, Identity: id, Catalog: cat, Inventory: inv, Ledger: led, Marketing: mk, Sales: sl, Payments: pay, Logistics: lg, WMS: wh, Sellers: sel, Returns: as}
 	return []kit.Module{n, id, files.New(d), cat, inv, content.New(d), tracking.New(d), led, mk, sl, pay, lg, wh, rv, sel, as}
 }

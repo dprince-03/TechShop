@@ -12,6 +12,7 @@ import {
   form,
   latestCode,
   peekCode,
+  placePaidOrder,
   seed,
   staffToken,
   textOf,
@@ -297,6 +298,39 @@ describe("Seller Centre", () => {
       textOf((await b.get(`/centre/${shopId}/reviews`)).html),
       /No reviews yet/,
     );
+
+    // An order: accept, pack, then the drop-off panel shows the parcel code, the deadline and
+    // the hubs; once hub staff scan it in, the seller sees it at the hub.
+    const number = await placePaidOrder("customer", listingId);
+    const ops = await staffToken("ops_manager");
+    const order = await api.get("/api/v1/staff/orders/{number}", {
+      path: { number },
+      token: ops,
+    });
+    const orderId = order.fulfilments![0].id;
+    const orderPage = `/centre/${shopId}/orders/${orderId}`;
+    assert.match(textOf((await b.get(orderPage)).html), /New — accept it/);
+    for (const name of ["acceptOrder", "packOrder"]) {
+      const r = await b.action<Result>(
+        "/centre/[shopId]/orders/[orderId]",
+        name,
+        [shopId, orderId, {}, form({})],
+        { url: orderPage },
+      );
+      assert.equal(r.value.ok, true, `${name}: ${JSON.stringify(r.value)}`);
+    }
+    const packed = textOf((await b.get(orderPage)).html);
+    const label = packed.match(/TSS-[0-9A-Z]{8}/)?.[0];
+    assert.ok(label, packed.slice(0, 600));
+    assert.match(packed, /Drop it off by/);
+    assert.match(packed, /Ikeja warehouse/);
+    assert.match(packed, /Wuse hub/);
+    assert.doesNotMatch(packed, /Victoria Island store/);
+    await api.post("/api/v1/staff/wms/dropoffs", {
+      body: { warehouseId: seed().extra.warehouseIkejaId, label },
+      token: await staffToken("warehouse_lead"),
+    });
+    assert.match(textOf((await b.get(orderPage)).html), /At the TechShop hub/);
 
     // Another seller can't open this shop's pages.
     const other = browser();
