@@ -202,6 +202,10 @@ describe("Seller Centre", () => {
       textOf((await b.get(`/centre/${shopId}`)).html),
       /You’re ready to sell/,
     );
+    const payouts = textOf((await b.get(payPage)).html);
+    assert.match(payouts, /Your balance/);
+    assert.match(payouts, /No payouts yet/);
+    assert.match(payouts, /Payouts are on hold/); // the account was added minutes ago
 
     // List a product: search, choose, offer. New shops' listings go to review.
     const newPage = `/centre/${shopId}/listings/new`;

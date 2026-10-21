@@ -9,3 +9,8 @@ export const dateTime = new Intl.DateTimeFormat("en-NG", {
   timeStyle: "short",
   timeZone: "Africa/Lagos",
 });
+
+export const dateOnly = new Intl.DateTimeFormat("en-NG", {
+  dateStyle: "medium",
+  timeZone: "Africa/Lagos",
+});

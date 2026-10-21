@@ -7,6 +7,8 @@ import { Figures } from "@/components/Figures";
 import { PageHead } from "@/components/PageHead";
 import { Tabs } from "@/components/Tabs";
 import { closePeriod } from "@/features/finance/actions";
+import { prepareBatch } from "@/features/payouts/actions";
+import { listBatches } from "@/features/payouts/server";
 import { ExceptionActions } from "@/features/finance/components/ExceptionActions";
 import { RefundActions } from "@/features/finance/components/RefundActions";
 import {
@@ -25,6 +27,7 @@ export const metadata = { title: "Finance | TechShop Staff" };
 const TABS = [
   { key: "overview", label: "Overview" },
   { key: "refunds", label: "Refunds" },
+  { key: "payouts", label: "Payouts" },
   { key: "reconciliation", label: "Reconciliation" },
   { key: "ledger", label: "Ledger" },
   { key: "periods", label: "Periods" },
@@ -55,6 +58,12 @@ export default async function FinancePage(props: PageProps<"/finance">) {
           approver={
             can(me, "refunds.approve") || can(me, "refunds.approve_small")
           }
+        />
+      ) : null}
+      {tab === "payouts" ? (
+        <Payouts
+          cursor={param(sp.cursor)}
+          canPrepare={can(me, "payouts.prepare")}
         />
       ) : null}
       {tab === "reconciliation" ? <Reconciliation /> : null}
@@ -127,6 +136,74 @@ async function Overview() {
         />
       </section>
     </>
+  );
+}
+
+const batchTone = {
+  draft: "neutral",
+  submitted: "warning",
+  approved: "info",
+  processing: "info",
+  done: "success",
+  cancelled: "neutral",
+} as const;
+
+async function Payouts({
+  cursor,
+  canPrepare,
+}: {
+  cursor?: string;
+  canPrepare: boolean;
+}) {
+  const page = await listBatches(cursor);
+  return (
+    <section className="stack" aria-labelledby="payouts-title">
+      <div className="cluster cluster--between">
+        <h2 id="payouts-title" className="text-xl">
+          Seller payouts
+        </h2>
+        {canPrepare ? (
+          <ActionButton
+            label="Prepare a batch"
+            variant="inverse"
+            action={prepareBatch}
+          />
+        ) : null}
+      </div>
+      <p className="text-sm text-muted">
+        A batch pays every seller whose delivered orders are past the 7-day
+        return window. Whoever prepares it can’t approve it.
+      </p>
+      <Table
+        caption="Payout batches"
+        rows={page.items ?? []}
+        rowKey={(b) => b.id}
+        href={(b) => `/finance/payouts/${b.id}`}
+        empty={{
+          title: "No payout batches yet",
+          body: "Prepare one on a payout day (Tuesday or Friday).",
+        }}
+        columns={[
+          { label: "Prepared", cell: (b) => formatDateTime(b.createdAt) },
+          { label: "Payouts", numeric: true, cell: (b) => b.count },
+          { label: "Total", numeric: true, cell: (b) => formatKobo(b.total) },
+          {
+            label: "Status",
+            cell: (b) => (
+              <Status label={humanise(b.status)} tone={batchTone[b.status]} />
+            ),
+          },
+        ]}
+      />
+      {page.page.hasMore && page.page.nextCursor ? (
+        <Link
+          className="link link--arrow"
+          href={`/finance?tab=payouts&cursor=${encodeURIComponent(page.page.nextCursor)}`}
+        >
+          Older batches
+        </Link>
+      ) : null}
+    </section>
   );
 }
 

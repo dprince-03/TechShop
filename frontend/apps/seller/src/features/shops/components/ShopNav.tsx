@@ -8,7 +8,7 @@ const sections = [
   { key: "orders", label: "Orders", path: "/orders" },
   { key: "reviews", label: "Reviews", path: "/reviews" },
   { key: "verification", label: "Verification", path: "/verification" },
-  { key: "payouts", label: "Payout accounts", path: "/payouts" },
+  { key: "payouts", label: "Payouts", path: "/payouts" },
 ] as const;
 
 export type Section = (typeof sections)[number]["key"];
