@@ -42,6 +42,7 @@ type Service struct {
 	ledger    *ledger.Service
 	notify    *notify.Service
 	providers map[string]Provider
+	banks     bankCache
 }
 
 // New creates the payments service and its provider adapters (fakes unless PAYMENTS_FAKE=false).

@@ -6,7 +6,19 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"sync"
+	"time"
 )
+
+// bankListTTL is how long the provider's bank list is reused. It changes a few times a year;
+// fetching it on every Seller Centre page would mean several paged provider calls each time.
+const bankListTTL = 24 * time.Hour
+
+type bankCache struct {
+	mu      sync.Mutex
+	banks   []Bank
+	fetched time.Time
+}
 
 // ErrAccountNotFound means the bank has no account with that number (name enquiry failed).
 var ErrAccountNotFound = errors.New("bank account not found")
@@ -43,7 +55,20 @@ func (s *Service) Banks(ctx context.Context) ([]Bank, error) {
 		// Development only: a short list so forms work without a provider.
 		return []Bank{{"044", "Access Bank (dev)"}, {"058", "Guaranty Trust Bank (dev)"}, {"057", "Zenith Bank (dev)"}}, nil
 	}
-	return NewPaystack(s.d.Cfg.PaystackSecretKey).banks(ctx)
+	s.banks.mu.Lock()
+	defer s.banks.mu.Unlock()
+	if s.banks.banks != nil && time.Since(s.banks.fetched) < bankListTTL {
+		return s.banks.banks, nil
+	}
+	banks, err := NewPaystack(s.d.Cfg.PaystackSecretKey).banks(ctx)
+	if err != nil {
+		if s.banks.banks != nil {
+			return s.banks.banks, nil // a stale list beats no list while the provider is down
+		}
+		return nil, err
+	}
+	s.banks.banks, s.banks.fetched = banks, time.Now()
+	return banks, nil
 }
 
 // resolveAccount calls Paystack's name enquiry (GET /bank/resolve).

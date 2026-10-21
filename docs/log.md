@@ -559,3 +559,8 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
 ## 2026-10-21 — Cleanup: one form-error helper
 
 - Market account actions and staff `runStaffAction` now use `failure()` from `@techshop/bff` (staff keeps its own wording for refusal codes such as `separation_of_duties` on top). Step-up, session-ended and field-error handling behave as before; field errors now come with "Check the highlighted fields." in staff too. Market e2e 16/16, staff e2e 16/16 after the change.
+
+## 2026-10-21 — Payments: cached bank list, Paystack adapter tests
+
+- The provider bank list (live mode) is cached in memory for 24 hours, and a stale list is served if the provider is down; before, each Seller Centre page fetched every page of Paystack's list.
+- Unit tests for the live Paystack calls against a local stand-in with the documented shapes: the bank list follows `meta.next` and skips inactive banks; name enquiry returns the account name and maps a failed lookup to `ErrAccountNotFound`.
