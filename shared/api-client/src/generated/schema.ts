@@ -926,6 +926,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/me/deliveries/{fulfilmentId}/rating": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Rate the seller of a delivered part of your order */
+    post: operations["rateSeller"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/me/mfa/totp": {
     parameters: {
       query?: never;
@@ -1420,6 +1437,41 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/products/{slug}/reviews": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Published reviews (verified purchases first) and the rating summary */
+    get: operations["productReviews"];
+    put?: never;
+    /** Review a product (one per product) */
+    post: operations["createReview"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/reviews/{id}/report": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Report a review that breaks the rules */
+    post: operations["reportReview"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/rider/devices": {
     parameters: {
       query?: never;
@@ -1676,6 +1728,110 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/seller/shops/{shopId}/listings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Your listings, newest first */
+    get: operations["sellerListListings"];
+    put?: never;
+    /** Offer a catalogue variant (automatic checks decide: live or review) */
+    post: operations["sellerCreateListing"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/listings/{listingId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** A listing with its moderation history */
+    get: operations["sellerGetListing"];
+    /** Fix a draft or a listing with changes requested, and resubmit */
+    put: operations["sellerResubmitListing"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/listings/{listingId}/pause": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Take a live listing off sale */
+    post: operations["sellerPauseListing"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/listings/{listingId}/price": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Change the price (a deep cut sends a live listing back to review) */
+    patch: operations["sellerSetListingPrice"];
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/listings/{listingId}/resume": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Put a paused listing back on sale */
+    post: operations["sellerResumeListing"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/listings/{listingId}/stock": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Set how many you have in stock */
+    put: operations["sellerSetListingStock"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/seller/shops/{shopId}/onboarding": {
     parameters: {
       query?: never;
@@ -1687,6 +1843,125 @@ export interface paths {
     get: operations["sellerOnboarding"];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/orders": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Orders to ship, newest first */
+    get: operations["sellerListOrders"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/orders/{orderId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** An order with its items */
+    get: operations["sellerGetOrder"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/orders/{orderId}/accept": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Accept (starts the packing deadline) */
+    post: operations["sellerAcceptOrder"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/orders/{orderId}/cancel": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Cancel before packing (refunds the customer; counts against the shop) */
+    post: operations["sellerCancelOrder"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/orders/{orderId}/pack": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Mark as packed and ready to hand over */
+    post: operations["sellerPackOrder"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/reviews": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Reviews of items you shipped, newest first */
+    get: operations["sellerListReviews"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/reviews/{reviewId}/response": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Answer a review publicly (once) */
+    post: operations["sellerRespondToReview"];
     delete?: never;
     options?: never;
     head?: never;
@@ -3269,6 +3544,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/staff/reviews/queue": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Held reviews and reviews with open reports, oldest first
+     * @description Requires permission `catalog.moderate`.
+     */
+    get: operations["staffReviewQueue"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/reviews/{id}/decision": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Publish, hide or reject a review (settles its reports)
+     * @description Requires permission `catalog.moderate`.
+     */
+    post: operations["staffDecideReview"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/staff/search/gaps/{query}": {
     parameters: {
       query?: never;
@@ -4250,6 +4565,13 @@ export interface components {
     ChangePasswordRequest: {
       currentPassword?: string;
       newPassword: string;
+    };
+    CheckResult: {
+      reasons: string[] | null;
+      /** Format: int32 */
+      risk: number;
+      /** @enum {string} */
+      status: "active" | "in_review" | "rejected";
     };
     CheckoutPreviewRequest: {
       addressId?: string;
@@ -5253,6 +5575,12 @@ export interface components {
       submittedAt: string;
       tin: string | null;
     };
+    KycDecision: {
+      /** @enum {string} */
+      decision: "approved" | "rejected" | "needs_more_info";
+      /** @description Required unless approving; the seller sees it */
+      note?: string;
+    };
     KycDocument: {
       fileId: string;
       /** @enum {string} */
@@ -5309,6 +5637,14 @@ export interface components {
       items: components["schemas"]["FinanceLedgerJournal"][] | null;
       page: components["schemas"]["Page"];
     };
+    ListListing: {
+      items: components["schemas"]["Listing"][] | null;
+      page: components["schemas"]["Page"];
+    };
+    ListPublicReview: {
+      items: components["schemas"]["PublicReview"][] | null;
+      page: components["schemas"]["Page"];
+    };
     ListSalesOrder: {
       items: components["schemas"]["SalesOrder"][] | null;
       page: components["schemas"]["Page"];
@@ -5317,9 +5653,123 @@ export interface components {
       items: components["schemas"]["SalesStaffListOrdersRow"][] | null;
       page: components["schemas"]["Page"];
     };
+    ListSellerOrder: {
+      items: components["schemas"]["SellerOrder"][] | null;
+      page: components["schemas"]["Page"];
+    };
+    ListSellerReview: {
+      items: components["schemas"]["SellerReview"][] | null;
+      page: components["schemas"]["Page"];
+    };
     ListVendorRow: {
       items: components["schemas"]["VendorRow"][] | null;
       page: components["schemas"]["Page"];
+    };
+    Listing: {
+      /** Format: int32 */
+      batteryHealthPct: number | null;
+      /**
+       * Format: int64
+       * @description Kobo
+       */
+      compareAt: number | null;
+      condition: string;
+      conditionNotes: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      grade: string | null;
+      /** Format: int32 */
+      handlingDays: number;
+      id: string;
+      /**
+       * Format: int64
+       * @description Kobo
+       */
+      price: number;
+      productName: string;
+      productSlug: string;
+      /** Format: date-time */
+      publishedAt: string | null;
+      /** Format: int32 */
+      sellerStock: number | null;
+      sku: string;
+      /** @enum {string} */
+      status:
+        | "draft"
+        | "auto_check"
+        | "in_review"
+        | "changes_requested"
+        | "active"
+        | "paused"
+        | "suspended"
+        | "rejected";
+      /** Format: date-time */
+      updatedAt: string;
+      variantId: string;
+      variantName: string;
+      /** Format: int32 */
+      warrantyMonths: number;
+      warrantyProvider: string;
+    };
+    ListingDetail: {
+      /** Format: int32 */
+      batteryHealthPct: number | null;
+      /**
+       * Format: int64
+       * @description Kobo
+       */
+      compareAt: number | null;
+      condition: string;
+      conditionNotes: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      grade: string | null;
+      /** Format: int32 */
+      handlingDays: number;
+      id: string;
+      /**
+       * Format: int64
+       * @description Kobo
+       */
+      price: number;
+      productName: string;
+      productSlug: string;
+      /** Format: date-time */
+      publishedAt: string | null;
+      reviews: components["schemas"]["ListingReview"][] | null;
+      /** Format: int32 */
+      sellerStock: number | null;
+      sku: string;
+      /** @enum {string} */
+      status:
+        | "draft"
+        | "auto_check"
+        | "in_review"
+        | "changes_requested"
+        | "active"
+        | "paused"
+        | "suspended"
+        | "rejected";
+      /** Format: date-time */
+      updatedAt: string;
+      variantId: string;
+      variantName: string;
+      /** Format: int32 */
+      warrantyMonths: number;
+      warrantyProvider: string;
+    };
+    ListingEdit: {
+      /** Format: int32 */
+      batteryHealthPct?: number;
+      conditionNotes?: string;
+      /** @enum {string} */
+      grade?: "A" | "B" | "C" | "";
+      /** Format: int32 */
+      handlingDays: number;
+      /** Format: int32 */
+      warrantyMonths: number;
+      /** @enum {string} */
+      warrantyProvider: "manufacturer" | "techshop" | "seller" | "none";
     };
     ListingInput: {
       /** Format: int32 */
@@ -5352,6 +5802,24 @@ export interface components {
       warrantyMonths?: number;
       /** @enum {string} */
       warrantyProvider?: "manufacturer" | "techshop" | "seller" | "none" | "";
+    };
+    ListingResult: {
+      check: components["schemas"]["CheckResult"];
+      listing: components["schemas"]["Listing"];
+    };
+    ListingReview: {
+      /** Format: date-time */
+      createdAt: string;
+      /** @enum {string} */
+      decision:
+        | "auto_passed"
+        | "auto_flagged"
+        | "approved"
+        | "changes_requested"
+        | "rejected"
+        | "suspended";
+      note: string | null;
+      reasons: string[] | null;
     };
     LogisticsBoardCountsRow: {
       /** Format: int32 */
@@ -5716,6 +6184,51 @@ export interface components {
       /** @enum {string} */
       status: "delivered" | "bounced" | "complained" | "failed";
     };
+    MyReview: {
+      /** Format: date-time */
+      createdAt: string;
+      id: string;
+      /** Format: int32 */
+      rating: number;
+      /**
+       * @description pending = waiting for a moderator
+       * @enum {string}
+       */
+      status: "published" | "pending";
+      verified: boolean;
+    };
+    NewListing: {
+      /** Format: int32 */
+      batteryHealthPct?: number;
+      /**
+       * Format: int64
+       * @description Kobo. A new listing has no price history, so this is refused (FCCPA)
+       */
+      compareAt?: number;
+      /** @enum {string} */
+      condition: "new" | "uk_used" | "refurbished" | "open_box";
+      /** @description Required unless new */
+      conditionNotes?: string;
+      /** @enum {string} */
+      grade?: "A" | "B" | "C" | "";
+      /**
+       * Format: int32
+       * @description Days to hand over to delivery (default 1)
+       */
+      handlingDays?: number;
+      /**
+       * Format: int64
+       * @description Kobo
+       */
+      price: number;
+      /** Format: int32 */
+      sellerStock: number;
+      variantId: string;
+      /** Format: int32 */
+      warrantyMonths?: number;
+      /** @enum {string} */
+      warrantyProvider?: "manufacturer" | "techshop" | "seller" | "none" | "";
+    };
     NewStaffInput: {
       department: string;
       /** Format: email */
@@ -5822,6 +6335,26 @@ export interface components {
       updatedAt: string;
       /** Format: int64 */
       vatKobo: number;
+    };
+    OrderLine: {
+      /** Format: date-time */
+      cancelledAt: string | null;
+      condition: string;
+      /**
+       * Format: int64
+       * @description Kobo
+       */
+      lineTotal: number;
+      productName: string;
+      /** Format: int32 */
+      quantity: number;
+      sku: string;
+      /**
+       * Format: int64
+       * @description Kobo
+       */
+      unitPrice: number;
+      variantName: string;
     };
     Packed: {
       /**
@@ -6171,6 +6704,10 @@ export interface components {
       status?: "draft" | "active" | "";
       variants: components["schemas"]["Item1"][] | null;
     };
+    ProductReviews: {
+      reviews: components["schemas"]["ListPublicReview"];
+      summary: components["schemas"]["Summary"];
+    };
     ProductSummary: {
       brandName?: string;
       /**
@@ -6253,6 +6790,39 @@ export interface components {
       /** Format: int32 */
       value: number | null;
     };
+    PublicReview: {
+      body: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      id: string;
+      imageFileIds: string[] | null;
+      /** Format: int32 */
+      rating: number;
+      reviewer: string;
+      sellerResponse: string | null;
+      /** Format: date-time */
+      sellerResponseAt: string | null;
+      title: string | null;
+      verified: boolean;
+    };
+    QueueItem: {
+      body: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      id: string;
+      /** Format: int32 */
+      openReports: number;
+      productName: string;
+      productSlug: string;
+      /** Format: int32 */
+      rating: number;
+      /** @description Why the automatic checks held it */
+      reasons: string[] | null;
+      reviewer: string;
+      status: string;
+      title: string | null;
+      verified: boolean;
+    };
     Quote: {
       couponCode?: string;
       /** Format: int64 */
@@ -6284,6 +6854,11 @@ export interface components {
        */
       vatKobo: number;
     };
+    RateSellerRequest: {
+      comment?: string;
+      /** Format: int32 */
+      rating: number;
+    };
     ReasonBody: {
       reason: string;
     };
@@ -6305,6 +6880,10 @@ export interface components {
       /** @enum {string} */
       platform: "ios" | "android";
       token: string;
+    };
+    ReportReviewRequest: {
+      /** @enum {string} */
+      reason: "abuse" | "personal_data" | "off_topic" | "fake" | "other";
     };
     RequestOtpRequest: {
       /** @example 0803 123 4567 */
@@ -6342,10 +6921,14 @@ export interface components {
       provider: "paystack" | "opay" | "moniepoint";
     };
     ReviewInput: {
-      /** @enum {string} */
-      decision: "approved" | "rejected" | "needs_more_info";
-      /** @description Required unless approving; the seller sees it */
-      note?: string;
+      body?: string;
+      /** @description Files uploaded with purpose review_image */
+      imageFileIds?: string[] | null;
+      /** @description Your delivered order line for this product: marks the review as a verified purchase */
+      orderLineId?: string;
+      /** Format: int32 */
+      rating: number;
+      title?: string;
     };
     RevokeOtherSessionsResponse: {
       /** Format: int64 */
@@ -6625,6 +7208,67 @@ export interface components {
       /** Format: int32 */
       searches: number;
     };
+    SellerCancelOrderRequest: {
+      note?: string;
+      /** @enum {string} */
+      reason: "out_of_stock" | "damaged" | "price_error" | "other";
+    };
+    SellerOrder: {
+      /**
+       * Format: date-time
+       * @description Accept before this or the order is cancelled
+       */
+      acceptBy: string | null;
+      cancelledReason: string | null;
+      city: string;
+      /** Format: date-time */
+      createdAt: string;
+      id: string;
+      lines?: components["schemas"]["OrderLine"][] | null;
+      orderNumber: string;
+      /**
+       * Format: date-time
+       * @description Pack before this or the order is cancelled
+       */
+      packBy: string | null;
+      /** Format: date-time */
+      placedAt: string;
+      recipientFirstName: string;
+      stateCode: string;
+      status: string;
+    };
+    SellerRespondToReviewRequest: {
+      text: string;
+    };
+    SellerReview: {
+      body: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      id: string;
+      productName: string;
+      productSlug: string;
+      /** Format: int32 */
+      rating: number;
+      reviewer: string;
+      sellerResponse: string | null;
+      title: string | null;
+    };
+    SellerSetListingPriceRequest: {
+      /**
+       * Format: int64
+       * @description Kobo; at most the 30-day maximum price (FCCPA)
+       */
+      compareAt?: number;
+      /**
+       * Format: int64
+       * @description Kobo
+       */
+      price: number;
+    };
+    SellerSetListingStockRequest: {
+      /** Format: int32 */
+      stock: number;
+    };
     SessionDTO: {
       audience: string;
       /** Format: date-time */
@@ -6790,6 +7434,13 @@ export interface components {
       name: string;
       stateCode: string;
     };
+    StaffDecideReviewRequest: {
+      /** @enum {string} */
+      decision: "publish" | "hide" | "reject";
+    };
+    StaffDecideReviewResponse: {
+      status: string;
+    };
     StaffDecideSuggestionRequest: {
       /** @enum {string} */
       decision: "accepted" | "rejected";
@@ -6908,6 +7559,21 @@ export interface components {
        * @description Approve only: when to send (default now)
        */
       sendAt?: string;
+    };
+    Summary: {
+      /**
+       * Format: double
+       * @description Weighted: verified purchases count 1, unverified 0.5
+       */
+      average: number;
+      /** @description Count per star, keys "1"–"5" */
+      stars: {
+        [key: string]: number;
+      };
+      /** Format: int32 */
+      total: number;
+      /** Format: int32 */
+      verified: number;
     };
     TOTPSetup: {
       otpauthUrl: string;
@@ -9103,6 +9769,39 @@ export interface operations {
       };
     };
   };
+  rateSeller: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        fulfilmentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RateSellerRequest"];
+      };
+    };
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   removeTotp: {
     parameters: {
       query?: never;
@@ -10031,6 +10730,109 @@ export interface operations {
       };
     };
   };
+  productReviews: {
+    parameters: {
+      query?: {
+        verified?: "true" | "false" | "";
+        cursor?: string;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        slug: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ProductReviews"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  createReview: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        slug: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReviewInput"];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MyReview"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  reportReview: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReportReviewRequest"];
+      };
+    };
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   riderRegisterDevice: {
     parameters: {
       query?: never;
@@ -10560,6 +11362,288 @@ export interface operations {
       };
     };
   };
+  sellerListListings: {
+    parameters: {
+      query?: {
+        status?:
+          | "draft"
+          | "in_review"
+          | "changes_requested"
+          | "active"
+          | "paused"
+          | "suspended"
+          | "rejected"
+          | "";
+        cursor?: string;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        shopId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ListListing"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerCreateListing: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewListing"];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ListingResult"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerGetListing: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+        listingId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ListingDetail"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerResubmitListing: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+        listingId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ListingEdit"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ListingResult"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerPauseListing: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+        listingId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Listing"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerSetListingPrice: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+        listingId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SellerSetListingPriceRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Listing"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerResumeListing: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+        listingId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Listing"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerSetListingStock: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+        listingId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SellerSetListingStockRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Listing"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   sellerOnboarding: {
     parameters: {
       query?: never;
@@ -10579,6 +11663,252 @@ export interface operations {
         content: {
           "application/json": components["schemas"]["Onboarding"];
         };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerListOrders: {
+    parameters: {
+      query?: {
+        status?:
+          | "pending"
+          | "accepted"
+          | "packed"
+          | "handed_over"
+          | "in_transit"
+          | "delivered"
+          | "failed"
+          | "returned"
+          | "cancelled"
+          | "";
+        cursor?: string;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        shopId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ListSellerOrder"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerGetOrder: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+        /** @description The fulfilment ID */
+        orderId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SellerOrder"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerAcceptOrder: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+        orderId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SellerOrder"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerCancelOrder: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+        orderId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SellerCancelOrderRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SellerOrder"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerPackOrder: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+        orderId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SellerOrder"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerListReviews: {
+    parameters: {
+      query?: {
+        cursor?: string;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        shopId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ListSellerReview"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerRespondToReview: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+        reviewId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SellerRespondToReviewRequest"];
+      };
+    };
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Error */
       default: {
@@ -13386,6 +14716,70 @@ export interface operations {
       };
     };
   };
+  staffReviewQueue: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["QueueItem"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffDecideReview: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StaffDecideReviewRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StaffDecideReviewResponse"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   staffMarkGap: {
     parameters: {
       query?: never;
@@ -13697,7 +15091,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["ReviewInput"];
+        "application/json": components["schemas"]["KycDecision"];
       };
     };
     responses: {

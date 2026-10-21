@@ -508,3 +508,21 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
 - Migration `00025_seller_rls`: RLS on `sellers.sellers`, `seller_members`, `seller_kyc_submissions`, `kyc_documents`, `seller_bank_accounts`.
 - **Tests:** unit (ID formats, slugs, name matching); e2e `TestSellerOnboardingAndKycReview`, `TestSellerKycRejectAndResubmit` (validation, file ownership, fake name enquiry match/mismatch/not-found, defaults and deletes, 404 for another seller, audience separation, permission refusal, approve/reject/resubmit, reveal with reason, no full numbers or hmac/encrypted fields in responses). Full backend e2e suite passes as `techshop_app` (20 tests). `golangci-lint`: 0 issues. API: 200 paths; TS types regenerated; api-client typecheck passes.
 - **RLS proved in Postgres** as `techshop_app` with `app.seller_id` = shop B: shop A's bank and KYC rows invisible (0), only 1 shop row visible, `UPDATE` of shop A affects 0 rows, `INSERT` into shop A refused by policy.
+
+## 2026-10-21 — M4 slices 2–3: seller listings and seller-shipped orders
+
+- **Listings:** `sellers/listings.go` (create, list, detail with moderation history, price, stock, pause/resume, edit and resubmit); `catalog/listings.go` (reprice with bait-price guard, pause, edit-and-resubmit); `validateListing` gives clear errors for missing condition notes or stock. Migration `00026_listing_moderation` (`auto_flagged`, listings RLS).
+- **Orders:** `sales/seller.go` (accept with handling-time deadline, cancel with refund and restock, SLA job every 5 min, 3-strike enforcement, new-order message, dev-only `/dev/sla/{id}/accept|pack` trigger); `sellers/fulfilment.go` (queue, detail, accept, pack, cancel). Migration `00027_fulfilment_rls`.
+- **Bugs found by tests and fixed:** Huma ignores path params in embedded structs (inputs now declare them explicitly); the bait-price guard included the listing's own new price in the median it compared against (now `CatalogMedianPriceOthers`); seller listing input no longer requires `fulfilledBy`.
+- **Tests:** e2e `TestSellerListingsAndModeration`, `TestSellerOrdersAcceptPackCancelAndSLA` (queue, privacy of the address, accept/pack/cancel transitions, refund request, stock release, late accept, late pack, 3-strike review, ledger balanced). RLS checked in Postgres as `techshop_app`: another shop's active listing visible, in-review hidden, update/delete 0 rows, insert refused; another shop's fulfilment readable but `UPDATE` 0 rows. `golangci-lint` 0 issues; API 211 paths; TS types regenerated.
+- **Blocked:** hand-over/delivery of seller-shipped orders (owner questions in `plan.md`).
+
+## 2026-10-21 — M4 slice 4: reviews, reports, seller ratings
+
+- `internal/modules/reviews` (`service.go`, `routes.go`, `dto.go`, `rules.go` + tests); `sellers/reviews.go` (Seller Centre list and answer, in the shop-scoped transaction); `db/queries/reviews.sql`; migration `00028_review_responses`; search read model weights unverified reviews at 0.5.
+- **Bugs found and fixed:**
+  - existing catalogue refresh job deduplicated by args within 2 s **including finished and running jobs**, so a second change to a product inside that window (review then publication; price then stock) was dropped until the nightly rebuild. Uniqueness removed (a refresh rebuilds one row; River requires running jobs in any unique set, so a narrower set couldn't fix it).
+  - two request types named `ReviewInput` crashed schema registration at boot; the KYC one is now `KycDecision`.
+- **Tests:** unit (hold rules incl. Nigerian and +234 phone formats, links, incentive phrases, normalisation); e2e `TestReviewsRatingsAndModeration` (verified purchase via a real carrier delivery, one per product, claim of another's purchase refused, held review hidden publicly with reason visible to staff, publish, weighted average checked against the previous summary, verified filter, read model updated, reports once/not own/settled, seller rating once and only own delivery, seller can't answer reviews of items it didn't ship). Test made re-runnable on a used database.
+- Web and mobile typecheck pass against the regenerated types; API 218 paths.
+- **Not covered yet:** a seller answering a review end to end needs a delivered seller-shipped order, which waits for the hand-over decision.

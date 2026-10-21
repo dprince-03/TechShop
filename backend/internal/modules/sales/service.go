@@ -440,6 +440,9 @@ func (s *Service) afterPaid(ctx context.Context, tx *uow.Tx, o store.SalesOrder,
 			if _, err := tx.Q.SalesSetFulfilmentStatus(ctx, store.SalesSetFulfilmentStatusParams{ID: f.ID, Status: "pending", AcceptBy: &accept, PackBy: &pack}); err != nil {
 				return err
 			}
+			if err := s.tellSellerNewOrder(ctx, tx, f.ID, f.SellerID, o.OrderNumber); err != nil {
+				return err
+			}
 		}
 	}
 	lines, err := tx.Q.SalesOrderLines(ctx, o.ID)
@@ -814,7 +817,7 @@ func join(xs []string) string {
 }
 
 // Jobs implements kit.Module. Seller SLA breach jobs arrive with seller fulfilment (M4).
-func (s *Service) Jobs(*jobs.Registry) {}
+func (s *Service) Jobs(reg *jobs.Registry) { s.registerSellerJobs(reg) }
 
 // Events implements kit.Module.
 func (s *Service) Events(*outbox.Relay) {}

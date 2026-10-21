@@ -120,6 +120,9 @@ func (s *Service) autoCheck(ctx context.Context, q *store.Queries, sellerID uuid
 
 // CreateListing creates an offer, runs automatic checks and records the first price.
 func (s *Service) CreateListing(ctx context.Context, tx *uow.Tx, sellerID uuid.UUID, sellerType string, in ListingInput, actor *uuid.UUID) (store.CatalogListing, CheckResult, error) {
+	if err := validateListing(in); err != nil {
+		return store.CatalogListing{}, CheckResult{}, err
+	}
 	chk := s.autoCheck(ctx, tx.Q, sellerID, sellerType, in)
 	if chk.Status == "rejected" {
 		return store.CatalogListing{}, chk, httpx.Invalid("listing_rejected", strings.Join(chk.Reasons, "; "))
@@ -155,17 +158,36 @@ func (s *Service) CreateListing(ctx context.Context, tx *uow.Tx, sellerID uuid.U
 	if err := tx.Q.CatalogInsertPriceHistory(ctx, store.CatalogInsertPriceHistoryParams{ListingID: l.ID, PriceKobo: in.Price, CompareAtKobo: in.CompareAt, ChangedBy: actor}); err != nil {
 		return l, chk, err
 	}
-	decision := "auto_passed"
-	if chk.Status != "active" {
-		decision = "changes_requested"
-	}
-	if chk.Status == "in_review" || len(chk.Reasons) > 0 {
-		if err := tx.Q.CatalogInsertListingReview(ctx, store.CatalogInsertListingReviewParams{ListingID: l.ID, Decision: map[bool]string{true: "auto_passed", false: decision}[chk.Status == "active"], Reasons: chk.Reasons}); err != nil {
-			return l, chk, err
-		}
+	if err := recordCheck(ctx, tx.Q, l.ID, chk); err != nil {
+		return l, chk, err
 	}
 	tx.Emit("listing", l.ID, "listing.changed", map[string]any{"listingId": l.ID, "status": l.Status})
 	return l, chk, nil
+}
+
+// validateListing catches what the database would otherwise reject with a constraint error, so
+// the seller gets a clear message instead.
+func validateListing(in ListingInput) error {
+	if in.Condition != "new" && strings.TrimSpace(in.ConditionNotes) == "" {
+		return httpx.Invalid("condition_notes_required", "Describe the condition of a used, refurbished or open-box item.")
+	}
+	if in.FulfilledBy == "seller" && in.SellerStock == nil {
+		return httpx.Invalid("stock_required", "Enter how many you have in stock.")
+	}
+	return nil
+}
+
+// recordCheck keeps the automatic check's outcome where the seller and moderators see it: an
+// auto_flagged review (reasons) when it goes to review, auto_passed with any warnings otherwise.
+func recordCheck(ctx context.Context, q *store.Queries, listingID uuid.UUID, chk CheckResult) error {
+	if chk.Status == "active" && len(chk.Reasons) == 0 {
+		return nil
+	}
+	decision := "auto_passed"
+	if chk.Status == "in_review" {
+		decision = "auto_flagged"
+	}
+	return q.CatalogInsertListingReview(ctx, store.CatalogInsertListingReviewParams{ListingID: listingID, Decision: decision, Reasons: chk.Reasons})
 }
 
 // UpdatePrice changes a price; a compare-at ("was") price may not exceed the 30-day maximum.
@@ -226,10 +248,10 @@ type RefreshArgs struct {
 // Kind identifies the job.
 func (RefreshArgs) Kind() string { return "catalog.refresh_summary" }
 
-// InsertOpts deduplicates refreshes of the same product queued close together.
-func (RefreshArgs) InsertOpts() river.InsertOpts {
-	return river.InsertOpts{UniqueOpts: river.UniqueOpts{ByArgs: true, ByPeriod: 2 * time.Second}}
-}
+// No uniqueness on purpose: River's unique window also matched finished and running refreshes,
+// so a second change within 2 seconds (a price then a stock update, a review then its
+// publication) was dropped and the read model stayed stale until the nightly rebuild. A refresh
+// rebuilds one product's row from scratch, so running it once per change is correct and cheap.
 
 type refreshWorker struct {
 	river.WorkerDefaults[RefreshArgs]

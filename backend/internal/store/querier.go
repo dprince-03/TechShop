@@ -57,6 +57,9 @@ type Querier interface {
 	CatalogMaxPrice30d(ctx context.Context, listingID uuid.UUID) (int64, error)
 	// Median active price for a variant and condition (price-outlier check).
 	CatalogMedianPrice(ctx context.Context, arg CatalogMedianPriceParams) (int64, error)
+	// Median active price for a variant and condition, leaving one listing out (its own new price
+	// must not pull the median it is compared with).
+	CatalogMedianPriceOthers(ctx context.Context, arg CatalogMedianPriceOthersParams) (int64, error)
 	CatalogModerationQueue(ctx context.Context, limit int32) ([]CatalogModerationQueueRow, error)
 	CatalogProductIDForListing(ctx context.Context, id uuid.UUID) (uuid.UUID, error)
 	CatalogProductIDForVariant(ctx context.Context, id uuid.UUID) (uuid.UUID, error)
@@ -67,6 +70,8 @@ type Querier interface {
 	CatalogSellerListingCount(ctx context.Context, sellerID uuid.UUID) (int32, error)
 	// A shop's own listings for Seller Centre, newest first (keyset by created_at).
 	CatalogSellerListingsPage(ctx context.Context, arg CatalogSellerListingsPageParams) ([]CatalogSellerListingsPageRow, error)
+	// Enforcement: a seller's live listings go back to moderation (e.g. 3 SLA breaches in 30 days).
+	CatalogSendSellerListingsToReview(ctx context.Context, sellerID uuid.UUID) ([]uuid.UUID, error)
 	CatalogSetAttributeValue(ctx context.Context, arg CatalogSetAttributeValueParams) error
 	CatalogSetListingStatus(ctx context.Context, arg CatalogSetListingStatusParams) (CatalogListing, error)
 	CatalogSetListingStock(ctx context.Context, arg CatalogSetListingStockParams) (CatalogListing, error)
@@ -141,6 +146,7 @@ type Querier interface {
 	FulfilmentParcelsForFulfilment(ctx context.Context, fulfilmentID uuid.UUID) ([]FulfilmentParcel, error)
 	FulfilmentPickItems(ctx context.Context, pickListID uuid.UUID) ([]FulfilmentPickItemsRow, error)
 	FulfilmentPickListOpenItems(ctx context.Context, pickListID uuid.UUID) (int32, error)
+	FulfilmentSLABreaches30d(ctx context.Context, sellerID uuid.UUID) (int32, error)
 	// Conditional: never picks more than ordered.
 	FulfilmentScanItem(ctx context.Context, arg FulfilmentScanItemParams) (FulfilmentPickListItem, error)
 	FulfilmentSellerSLAStats(ctx context.Context, sellerID uuid.UUID) (FulfilmentSellerSLAStatsRow, error)
@@ -515,6 +521,34 @@ type Querier interface {
 	PlatformPing(ctx context.Context) (int32, error)
 	PlatformReleaseIdempotencyKey(ctx context.Context, arg PlatformReleaseIdempotencyKeyParams) error
 	PlatformSetFeatureFlag(ctx context.Context, arg PlatformSetFeatureFlagParams) (PlatformFeatureFlag, error)
+	// A delivered fulfilment of the caller's own order (the only thing a customer may rate).
+	RatingsDeliveredFulfilment(ctx context.Context, arg RatingsDeliveredFulfilmentParams) (RatingsDeliveredFulfilmentRow, error)
+	RatingsInsert(ctx context.Context, arg RatingsInsertParams) (CatalogSellerRating, error)
+	RatingsRecomputeSeller(ctx context.Context, id uuid.UUID) error
+	ReviewsByUserLast24h(ctx context.Context, userID uuid.UUID) (int32, error)
+	ReviewsDecideReports(ctx context.Context, arg ReviewsDecideReportsParams) error
+	// Product reviews, reports and seller ratings (M4 slice 4). Plan: trust-safety.md §6.
+	// The caller's delivered, not-cancelled order line for this product (a verified purchase).
+	ReviewsDeliveredLine(ctx context.Context, arg ReviewsDeliveredLineParams) (ReviewsDeliveredLineRow, error)
+	// Published reviews of items this seller shipped (the reviews it may answer).
+	ReviewsForSeller(ctx context.Context, arg ReviewsForSellerParams) ([]ReviewsForSellerRow, error)
+	ReviewsGet(ctx context.Context, id uuid.UUID) (CatalogProductReview, error)
+	ReviewsGetForUpdate(ctx context.Context, id uuid.UUID) (CatalogProductReview, error)
+	ReviewsInsert(ctx context.Context, arg ReviewsInsertParams) (CatalogProductReview, error)
+	ReviewsInsertImage(ctx context.Context, arg ReviewsInsertImageParams) error
+	ReviewsInsertReport(ctx context.Context, arg ReviewsInsertReportParams) (RiskReviewReport, error)
+	ReviewsPublished(ctx context.Context, arg ReviewsPublishedParams) ([]ReviewsPublishedRow, error)
+	// Staff moderation: held reviews, oldest first, and published ones with open reports.
+	ReviewsQueue(ctx context.Context, limit int32) ([]ReviewsQueueRow, error)
+	ReviewsReportedBy(ctx context.Context, arg ReviewsReportedByParams) (bool, error)
+	// Another account already posted this text (normalised): a sign of copied or bought reviews.
+	ReviewsSameTextByOthers(ctx context.Context, arg ReviewsSameTextByOthersParams) (bool, error)
+	// The seller that shipped the reviewed item (null for unverified reviews).
+	ReviewsSellerOf(ctx context.Context, id uuid.UUID) (uuid.UUID, error)
+	ReviewsSetSellerResponse(ctx context.Context, arg ReviewsSetSellerResponseParams) (int64, error)
+	ReviewsSetStatus(ctx context.Context, arg ReviewsSetStatusParams) (CatalogProductReview, error)
+	// Star counts and the weighted average (verified reviews count 1, unverified 0.5).
+	ReviewsSummary(ctx context.Context, productID uuid.UUID) (ReviewsSummaryRow, error)
 	// The exact device sold (IMEI/serial), bound when the unit is picked.
 	SalesBindDeviceUnit(ctx context.Context, arg SalesBindDeviceUnitParams) (SalesOrderLine, error)
 	SalesCancelLine(ctx context.Context, arg SalesCancelLineParams) (SalesOrderLine, error)
@@ -531,6 +565,11 @@ type Querier interface {
 	SalesCreateOrder(ctx context.Context, arg SalesCreateOrderParams) (SalesOrder, error)
 	SalesCustomerOrderByNumber(ctx context.Context, arg SalesCustomerOrderByNumberParams) (SalesOrder, error)
 	SalesDeleteCartItem(ctx context.Context, arg SalesDeleteCartItemParams) (int64, error)
+	// Development only (dev route): moves a seller fulfilment's deadline into the past so the SLA
+	// job can be tested without waiting a day.
+	SalesDevExpireDeadline(ctx context.Context, arg SalesDevExpireDeadlineParams) error
+	// The longest handling time among the fulfilment's listings: the seller's packing deadline.
+	SalesFulfilmentHandlingDays(ctx context.Context, fulfilmentID uuid.UUID) (int32, error)
 	SalesFulfilmentLines(ctx context.Context, fulfilmentID uuid.UUID) ([]SalesOrderLine, error)
 	SalesGetFulfilment(ctx context.Context, id uuid.UUID) (SalesFulfilment, error)
 	SalesGetFulfilmentForUpdate(ctx context.Context, id uuid.UUID) (SalesFulfilment, error)
@@ -539,6 +578,7 @@ type Querier interface {
 	SalesGetOrder(ctx context.Context, id uuid.UUID) (SalesOrder, error)
 	SalesGetOrderByNumber(ctx context.Context, orderNumber string) (SalesOrder, error)
 	SalesGetOrderForUpdate(ctx context.Context, id uuid.UUID) (SalesOrder, error)
+	SalesGetSellerFulfilment(ctx context.Context, arg SalesGetSellerFulfilmentParams) (SalesGetSellerFulfilmentRow, error)
 	// Sales: carts, orders, fulfilments, lines, status history (docs/orders-fulfilment.md §2).
 	SalesGetUserCart(ctx context.Context, userID *uuid.UUID) (SalesCart, error)
 	SalesInsertHistory(ctx context.Context, arg SalesInsertHistoryParams) error
@@ -553,7 +593,10 @@ type Querier interface {
 	SalesOrderLines(ctx context.Context, orderID uuid.UUID) ([]SalesOrderLine, error)
 	SalesPaidOrdersCount(ctx context.Context, customerUserID *uuid.UUID) (int32, error)
 	SalesPendingAcceptBreaches(ctx context.Context) ([]SalesPendingAcceptBreachesRow, error)
+	SalesPendingPackBreaches(ctx context.Context) ([]SalesPendingPackBreachesRow, error)
 	SalesSellerFulfilments(ctx context.Context, arg SalesSellerFulfilmentsParams) ([]SalesSellerFulfilmentsRow, error)
+	// ---- Seller-shipped fulfilment (M4 slice 3, orders-fulfilment.md §4 "Seller SLAs")
+	SalesSellerFulfilmentsPage(ctx context.Context, arg SalesSellerFulfilmentsPageParams) ([]SalesSellerFulfilmentsPageRow, error)
 	// Was this listing's discount seller-funded when the order was placed? (Seller-funded
 	// promotions always target the seller's own listings and never carry coupons.)
 	SalesSellerFundedAt(ctx context.Context, arg SalesSellerFundedAtParams) (bool, error)
@@ -564,6 +607,7 @@ type Querier interface {
 	SalesSetFulfilmentStatus(ctx context.Context, arg SalesSetFulfilmentStatusParams) (SalesFulfilment, error)
 	SalesSetFulfilmentWarehouse(ctx context.Context, arg SalesSetFulfilmentWarehouseParams) error
 	SalesSetOrderStatus(ctx context.Context, arg SalesSetOrderStatusParams) (SalesOrder, error)
+	SalesSetPackBy(ctx context.Context, arg SalesSetPackByParams) error
 	SalesStaffListOrders(ctx context.Context, arg SalesStaffListOrdersParams) ([]SalesStaffListOrdersRow, error)
 	// Best wholesale tier unit price for a quantity (null when no tier applies).
 	SalesTierPrice(ctx context.Context, arg SalesTierPriceParams) (int64, error)

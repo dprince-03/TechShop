@@ -18,6 +18,9 @@ var sellerAud = []string{auth.AudSeller}
 
 // Routes implements kit.Module.
 func (s *Service) Routes(r *kit.Routes) {
+	s.listingRoutes(r)
+	s.orderRoutes(r)
+	s.reviewRoutes(r)
 	g := r.Public
 	sel := func(o httpx.Op) httpx.Op { o.Tag = "Seller Centre"; o.Auth = sellerAud; return o }
 
@@ -113,7 +116,7 @@ func (s *Service) Routes(r *kit.Routes) {
 	httpx.Register(g, st(httpx.Op{ID: "staffReviewKyc", Method: http.MethodPost, Path: "/api/v1/staff/vendors/kyc/{id}/review", Perm: "vendors.kyc_review", Summary: "Approve, reject or ask for more information"}),
 		func(ctx context.Context, in *struct {
 			ID   uuid.UUID `path:"id"`
-			Body ReviewInput
+			Body KycDecision
 		}) (*struct{ Body Kyc }, error) {
 			k, err := s.ReviewKyc(ctx, in.ID, in.Body)
 			return &struct{ Body Kyc }{k}, err

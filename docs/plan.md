@@ -641,3 +641,36 @@ Owner: "add RLS in M4"; work until 07:00, slice by slice (code, test, fix).
 - Approval needs a verified bank account; reviewer may not be a member of the shop. The owner gets the existing `seller_kyc_result` email.
 - **RLS policy semantics:** rows are restricted only when `app.seller_id` is set (seller requests). Staff, customer and job requests are unaffected. This is defence in depth for seller endpoints, not a replacement for the API's checks.
 - Dev fake name enquiry: echoes the typed name; numbers starting 9 return a different holder; `0000000000` is not found.
+
+## 2026-10-21 — M4 slices 2–3 decisions (listings, seller orders)
+
+**Slice 2: seller listings**
+- The catalogue module keeps owning listing rules; Seller Centre (`sellers/listings.go`) scopes them to the shop.
+- Marketplace sellers ship their own stock for now (`fulfilled_by = seller`, stock required). TechShop-fulfilled vendor stock needs inbound receiving, which isn't built.
+- A live listing whose price is cut more than 40 % below the other sellers' median goes **back to review** (same scam signal as at creation; stops "approve then bait price").
+- RLS on `catalog.listings`: sellers write only their own; they can read their own plus all **active** listings (public anyway, and the price-outlier check needs them).
+- Bug fixed in existing code: automatic flags recorded a review with no reviewer, breaking a DB check. New decision value `auto_flagged` (migration 00026).
+
+**Slice 3: seller-shipped orders**
+- Accept within 24 h (existing `accept_by`); on accept, `pack_by` = now + the longest `handling_days` of the order's listings (doc: "pack within handling_days"; before it was a flat 48 h).
+- Seller cancel (pending or accepted) and SLA breaches cancel the whole fulfilment, release stock and raise **one refund request** (existing listener). Existing rule kept: system refund requests still need finance approval (dual control).
+- 3 late breaches (`late_accept`, `late_pack`, `late_handover`) in 30 days send the seller's live listings back to review (trust-safety.md §7, orders-fulfilment.md §4). Seller cancellations are recorded but not counted as late.
+- Sellers see the recipient's **first name and city only**.
+- RLS on `sales.fulfilments` restricts **writes** only: the order status is derived from all of an order's fulfilments, so reads stay open; seller queries filter by shop.
+- New-order message to the shop owner on payment (existing `seller_new_order` template, push + email).
+
+**Open question for the owner (blocks hand-over, delivery and seller payouts for seller-shipped orders):**
+1. How do packed seller orders reach the customer at launch: (a) a TechShop rider picks up from the seller, (b) the seller drops off at a TechShop hub, or (c) the seller's own courier with a tracking number? (a) needs a seller pickup address, which no table holds today.
+2. For (c), who confirms delivery: carrier tracking, the customer's delivery code, or staff? Delivery is what makes the seller's money payable, so a seller must not be able to confirm it alone.
+3. When should a seller see the full delivery address and phone? Today: never (first name and city only).
+
+## 2026-10-21 — M4 slice 4 decisions (reviews and seller ratings)
+
+From trust-safety.md §6 unless noted:
+- New module `internal/modules/reviews`. One review per user per product (existing unique index). Verified = tied to the reviewer's own **delivered**, not-cancelled order line for that product.
+- **Unverified reviews count half** in the rating (doc: "weighted lower"; 0.5 chosen) — the product page summary and the search read model use the same weighting.
+- **Held for moderation** (status `pending`) when: 5+ reviews from the account in 24 h; the same text (normalised, 20+ characters) posted by another account; incentivised-review phrases; phone numbers, emails or links. Reasons are stored for moderators and never shown to the reviewer. Other reviews publish immediately.
+- Moderation (`catalog.moderate`): publish / hide / reject; hiding or rejecting upholds open reports, publishing dismisses them. Nobody moderates their own review.
+- Reports: any signed-in customer or seller, once per review while open, not your own.
+- Sellers answer a review once, only for items **they shipped** (owner or manager); they can't remove reviews. New columns `seller_response`, `seller_response_at`, `moderation_reasons` (migration 00028).
+- Seller ratings: once per **delivered** fulfilment of your own order; the shop's `rating_avg`/`rating_count` are recomputed on each rating.

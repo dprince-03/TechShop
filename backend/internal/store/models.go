@@ -495,17 +495,20 @@ type CatalogProductOfferSummary struct {
 
 // [catalog] Product reviews. Verified purchase when tied to the order line bought; unverified ones are shown separately and weigh less.
 type CatalogProductReview struct {
-	ID          uuid.UUID  `json:"id"`
-	ProductID   uuid.UUID  `json:"productId"`
-	OrderLineID *uuid.UUID `json:"orderLineId"`
-	UserID      uuid.UUID  `json:"userId"`
-	Rating      int16      `json:"rating"`
-	Title       *string    `json:"title"`
-	Body        *string    `json:"body"`
-	IsVerified  *bool      `json:"isVerified"`
-	Status      string     `json:"status"`
-	CreatedAt   time.Time  `json:"createdAt"`
-	UpdatedAt   time.Time  `json:"updatedAt"`
+	ID                uuid.UUID  `json:"id"`
+	ProductID         uuid.UUID  `json:"productId"`
+	OrderLineID       *uuid.UUID `json:"orderLineId"`
+	UserID            uuid.UUID  `json:"userId"`
+	Rating            int16      `json:"rating"`
+	Title             *string    `json:"title"`
+	Body              *string    `json:"body"`
+	IsVerified        *bool      `json:"isVerified"`
+	Status            string     `json:"status"`
+	CreatedAt         time.Time  `json:"createdAt"`
+	UpdatedAt         time.Time  `json:"updatedAt"`
+	SellerResponse    *string    `json:"sellerResponse"`
+	SellerResponseAt  *time.Time `json:"sellerResponseAt"`
+	ModerationReasons []string   `json:"moderationReasons"`
 }
 
 // [catalog] Seller-proposed new products or edits, waiting for the catalogue team.

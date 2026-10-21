@@ -75,6 +75,7 @@ func (s *Service) Detail(ctx context.Context, o store.SalesOrder, withRefunds bo
 
 // Routes implements kit.Module.
 func (s *Service) Routes(r *kit.Routes) {
+	s.devSLARoutes(r)
 	g := r.Public
 	cartOp := func(o httpx.Op) httpx.Op { o.Tag = "Cart & checkout"; o.Auth = buyers; o.Optional = true; return o }
 	buyOp := func(o httpx.Op) httpx.Op { o.Tag = "Cart & checkout"; o.Auth = buyers; return o }

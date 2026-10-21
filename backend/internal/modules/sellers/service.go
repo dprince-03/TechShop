@@ -18,8 +18,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
+	"github.com/dprince-03/techshop/backend/internal/modules/catalog"
 	"github.com/dprince-03/techshop/backend/internal/modules/notify"
 	"github.com/dprince-03/techshop/backend/internal/modules/payments"
+	"github.com/dprince-03/techshop/backend/internal/modules/reviews"
+	"github.com/dprince-03/techshop/backend/internal/modules/sales"
 	"github.com/dprince-03/techshop/backend/internal/platform/httpx"
 	"github.com/dprince-03/techshop/backend/internal/platform/jobs"
 	"github.com/dprince-03/techshop/backend/internal/platform/kit"
@@ -49,14 +52,17 @@ type Banks interface {
 
 // Service is the sellers module.
 type Service struct {
-	d      *kit.Deps
-	banks  Banks
-	notify *notify.Service
+	d       *kit.Deps
+	banks   Banks
+	notify  *notify.Service
+	catalog *catalog.Service
+	sales   *sales.Service
+	reviews *reviews.Service
 }
 
 // New creates the module.
-func New(d *kit.Deps, banks Banks, n *notify.Service) *Service {
-	return &Service{d: d, banks: banks, notify: n}
+func New(d *kit.Deps, banks Banks, n *notify.Service, cat *catalog.Service, sl *sales.Service, rv *reviews.Service) *Service {
+	return &Service{d: d, banks: banks, notify: n, catalog: cat, sales: sl, reviews: rv}
 }
 
 // Name implements kit.Module.
@@ -491,15 +497,15 @@ func (s *Service) Vendor(ctx context.Context, shopID uuid.UUID) (Vendor, error) 
 	return out, nil
 }
 
-// ReviewInput is a reviewer's decision.
-type ReviewInput struct {
+// KycDecision is a KYC reviewer's decision.
+type KycDecision struct {
 	Decision string `json:"decision" enum:"approved,rejected,needs_more_info"`
 	Note     string `json:"note,omitempty" maxLength:"500" doc:"Required unless approving; the seller sees it"`
 }
 
 // ReviewKyc records a decision. The reviewer can't be a member of the shop (separation of
 // duties); approval needs a verified bank account and activates the shop.
-func (s *Service) ReviewKyc(ctx context.Context, submissionID uuid.UUID, in ReviewInput) (Kyc, error) {
+func (s *Service) ReviewKyc(ctx context.Context, submissionID uuid.UUID, in KycDecision) (Kyc, error) {
 	reviewer := httpx.MustPrincipal(ctx).UserID
 	note := optional(in.Note)
 	if in.Decision != "approved" && note == nil {

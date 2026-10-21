@@ -1397,6 +1397,26 @@ func (q *Queries) CatalogMedianPrice(ctx context.Context, arg CatalogMedianPrice
 	return column_1, err
 }
 
+const catalogMedianPriceOthers = `-- name: CatalogMedianPriceOthers :one
+select coalesce(percentile_cont(0.5) within group (order by price_kobo), 0)::bigint
+from catalog.listings where variant_id = $1 and condition = $2 and status = 'active' and id <> $3
+`
+
+type CatalogMedianPriceOthersParams struct {
+	VariantID uuid.UUID `json:"variantId"`
+	Condition string    `json:"condition"`
+	ID        uuid.UUID `json:"id"`
+}
+
+// Median active price for a variant and condition, leaving one listing out (its own new price
+// must not pull the median it is compared with).
+func (q *Queries) CatalogMedianPriceOthers(ctx context.Context, arg CatalogMedianPriceOthersParams) (int64, error) {
+	row := q.db.QueryRow(ctx, catalogMedianPriceOthers, arg.VariantID, arg.Condition, arg.ID)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const catalogModerationQueue = `-- name: CatalogModerationQueue :many
 select l.id, l.seller_id, l.variant_id, l.condition, l.grade, l.price_kobo, l.compare_at_kobo, l.currency, l.fulfilled_by, l.seller_stock, l.min_order_quantity, l.handling_days, l.warranty_provider, l.warranty_months, l.condition_notes, l.battery_health_pct, l.status, l.risk_score, l.published_at, l.created_at, l.updated_at, v.name as variant_name, p.name as product_name, p.slug as product_slug, s.display_name as seller_name,
        (select r.reasons from catalog.listing_reviews r where r.listing_id = l.id order by r.created_at desc limit 1)::text[] as reasons
@@ -1538,7 +1558,9 @@ with recursive up as (
   from catalog.product_attribute_values v join catalog.attribute_definitions d on d.id = v.attribute_id
   where v.product_id = $2
 ), ratings as (
-  select avg(rating)::numeric(3, 2) as avg, count(*)::int as cnt from catalog.product_reviews where product_id = $2 and status = 'published'
+  -- Verified purchases count fully, unverified reviews half (trust-safety.md §6).
+  select (sum(rating * case when is_verified then 1.0 else 0.5 end) / nullif(sum(case when is_verified then 1.0 else 0.5 end), 0))::numeric(3, 2) as avg,
+         count(*)::int as cnt from catalog.product_reviews where product_id = $2 and status = 'published'
 ), sales as (
   select coalesce(sum(ol.quantity), 0)::int as qty from sales.order_lines ol
   join sales.orders o on o.id = ol.order_id
@@ -1693,6 +1715,33 @@ func (q *Queries) CatalogSellerListingsPage(ctx context.Context, arg CatalogSell
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const catalogSendSellerListingsToReview = `-- name: CatalogSendSellerListingsToReview :many
+update catalog.listings set status = 'in_review', risk_score = greatest(coalesce(risk_score, 0), 70)
+where seller_id = $1 and status = 'active'
+returning id
+`
+
+// Enforcement: a seller's live listings go back to moderation (e.g. 3 SLA breaches in 30 days).
+func (q *Queries) CatalogSendSellerListingsToReview(ctx context.Context, sellerID uuid.UUID) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, catalogSendSellerListingsToReview, sellerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []uuid.UUID{}
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
