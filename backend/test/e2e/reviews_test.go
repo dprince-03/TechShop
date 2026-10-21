@@ -5,14 +5,21 @@ package e2e
 import (
 	"math"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
 
-// deliveredByCarrier buys a TechShop item for a Kano address (outside rider zones, so it ships
+var warehouseMu sync.Mutex
+
+// deliveredByCarrier buys a TechShop item (serialFor: SKU → IMEI for serialised items) for a Kano address (outside rider zones, so it ships
 // by carrier) and drives it to delivered. Returns the order number, fulfilment and line IDs.
-func deliveredByCarrier(t *testing.T, cust, listing string) (number, fulfilmentID, lineID string) {
+func deliveredByCarrier(t *testing.T, cust, listing string, serialFor map[string]string) (number, fulfilmentID, lineID string) {
 	t.Helper()
+	// A pick wave takes every paid line waiting in the warehouse, so two parallel tests could
+	// sweep up each other's orders. Picking tests take turns from purchase to packing.
+	warehouseMu.Lock()
+	defer warehouseMu.Unlock()
 	a := post(t, "/api/v1/me/addresses", cust, map[string]any{"recipientName": "Halima Bello", "phone": "08031234570", "line1": "5 Murtala Mohammed Way", "city": "Kano", "stateCode": "KN"})
 	expect(t, a, 201, "Kano address")
 	clearCart(t, cust)
@@ -24,7 +31,7 @@ func deliveredByCarrier(t *testing.T, cust, listing string) (number, fulfilmentI
 	number = o.str("orderNumber")
 	fakePay(t, "paystack", o.str("payment", "reference"), "success")
 	waitOrderStatus(t, cust, number, "paid")
-	p := pickAndPack(t, number, nil)
+	p := pickAndPack(t, number, serialFor)
 	tracking, label := p.str("shipment", "trackingNumber"), p.str("parcel", "labelCode")
 	wh := staffLogin(t, "warehouse_lead")
 	carrierID := ""
@@ -49,7 +56,7 @@ func TestReviewsRatingsAndModeration(t *testing.T) {
 	t.Parallel()
 	slug := "lumen-smart-bulb-4-pack"
 	ada := newCustomer(t, "Adaora")
-	_, fulfilment, line := deliveredByCarrier(t, ada, seed.Extra["listing_p21"])
+	_, fulfilment, line := deliveredByCarrier(t, ada, seed.Extra["listing_p21"], nil)
 
 	// A verified review publishes straight away; one review per product.
 	// Reviewed from the order page (by order line): the product comes from the line.

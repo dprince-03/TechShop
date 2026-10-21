@@ -3050,6 +3050,39 @@ components:
         - unread
         - page
       type: object
+    InspectInput:
+      additionalProperties: false
+      properties:
+        disposition:
+          enum:
+            - restock_new
+            - restock_open_box
+            - repair
+            - return_to_supplier
+            - write_off
+          type: string
+        grade:
+          enum:
+            - A
+            - B
+            - C
+            - faulty
+          type: string
+        notes:
+          maxLength: 500
+          type: string
+        scannedSerial:
+          description: IMEI or serial on the item (required for serialised devices)
+          maxLength: 40
+          type: string
+        warehouseId:
+          description: Where restocked items go
+          type: string
+      required:
+        - warehouseId
+        - grade
+        - disposition
+      type: object
     InventoryDeviceUnit:
       additionalProperties: false
       properties:
@@ -4066,6 +4099,21 @@ components:
         items:
           items:
             $ref: "#/components/schemas/PublicReview"
+          type:
+            - array
+            - "null"
+        page:
+          $ref: "#/components/schemas/Page"
+      required:
+        - items
+        - page
+      type: object
+    ListReturnRow:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/ReturnRow"
           type:
             - array
             - "null"
@@ -7347,6 +7395,177 @@ components:
       required:
         - provider
       type: object
+    Return:
+      additionalProperties: false
+      properties:
+        autoApproved:
+          type: boolean
+        createdAt:
+          format: date-time
+          type: string
+        details:
+          type:
+            - string
+            - "null"
+        items:
+          items:
+            $ref: "#/components/schemas/ReturnItem"
+          type:
+            - array
+            - "null"
+        method:
+          type:
+            - string
+            - "null"
+        orderNumber:
+          type: string
+        reason:
+          type: string
+        refund:
+          description: Kobo, total for the items
+          format: int64
+          type: integer
+        rejectionReason:
+          type:
+            - string
+            - "null"
+        rma:
+          type: string
+        status:
+          enum:
+            - requested
+            - approved
+            - rejected
+            - awaiting_pickup
+            - received
+            - inspected
+            - refunded
+            - replaced
+            - closed
+          type: string
+      required:
+        - rma
+        - orderNumber
+        - reason
+        - details
+        - method
+        - status
+        - autoApproved
+        - rejectionReason
+        - items
+        - refund
+        - createdAt
+      type: object
+    ReturnInput:
+      additionalProperties: false
+      properties:
+        details:
+          maxLength: 1000
+          type: string
+        items:
+          items:
+            $ref: "#/components/schemas/ReturnItemInput"
+          maxItems: 20
+          minItems: 1
+          type:
+            - array
+            - "null"
+        method:
+          description: How the item comes back
+          enum:
+            - pickup
+            - store_dropoff
+          type: string
+        reason:
+          enum:
+            - faulty
+            - damaged
+            - not_as_described
+            - wrong_item
+            - change_of_mind
+          type: string
+      required:
+        - items
+        - reason
+        - method
+      type: object
+    ReturnItem:
+      additionalProperties: false
+      properties:
+        disposition:
+          type:
+            - string
+            - "null"
+        grade:
+          type:
+            - string
+            - "null"
+        id:
+          type: string
+        orderLineId:
+          type: string
+        productName:
+          type: string
+        quantity:
+          format: int32
+          type: integer
+        refund:
+          description: "Kobo: the price paid for these units"
+          format: int64
+          type: integer
+        serialised:
+          description: The inspector must scan the IMEI or serial
+          type: boolean
+        variantName:
+          type: string
+      required:
+        - id
+        - orderLineId
+        - productName
+        - variantName
+        - quantity
+        - refund
+        - serialised
+        - grade
+        - disposition
+      type: object
+    ReturnItemInput:
+      additionalProperties: false
+      properties:
+        orderLineId:
+          type: string
+        quantity:
+          format: int32
+          minimum: 1
+          type: integer
+      required:
+        - orderLineId
+        - quantity
+      type: object
+    ReturnRow:
+      additionalProperties: false
+      properties:
+        autoApproved:
+          type: boolean
+        createdAt:
+          format: date-time
+          type: string
+        orderNumber:
+          type: string
+        reason:
+          type: string
+        rma:
+          type: string
+        status:
+          type: string
+      required:
+        - rma
+        - orderNumber
+        - reason
+        - status
+        - autoApproved
+        - createdAt
+      type: object
     ReviewInput:
       additionalProperties: false
       properties:
@@ -8699,6 +8918,21 @@ components:
         - address
         - city
         - stateCode
+      type: object
+    StaffDecideReturnRequest:
+      additionalProperties: false
+      properties:
+        decision:
+          enum:
+            - approve
+            - reject
+          type: string
+        reason:
+          description: Required to reject; the customer sees it
+          maxLength: 500
+          type: string
+      required:
+        - decision
       type: object
     StaffDecideReviewRequest:
       additionalProperties: false
@@ -12022,6 +12256,39 @@ paths:
       summary: Pay again for an unpaid order (e.g. another method)
       tags:
         - Payments
+  /api/v1/me/orders/{number}/returns:
+    post:
+      operationId: requestReturn
+      parameters:
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReturnInput"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Return"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Return items from a delivered order (7 days, faulty / damaged / wrong / not as described)
+      tags:
+        - Returns
   /api/v1/me/password:
     post:
       operationId: changePassword
@@ -12196,6 +12463,58 @@ paths:
       summary: My refunds
       tags:
         - Payments
+  /api/v1/me/returns:
+    get:
+      operationId: myReturns
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/ReturnRow"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Your returns, newest first
+      tags:
+        - Returns
+  /api/v1/me/returns/{rma}:
+    get:
+      operationId: myReturn
+      parameters:
+        - in: path
+          name: rma
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Return"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: One of your returns
+      tags:
+        - Returns
   /api/v1/me/saved:
     get:
       operationId: listSaved
@@ -16319,6 +16638,213 @@ paths:
       summary: Cancel one line (e.g. seller out of stock)
       tags:
         - Staff · Orders
+  /api/v1/staff/returns:
+    get:
+      description: Requires permission `returns.manage`.
+      operationId: staffListReturns
+      parameters:
+        - explode: false
+          in: query
+          name: status
+          schema:
+            enum:
+              - requested
+              - approved
+              - rejected
+              - awaiting_pickup
+              - received
+              - inspected
+              - refunded
+              - replaced
+              - closed
+              - ""
+            type: string
+        - explode: false
+          in: query
+          name: cursor
+          schema:
+            type: string
+        - explode: false
+          in: query
+          name: limit
+          schema:
+            format: int64
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListReturnRow"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Returns, newest first
+      tags:
+        - Staff · Returns
+  /api/v1/staff/returns/{rma}:
+    get:
+      description: Requires permission `returns.manage`.
+      operationId: staffGetReturn
+      parameters:
+        - in: path
+          name: rma
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Return"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: A return with its items and inspections
+      tags:
+        - Staff · Returns
+  /api/v1/staff/returns/{rma}/decision:
+    post:
+      description: Requires permission `returns.manage`.
+      operationId: staffDecideReturn
+      parameters:
+        - in: path
+          name: rma
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffDecideReturnRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Return"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Approve or reject a return waiting for support
+      tags:
+        - Staff · Returns
+  /api/v1/staff/returns/{rma}/items/{itemId}/inspection:
+    post:
+      description: Requires permission `returns.manage`.
+      operationId: staffInspectReturnItem
+      parameters:
+        - in: path
+          name: rma
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: itemId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InspectInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Return"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Grade an item and decide where it goes (IMEI must match the unit sold)
+      tags:
+        - Staff · Returns
+  /api/v1/staff/returns/{rma}/receive:
+    post:
+      description: Requires permission `returns.manage`.
+      operationId: staffReceiveReturn
+      parameters:
+        - in: path
+          name: rma
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Return"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: The item arrived (warehouse or store)
+      tags:
+        - Staff · Returns
+  /api/v1/staff/returns/{rma}/refund:
+    post:
+      description: Requires permission `returns.manage`.
+      operationId: staffRefundReturn
+      parameters:
+        - in: path
+          name: rma
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Return"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Raise the refund for an inspected return (finance approves it)
+      tags:
+        - Staff · Returns
   /api/v1/staff/reviews/queue:
     get:
       description: Requires permission `catalog.moderate`.

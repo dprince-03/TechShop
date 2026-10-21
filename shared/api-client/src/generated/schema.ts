@@ -1165,6 +1165,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/me/orders/{number}/returns": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Return items from a delivered order (7 days, faulty / damaged / wrong / not as described) */
+    post: operations["requestReturn"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/me/password": {
     parameters: {
       query?: never;
@@ -1276,6 +1293,40 @@ export interface paths {
     };
     /** My refunds */
     get: operations["listMyRefunds"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/returns": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Your returns, newest first */
+    get: operations["myReturns"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/returns/{rma}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** One of your returns */
+    get: operations["myReturn"];
     put?: never;
     post?: never;
     delete?: never;
@@ -3561,6 +3612,126 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/staff/returns": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Returns, newest first
+     * @description Requires permission `returns.manage`.
+     */
+    get: operations["staffListReturns"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/returns/{rma}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * A return with its items and inspections
+     * @description Requires permission `returns.manage`.
+     */
+    get: operations["staffGetReturn"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/returns/{rma}/decision": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Approve or reject a return waiting for support
+     * @description Requires permission `returns.manage`.
+     */
+    post: operations["staffDecideReturn"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/returns/{rma}/items/{itemId}/inspection": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Grade an item and decide where it goes (IMEI must match the unit sold)
+     * @description Requires permission `returns.manage`.
+     */
+    post: operations["staffInspectReturnItem"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/returns/{rma}/receive": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * The item arrived (warehouse or store)
+     * @description Requires permission `returns.manage`.
+     */
+    post: operations["staffReceiveReturn"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/returns/{rma}/refund": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Raise the refund for an inspected return (finance approves it)
+     * @description Requires permission `returns.manage`.
+     */
+    post: operations["staffRefundReturn"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/staff/reviews/queue": {
     parameters: {
       query?: never;
@@ -5299,6 +5470,22 @@ export interface components {
       /** Format: int32 */
       unread: number;
     };
+    InspectInput: {
+      /** @enum {string} */
+      disposition:
+        | "restock_new"
+        | "restock_open_box"
+        | "repair"
+        | "return_to_supplier"
+        | "write_off";
+      /** @enum {string} */
+      grade: "A" | "B" | "C" | "faulty";
+      notes?: string;
+      /** @description IMEI or serial on the item (required for serialised devices) */
+      scannedSerial?: string;
+      /** @description Where restocked items go */
+      warehouseId: string;
+    };
     InventoryDeviceUnit: {
       acquiredVia: string;
       condition: string;
@@ -5667,6 +5854,10 @@ export interface components {
     };
     ListPublicReview: {
       items: components["schemas"]["PublicReview"][] | null;
+      page: components["schemas"]["Page"];
+    };
+    ListReturnRow: {
+      items: components["schemas"]["ReturnRow"][] | null;
       page: components["schemas"]["Page"];
     };
     ListSalesOrder: {
@@ -6944,6 +7135,81 @@ export interface components {
       /** @enum {string} */
       provider: "paystack" | "opay" | "moniepoint";
     };
+    Return: {
+      autoApproved: boolean;
+      /** Format: date-time */
+      createdAt: string;
+      details: string | null;
+      items: components["schemas"]["ReturnItem"][] | null;
+      method: string | null;
+      orderNumber: string;
+      reason: string;
+      /**
+       * Format: int64
+       * @description Kobo, total for the items
+       */
+      refund: number;
+      rejectionReason: string | null;
+      rma: string;
+      /** @enum {string} */
+      status:
+        | "requested"
+        | "approved"
+        | "rejected"
+        | "awaiting_pickup"
+        | "received"
+        | "inspected"
+        | "refunded"
+        | "replaced"
+        | "closed";
+    };
+    ReturnInput: {
+      details?: string;
+      items: components["schemas"]["ReturnItemInput"][] | null;
+      /**
+       * @description How the item comes back
+       * @enum {string}
+       */
+      method: "pickup" | "store_dropoff";
+      /** @enum {string} */
+      reason:
+        | "faulty"
+        | "damaged"
+        | "not_as_described"
+        | "wrong_item"
+        | "change_of_mind";
+    };
+    ReturnItem: {
+      disposition: string | null;
+      grade: string | null;
+      id: string;
+      orderLineId: string;
+      productName: string;
+      /** Format: int32 */
+      quantity: number;
+      /**
+       * Format: int64
+       * @description Kobo: the price paid for these units
+       */
+      refund: number;
+      /** @description The inspector must scan the IMEI or serial */
+      serialised: boolean;
+      variantName: string;
+    };
+    ReturnItemInput: {
+      orderLineId: string;
+      /** Format: int32 */
+      quantity: number;
+    };
+    ReturnRow: {
+      autoApproved: boolean;
+      /** Format: date-time */
+      createdAt: string;
+      orderNumber: string;
+      reason: string;
+      rma: string;
+      status: string;
+    };
     ReviewInput: {
       body?: string;
       /** @description Files uploaded with purpose review_image */
@@ -7457,6 +7723,12 @@ export interface components {
       longitude?: number;
       name: string;
       stateCode: string;
+    };
+    StaffDecideReturnRequest: {
+      /** @enum {string} */
+      decision: "approve" | "reject";
+      /** @description Required to reject; the customer sees it */
+      reason?: string;
     };
     StaffDecideReviewRequest: {
       /** @enum {string} */
@@ -10271,6 +10543,41 @@ export interface operations {
       };
     };
   };
+  requestReturn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReturnInput"];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Return"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   changePassword: {
     parameters: {
       query?: never;
@@ -10470,6 +10777,66 @@ export interface operations {
         content: {
           "application/json":
             components["schemas"]["PaymentsCustomerRefundsRow"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  myReturns: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReturnRow"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  myReturn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        rma: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Return"];
         };
       };
       /** @description Error */
@@ -14762,6 +15129,213 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["OrderDetail"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffListReturns: {
+    parameters: {
+      query?: {
+        status?:
+          | "requested"
+          | "approved"
+          | "rejected"
+          | "awaiting_pickup"
+          | "received"
+          | "inspected"
+          | "refunded"
+          | "replaced"
+          | "closed"
+          | "";
+        cursor?: string;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ListReturnRow"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffGetReturn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        rma: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Return"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffDecideReturn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        rma: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StaffDecideReturnRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Return"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffInspectReturnItem: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        rma: string;
+        itemId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["InspectInput"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Return"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffReceiveReturn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        rma: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Return"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffRefundReturn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        rma: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Return"];
         };
       };
       /** @description Error */

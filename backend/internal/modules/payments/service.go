@@ -502,6 +502,16 @@ func (s *Service) Sweep(ctx context.Context) error {
 
 // RequestRefund opens a refund for an order. requestedBy nil = an automatic (system) request.
 func (s *Service) RequestRefund(ctx context.Context, tx *uow.Tx, orderID uuid.UUID, amount int64, reason, method string, requestedBy *uuid.UUID) (store.PaymentsRefund, error) {
+	return s.requestRefund(ctx, tx, orderID, nil, amount, reason, method, requestedBy)
+}
+
+// RequestReturnRefund raises the refund for an inspected return (linked to it, so finance sees
+// why). It goes through the same approval as every other refund.
+func (s *Service) RequestReturnRefund(ctx context.Context, tx *uow.Tx, orderID, returnID uuid.UUID, amount int64, reason string, requestedBy *uuid.UUID) (store.PaymentsRefund, error) {
+	return s.requestRefund(ctx, tx, orderID, &returnID, amount, reason, "original", requestedBy)
+}
+
+func (s *Service) requestRefund(ctx context.Context, tx *uow.Tx, orderID uuid.UUID, returnID *uuid.UUID, amount int64, reason, method string, requestedBy *uuid.UUID) (store.PaymentsRefund, error) {
 	pay, err := tx.Q.PaymentsSucceededForOrder(ctx, &orderID)
 	if err != nil {
 		return store.PaymentsRefund{}, httpx.Conflict("not_paid", "This order has no captured payment to refund.")
@@ -513,7 +523,7 @@ func (s *Service) RequestRefund(ctx context.Context, tx *uow.Tx, orderID uuid.UU
 	if amount <= 0 || amount > pay.AmountKobo-already {
 		return store.PaymentsRefund{}, httpx.Invalid("refund_too_large", "The refund can be at most "+money.Format(pay.AmountKobo-already)+" (captured minus already refunded).")
 	}
-	r, err := tx.Q.PaymentsCreateRefund(ctx, store.PaymentsCreateRefundParams{PaymentID: pay.ID, OrderID: orderID, AmountKobo: amount, Method: method, Reason: reason, RequestedBy: requestedBy})
+	r, err := tx.Q.PaymentsCreateRefund(ctx, store.PaymentsCreateRefundParams{PaymentID: pay.ID, OrderID: orderID, ReturnRequestID: returnID, AmountKobo: amount, Method: method, Reason: reason, RequestedBy: requestedBy})
 	if err != nil {
 		return r, httpx.DB(err, "refund")
 	}

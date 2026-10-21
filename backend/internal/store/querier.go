@@ -13,6 +13,24 @@ import (
 )
 
 type Querier interface {
+	AftersalesAddItem(ctx context.Context, arg AftersalesAddItemParams) error
+	AftersalesCreateReturn(ctx context.Context, arg AftersalesCreateReturnParams) (AftersalesReturnRequest, error)
+	AftersalesDecide(ctx context.Context, arg AftersalesDecideParams) (AftersalesReturnRequest, error)
+	AftersalesGetReturn(ctx context.Context, rmaNumber string) (AftersalesGetReturnRow, error)
+	AftersalesGetReturnForUpdate(ctx context.Context, rmaNumber string) (AftersalesReturnRequest, error)
+	AftersalesInsertInspection(ctx context.Context, arg AftersalesInsertInspectionParams) (AftersalesReturnInspection, error)
+	AftersalesItems(ctx context.Context, returnRequestID uuid.UUID) ([]AftersalesItemsRow, error)
+	AftersalesOpenRiskCase(ctx context.Context, arg AftersalesOpenRiskCaseParams) (uuid.UUID, error)
+	// After-sales: returns (RMA). Plan: orders-fulfilment.md §7.
+	// The order's lines with what a return needs: delivery state, who shipped it, the unit sold and
+	// how many are already in an open (not rejected) return.
+	AftersalesReturnableLines(ctx context.Context, orderID uuid.UUID) ([]AftersalesReturnableLinesRow, error)
+	AftersalesReturnsForUser(ctx context.Context, requestedBy uuid.UUID) ([]AftersalesReturnsForUserRow, error)
+	AftersalesSetStatus(ctx context.Context, arg AftersalesSetStatusParams) (AftersalesReturnRequest, error)
+	AftersalesSetUnitCondition(ctx context.Context, arg AftersalesSetUnitConditionParams) error
+	AftersalesStaffList(ctx context.Context, arg AftersalesStaffListParams) ([]AftersalesStaffListRow, error)
+	// Returns vs delivered orders in the last 90 days, and open risk cases: "good standing" for auto-approval.
+	AftersalesStanding(ctx context.Context, userID uuid.UUID) (AftersalesStandingRow, error)
 	CatalogAddCompatibility(ctx context.Context, arg CatalogAddCompatibilityParams) error
 	CatalogAddImage(ctx context.Context, arg CatalogAddImageParams) (CatalogProductImage, error)
 	CatalogAddStockAlert(ctx context.Context, arg CatalogAddStockAlertParams) error

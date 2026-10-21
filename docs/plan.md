@@ -674,3 +674,16 @@ From trust-safety.md §6 unless noted:
 - Reports: any signed-in customer or seller, once per review while open, not your own.
 - Sellers answer a review once, only for items **they shipped** (owner or manager); they can't remove reviews. New columns `seller_response`, `seller_response_at`, `moderation_reasons` (migration 00028).
 - Seller ratings: once per **delivered** fulfilment of your own order; the shop's `rating_avg`/`rating_count` are recomputed on each rating.
+
+## 2026-10-21 — M5 (after-sales) started: slice 1 returns — decisions
+
+Owner asked for the next milestone after M4. M5 slices: 1 returns (RMA) → 2 warranty claims and repairs → 3 support tickets and contact → 4 trade-ins → 5 risk rules and cases; then web/app screens.
+
+**Slice 1 decisions** (orders-fulfilment.md §7 unless noted):
+- New module `internal/modules/aftersales`.
+- Returns for **faulty, damaged, wrong item, not as described within 7 days of delivery**. **Change-of-mind returns are refused for now**: the plan says the owner decides that policy (eligible categories, restocking fee).
+- **Auto-approval** for those reasons when the customer is in good standing, read as: no open risk case, and returns ≤ 30 % of delivered orders in 90 days counting this one (trust-safety.md §3's return rule). A first return is always in good standing. Otherwise support (`returns.manage`) approves or rejects with a reason the customer sees.
+- Only items **TechShop shipped**; seller-shipped items wait for the hand-over decision (customers are told to contact support).
+- Methods: `store_dropoff` or `pickup` (status `awaiting_pickup`). **Not built:** creating the rider return-pickup job; staff mark the item received when it arrives.
+- Inspection per item: grade A/B/C/faulty and disposition. Serialised devices must be scanned: **a mismatched IMEI or serial rejects the whole return and opens a risk case (`kind = return`) — both committed**, the inspector gets 409 `serial_mismatch`. `restock_new` / `restock_open_box` put the unit back in stock (movement reason `return`; device unit back `in_stock` with the new condition).
+- **Refund** = the price paid for the returned units (line total share, so discounts are respected); faulty returns have no restocking fee; the delivery fee is not refunded (not stated in the plan; flag for the owner). It's a refund request linked to the return, approved by finance as usual.

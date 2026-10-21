@@ -570,3 +570,10 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
 - **Run 1** (fresh stack): backend e2e ok (23 tests); api-client contract 46/46; market 15/16 (**1 failure**, test name not captured); staff 16/16; seller 2/2. Market re-run on the same stack: 16/16.
 - **Run 2** (fresh stack, same order, full market log kept): backend e2e ok; contract 46/46; market 16/16.
 - **Open:** one intermittent market e2e failure, cause unknown (not reproduced in two further runs). If it comes back, the full log in the run will name it.
+
+## 2026-10-21 — M5 slice 1: returns (RMA)
+
+- New module `internal/modules/aftersales` (`service.go`, `routes.go`, `dto.go`, `rules.go` + tests), `db/queries/aftersales.sql`. 9 endpoints: customer `POST /me/orders/{number}/returns`, `GET /me/returns`, `GET /me/returns/{rma}`; staff (`returns.manage`) list, detail, decision, receive, inspect an item, raise the refund. Payments gained `RequestReturnRefund` (refund linked to the return, same dual control).
+- **Tests:** unit (7-day window, good standing, refund share, serial match, restock condition); e2e `TestReturnInspectRestockRefund` (change-of-mind refused, quantity limits, auto-approval, only your own return, no re-decision, refund only after inspection, receive → inspect → open-box stock +1, no double inspection, refund request reaches finance, ledger balanced) and `TestReturnSerialMismatchOpensRiskCase` (phone with a real IMEI delivered by carrier; pickup return; wrong IMEI → 409, return rejected and visible to the customer).
+- **Test harness fixes found on the way:** each Go e2e test now uses its own client address (`X-Forwarded-For` from the test name), because the suite outgrew the API's 20-codes-an-hour per-network limit; tests that pick in the warehouse take turns (a wave takes every waiting paid line, so parallel tests could steal each other's orders); the delivery helper accepts IMEIs (`"*"` for any serialised line).
+- Full backend e2e on a fresh stack: 25 passed. Lint 0 issues; API 228 paths; web and mobile typecheck against the new types.
