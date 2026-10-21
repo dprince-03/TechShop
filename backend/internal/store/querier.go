@@ -498,6 +498,8 @@ type Querier interface {
 	PaymentsMarkEventProcessed(ctx context.Context, arg PaymentsMarkEventProcessedParams) error
 	PaymentsOrderRefunds(ctx context.Context, orderID uuid.UUID) ([]PaymentsRefund, error)
 	PaymentsOrderWithCustomer(ctx context.Context, id uuid.UUID) (PaymentsOrderWithCustomerRow, error)
+	// Refunds the provider accepted but hasn't finished (left in processing with its reference).
+	PaymentsPendingRefunds(ctx context.Context, olderThan *time.Time) ([]PaymentsRefund, error)
 	// Circuit breaker: 5 failures in a row open the breaker for this provider.
 	PaymentsRecordFailure(ctx context.Context, provider string) (PaymentsProviderHealth, error)
 	PaymentsRecordSuccess(ctx context.Context, provider string) error

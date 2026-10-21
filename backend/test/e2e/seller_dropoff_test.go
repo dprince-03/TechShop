@@ -75,6 +75,9 @@ func TestSellerDropoffToDelivery(t *testing.T) {
 	if s := get(t, orders+"/"+fid, seller).str("status"); s != "handed_over" {
 		t.Fatalf("after drop-off the seller sees %s", s)
 	}
+	waitFor(t, "the seller told the hub has the parcel", 15*time.Second, func() bool {
+		return strings.Contains(string(get(t, "/api/v1/me/notifications", seller).Raw), "received your parcel for order "+number)
+	})
 	expect(t, post(t, "/dev/sla/"+fid+"/handover", "", nil), 200, "late hand-over after drop-off")
 	if s := get(t, orders+"/"+fid, seller).str("status"); s != "handed_over" {
 		t.Fatalf("a dropped-off parcel must not be cancelled by the hand-over SLA, is %s", s)

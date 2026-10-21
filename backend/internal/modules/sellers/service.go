@@ -9,6 +9,7 @@ package sellers
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
@@ -75,8 +76,37 @@ func (s *Service) Name() string { return "sellers" }
 // Jobs implements kit.Module.
 func (s *Service) Jobs(*jobs.Registry) {}
 
-// Events implements kit.Module.
-func (s *Service) Events(*outbox.Relay) {}
+// Events implements kit.Module: when hub staff scan a seller's parcel in, the shop owner is
+// told it arrived (so they stop worrying about the drop-off deadline).
+func (s *Service) Events(r *outbox.Relay) {
+	r.On("fulfilment.handed_over", func(ctx context.Context, tx *uow.Tx, ev outbox.Event) error {
+		var p struct {
+			FulfilmentID uuid.UUID `json:"fulfilmentId"`
+		}
+		if err := json.Unmarshal(ev.Payload, &p); err != nil {
+			return err
+		}
+		f, err := tx.Q.SalesGetFulfilment(ctx, p.FulfilmentID)
+		if err != nil || f.FulfilledBy != "seller" {
+			return err
+		}
+		o, err := tx.Q.SalesGetOrder(ctx, f.OrderID)
+		if err != nil {
+			return err
+		}
+		shop, err := tx.Q.SellersGet(ctx, f.SellerID)
+		if err != nil || shop.OwnerUserID == nil {
+			return err
+		}
+		for _, ch := range []string{"push", "in_app"} {
+			if err := s.notify.Send(ctx, tx, notify.Msg{UserID: shop.OwnerUserID, Channel: ch, Category: notify.CatSeller, Template: "seller_parcel_received",
+				Data: map[string]any{"order": o.OrderNumber}, Key: "fulfilment:" + f.ID.String() + ":received:" + ch}); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
 
 // ---- Opening a shop
 

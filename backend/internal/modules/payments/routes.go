@@ -303,6 +303,14 @@ func (s *Service) devRoutes(e *gin.Engine) {
 		code, body := s.FakeComplete(c.Request.Context(), c.Param("provider"), c.Param("reference"), c.Param("outcome"), c.Query("amount"))
 		c.JSON(code, body)
 	})
+	// Runs the pending-refund sweep now (it otherwise runs every 10 minutes).
+	e.POST("/dev/refunds/sweep", func(c *gin.Context) {
+		if err := s.SweepRefunds(c.Request.Context(), nil); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"swept": true})
+	})
 	// A signed Paystack-shaped transfer webhook (success | failed | reversed) for a payout reference.
 	e.POST("/dev/transfers/:reference/:event", func(c *gin.Context) {
 		prov, ok := s.providers["paystack"].(*Fake)

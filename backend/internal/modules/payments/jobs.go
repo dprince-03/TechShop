@@ -64,6 +64,29 @@ func (w *expiryWorker) Work(ctx context.Context, _ *river.Job[expiryArgs]) error
 	return err
 }
 
+// refundSweepArgs re-checks refunds the provider left pending. All = every pending refund now
+// (after a refund webhook); otherwise only those untouched for 10 minutes (the schedule).
+type refundSweepArgs struct {
+	All bool `json:"all,omitempty"`
+}
+
+// Kind identifies the job.
+func (refundSweepArgs) Kind() string { return "payments.refund_sweep" }
+
+type refundSweepWorker struct {
+	river.WorkerDefaults[refundSweepArgs]
+	s *Service
+}
+
+func (w *refundSweepWorker) Work(ctx context.Context, j *river.Job[refundSweepArgs]) error {
+	var before *time.Time
+	if !j.Args.All {
+		t := time.Now().Add(-10 * time.Minute)
+		before = &t
+	}
+	return w.s.SweepRefunds(ctx, before)
+}
+
 type sweepArgs struct{}
 
 func (sweepArgs) Kind() string { return "payments.sweep" }
@@ -75,15 +98,17 @@ type sweepWorker struct {
 
 func (w *sweepWorker) Work(ctx context.Context, _ *river.Job[sweepArgs]) error { return w.s.Sweep(ctx) }
 
-// Jobs implements kit.Module: webhook processing, refunds, expiry (every minute) and the
-// pending-payment sweep (every 5 minutes).
+// Jobs implements kit.Module: webhook processing, refunds, expiry (every minute), the
+// pending-payment sweep (every 5 minutes) and the pending-refund sweep (every 10 minutes).
 func (s *Service) Jobs(reg *jobs.Registry) {
 	river.AddWorker(reg.Workers, &processEventWorker{s: s})
 	river.AddWorker(reg.Workers, &executeRefundWorker{s: s})
 	river.AddWorker(reg.Workers, &expiryWorker{s: s})
 	river.AddWorker(reg.Workers, &sweepWorker{s: s})
+	river.AddWorker(reg.Workers, &refundSweepWorker{s: s})
 	reg.Every(time.Minute, func() (river.JobArgs, *river.InsertOpts) { return expiryArgs{}, critical() })
 	reg.Every(5*time.Minute, func() (river.JobArgs, *river.InsertOpts) { return sweepArgs{}, critical() })
+	reg.Every(10*time.Minute, func() (river.JobArgs, *river.InsertOpts) { return refundSweepArgs{}, finance() })
 }
 
 // Events implements kit.Module: cancelling a paid order (or a line) raises an automatic refund

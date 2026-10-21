@@ -653,3 +653,26 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
   - Identity tests still pass.
   - Seller web 2/2, now including the invite → accept flow. Market web 16/16. Contract 46/46.
   - All web apps typecheck and lint clean. Backend lint 0 issues; unit tests pass.
+
+## 2026-10-21 — Monnify and OPay adapters, pending-refund sweep, parcel-received notice (branch feat/m4-seller-team)
+
+- **Backend:**
+  - `payments/monnify.go` and `payments/opay.go` (live adapters).
+  - The provider port gains `Refund(..., refundRef)` and `RefundStatus`. Paystack implements `RefundStatus` (`GET /refund/{id}`).
+  - `SweepRefunds` job every 10 minutes; `refund.*` webhooks trigger it.
+  - Webhook intake lets each adapter check its own signature (OPay signs inside the body).
+  - Config: `MONNIFY_BASE_URL`, `OPAY_PUBLIC_KEY`, `OPAY_BASE_URL`, plus validation for both providers (`.env.example` updated).
+  - Sellers subscribe to `fulfilment.handed_over` → `seller_parcel_received` notice.
+  - Dev route `/dev/refunds/sweep`. The fake answers "pending" for refunds ending in 99 kobo.
+- **Unit tests against local stand-ins:**
+  - Monnify: token reuse, transfer collection, verify (naira→kobo, fees, Lagos `paidOn`), refund and refund status, webhook signature and parsing, status mapping.
+  - OPay: public-key create, signed status, refunds checked by recomputing the HMAC over the received body, SHA3 callback signature (valid, tampered, unsigned), parsing.
+  - Config: validation for all three providers.
+- **e2e:**
+  - `TestRefundsDualControl` now covers a refund the provider leaves pending: processing, then sweep, then succeeded.
+  - `TestSellerDropoffToDelivery` checks the parcel-received notice.
+- **Verification on a fresh stack:**
+  - Backend e2e 29/29. Lint 0 issues; unit tests pass.
+  - Staff web 17/17.
+  - Contract 46/46, market 16/16 and seller 2/2 after one rerun. Their first run, straight after the backend suite, hit rate limits (API log: nine 429s on `/auth/otp/request`, two on `/orders`, no 5xx).
+  - All web apps and mobile typecheck and lint clean.

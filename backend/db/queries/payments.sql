@@ -138,3 +138,10 @@ order by received_at desc limit 1;
 -- name: PaymentsOrderWithCustomer :one
 select o.*, u.email as customer_email, u.phone as customer_phone, u.first_name as customer_first_name
 from sales.orders o left join identity.users u on u.id = o.customer_user_id where o.id = $1;
+
+-- name: PaymentsPendingRefunds :many
+-- Refunds the provider accepted but hasn't finished (left in processing with its reference).
+select * from payments.refunds
+where status = 'processing' and provider_reference is not null
+  and (sqlc.narg('older_than')::timestamptz is null or updated_at < sqlc.narg('older_than'))
+order by updated_at limit 100;

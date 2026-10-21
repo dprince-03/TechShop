@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 )
@@ -23,8 +24,11 @@ type Provider interface {
 	Initialize(ctx context.Context, r InitRequest) (InitResult, error)
 	// Verify asks the provider for the truth about a reference (webhooks are never trusted alone).
 	Verify(ctx context.Context, reference string) (VerifyResult, error)
-	// Refund returns money for a captured reference.
-	Refund(ctx context.Context, reference string, amountKobo int64) (RefundResult, error)
+	// Refund returns money for a captured reference; refundRef is our refund ID, sent where the
+	// provider accepts our own reference so a retried request can't refund twice.
+	Refund(ctx context.Context, reference string, amountKobo int64, refundRef string) (RefundResult, error)
+	// RefundStatus asks about a refund the provider accepted as pending (its Reference).
+	RefundStatus(ctx context.Context, providerRefundRef string) (RefundResult, error)
 	// SignatureHeader names the webhook signature header; VerifySignature checks it over the raw body.
 	SignatureHeader() string
 	VerifySignature(body []byte, signature string) bool
@@ -127,9 +131,19 @@ func (f *Fake) Verify(ctx context.Context, reference string) (VerifyResult, erro
 	return f.state(ctx, f.name, reference)
 }
 
-// Refund implements Provider: always processed immediately.
-func (f *Fake) Refund(_ context.Context, reference string, _ int64) (RefundResult, error) {
-	return RefundResult{Reference: "rf_" + reference + "_" + strconv.FormatInt(time.Now().UnixNano()%1e6, 10), Status: "processed"}, nil
+// Refund implements Provider: processed immediately, except amounts ending in 99 kobo, which
+// the provider "accepts as pending" so the pending-refund sweep can be tested.
+func (f *Fake) Refund(_ context.Context, reference string, amountKobo int64, _ string) (RefundResult, error) {
+	st := "processed"
+	if amountKobo%100 == 99 {
+		st = "pending"
+	}
+	return RefundResult{Reference: "rf_" + reference + "_" + strconv.FormatInt(time.Now().UnixNano()%1e6, 10), Status: st}, nil
+}
+
+// RefundStatus implements Provider: fake refunds are processed at once.
+func (f *Fake) RefundStatus(_ context.Context, ref string) (RefundResult, error) {
+	return RefundResult{Reference: ref, Status: "processed"}, nil
 }
 
 // SignatureHeader implements Provider (the real header names; OPay's scheme is confirmed when its live adapter is built).
@@ -266,8 +280,8 @@ func (p *Paystack) Verify(ctx context.Context, reference string) (VerifyResult, 
 	return VerifyResult{Status: out.Data.Status, AmountKobo: out.Data.Amount, Currency: out.Data.Currency, Channel: out.Data.Channel, FeesKobo: out.Data.Fees, PaidAt: out.Data.PaidAt}, nil
 }
 
-// Refund implements Provider.
-func (p *Paystack) Refund(ctx context.Context, reference string, amountKobo int64) (RefundResult, error) {
+// Refund implements Provider (POST /refund). Paystack issues its own refund ID.
+func (p *Paystack) Refund(ctx context.Context, reference string, amountKobo int64, _ string) (RefundResult, error) {
 	var out struct {
 		Status  bool   `json:"status"`
 		Message string `json:"message"`
@@ -282,11 +296,38 @@ func (p *Paystack) Refund(ctx context.Context, reference string, amountKobo int6
 	if !out.Status {
 		return RefundResult{Status: "failed", Reason: out.Message}, nil
 	}
-	st := "pending"
-	if out.Data.Status == "processed" {
-		st = "processed"
+	return RefundResult{Reference: out.Data.ID.String(), Status: paystackRefundStatus(out.Data.Status)}, nil
+}
+
+// paystackRefundStatus maps Paystack refund statuses (pending, processing, processed, failed,
+// needs-attention) onto ours; anything unsettled stays pending and is checked again.
+func paystackRefundStatus(s string) string {
+	switch s {
+	case "processed":
+		return "processed"
+	case "failed":
+		return "failed"
+	default:
+		return "pending"
 	}
-	return RefundResult{Reference: out.Data.ID.String(), Status: st}, nil
+}
+
+// RefundStatus implements Provider (GET /refund/{id}).
+func (p *Paystack) RefundStatus(ctx context.Context, id string) (RefundResult, error) {
+	var out struct {
+		Status  bool   `json:"status"`
+		Message string `json:"message"`
+		Data    struct {
+			Status string `json:"status"`
+		} `json:"data"`
+	}
+	if err := p.call(ctx, http.MethodGet, "/refund/"+url.PathEscape(id), nil, &out); err != nil {
+		return RefundResult{}, err
+	}
+	if !out.Status {
+		return RefundResult{}, fmt.Errorf("paystack refund status: %s", out.Message)
+	}
+	return RefundResult{Reference: id, Status: paystackRefundStatus(out.Data.Status)}, nil
 }
 
 // SignatureHeader implements Provider.

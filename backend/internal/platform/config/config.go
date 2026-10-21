@@ -65,8 +65,11 @@ type Config struct {
 	MonnifyAPIKey             string        `env:"MONNIFY_API_KEY"`
 	MonnifySecretKey          string        `env:"MONNIFY_SECRET_KEY"`
 	MonnifyContractCode       string        `env:"MONNIFY_CONTRACT_CODE"`
+	MonnifyBaseURL            string        `env:"MONNIFY_BASE_URL" envDefault:"https://sandbox.monnify.com"`
 	OPayMerchantID            string        `env:"OPAY_MERCHANT_ID"`
+	OPayPublicKey             string        `env:"OPAY_PUBLIC_KEY"`
 	OPaySecretKey             string        `env:"OPAY_SECRET_KEY"`
+	OPayBaseURL               string        `env:"OPAY_BASE_URL" envDefault:"https://testapi.opaycheckout.com"`
 	PaymentCallbackURL        string        `env:"PAYMENT_CALLBACK_URL" envDefault:"http://localhost:4102/checkout/return"`
 	OrderPaymentTTL           time.Duration `env:"ORDER_PAYMENT_TTL" envDefault:"30m"`
 	TransferAccountTTL        time.Duration `env:"TRANSFER_ACCOUNT_TTL" envDefault:"30m"`
@@ -184,13 +187,30 @@ func (c *Config) validate() error {
 	if c.PaymentsFake {
 		errs = append(errs, errors.New("PAYMENTS_FAKE must be false outside development"))
 	}
-	// Only Paystack has a live adapter so far; Monnify (Moniepoint) and OPay run as fakes until
-	// their adapters are built and confirmed against the providers' sandboxes.
+	// Every enabled provider needs its live credentials (adapters: Paystack, Monnify, OPay).
 	for _, p := range c.PaymentsEnabledProviders {
 		switch p {
 		case "paystack":
 			if err := checkStrong("PAYSTACK_SECRET_KEY", c.PaystackSecretKey); err != nil {
 				errs = append(errs, err)
+			}
+		case "moniepoint":
+			for name, v := range map[string]string{"MONNIFY_API_KEY": c.MonnifyAPIKey, "MONNIFY_SECRET_KEY": c.MonnifySecretKey} {
+				if err := checkStrong(name, v); err != nil {
+					errs = append(errs, err)
+				}
+			}
+			if c.MonnifyContractCode == "" || c.MonnifyBaseURL == "" {
+				errs = append(errs, errors.New("MONNIFY_CONTRACT_CODE and MONNIFY_BASE_URL are required when moniepoint is enabled"))
+			}
+		case "opay":
+			for name, v := range map[string]string{"OPAY_PUBLIC_KEY": c.OPayPublicKey, "OPAY_SECRET_KEY": c.OPaySecretKey} {
+				if err := checkStrong(name, v); err != nil {
+					errs = append(errs, err)
+				}
+			}
+			if c.OPayMerchantID == "" || c.OPayBaseURL == "" {
+				errs = append(errs, errors.New("OPAY_MERCHANT_ID and OPAY_BASE_URL are required when opay is enabled"))
 			}
 		default:
 			errs = append(errs, fmt.Errorf("payment provider %q has no live adapter yet; remove it from PAYMENTS_ENABLED_PROVIDERS", p))

@@ -842,6 +842,50 @@ func (q *Queries) PaymentsOrderWithCustomer(ctx context.Context, id uuid.UUID) (
 	return i, err
 }
 
+const paymentsPendingRefunds = `-- name: PaymentsPendingRefunds :many
+select id, payment_id, order_id, return_request_id, amount_kobo, currency, method, reason, status, requested_by, approved_by, provider_reference, failure_reason, created_at, updated_at from payments.refunds
+where status = 'processing' and provider_reference is not null
+  and ($1::timestamptz is null or updated_at < $1)
+order by updated_at limit 100
+`
+
+// Refunds the provider accepted but hasn't finished (left in processing with its reference).
+func (q *Queries) PaymentsPendingRefunds(ctx context.Context, olderThan *time.Time) ([]PaymentsRefund, error) {
+	rows, err := q.db.Query(ctx, paymentsPendingRefunds, olderThan)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PaymentsRefund{}
+	for rows.Next() {
+		var i PaymentsRefund
+		if err := rows.Scan(
+			&i.ID,
+			&i.PaymentID,
+			&i.OrderID,
+			&i.ReturnRequestID,
+			&i.AmountKobo,
+			&i.Currency,
+			&i.Method,
+			&i.Reason,
+			&i.Status,
+			&i.RequestedBy,
+			&i.ApprovedBy,
+			&i.ProviderReference,
+			&i.FailureReason,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const paymentsRecordFailure = `-- name: PaymentsRecordFailure :one
 insert into payments.provider_health (provider, failures, last_failure_at, breaker_state) values ($1, 1, now(), 'closed')
 on conflict (provider) do update set failures = payments.provider_health.failures + 1, last_failure_at = now(),
