@@ -347,6 +347,27 @@ func (q *Queries) ReviewsInsertReport(ctx context.Context, arg ReviewsInsertRepo
 	return i, err
 }
 
+const reviewsLineProductSlug = `-- name: ReviewsLineProductSlug :one
+select p.slug from sales.order_lines ol
+join sales.orders o on o.id = ol.order_id
+join catalog.product_variants v on v.id = ol.variant_id
+join catalog.products p on p.id = v.product_id
+where ol.id = $1 and o.customer_user_id = $2
+`
+
+type ReviewsLineProductSlugParams struct {
+	LineID uuid.UUID  `json:"lineId"`
+	UserID *uuid.UUID `json:"userId"`
+}
+
+// The product slug of one of the caller's order lines (to review it from the order page).
+func (q *Queries) ReviewsLineProductSlug(ctx context.Context, arg ReviewsLineProductSlugParams) (string, error) {
+	row := q.db.QueryRow(ctx, reviewsLineProductSlug, arg.LineID, arg.UserID)
+	var slug string
+	err := row.Scan(&slug)
+	return slug, err
+}
+
 const reviewsPublished = `-- name: ReviewsPublished :many
 select r.id, r.rating, r.title, r.body, r.is_verified, r.seller_response, r.seller_response_at, r.created_at,
        u.first_name, left(u.last_name, 1) as last_initial,

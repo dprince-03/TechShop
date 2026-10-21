@@ -114,3 +114,11 @@ update sellers.sellers s
 set rating_avg = (select round(avg(rating), 2) from catalog.seller_ratings where seller_id = s.id),
     rating_count = (select count(*) from catalog.seller_ratings where seller_id = s.id)
 where s.id = $1;
+
+-- name: ReviewsLineProductSlug :one
+-- The product slug of one of the caller's order lines (to review it from the order page).
+select p.slug from sales.order_lines ol
+join sales.orders o on o.id = ol.order_id
+join catalog.product_variants v on v.id = ol.variant_id
+join catalog.products p on p.id = v.product_id
+where ol.id = @line_id and o.customer_user_id = @user_id;

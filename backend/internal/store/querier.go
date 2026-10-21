@@ -537,6 +537,8 @@ type Querier interface {
 	ReviewsInsert(ctx context.Context, arg ReviewsInsertParams) (CatalogProductReview, error)
 	ReviewsInsertImage(ctx context.Context, arg ReviewsInsertImageParams) error
 	ReviewsInsertReport(ctx context.Context, arg ReviewsInsertReportParams) (RiskReviewReport, error)
+	// The product slug of one of the caller's order lines (to review it from the order page).
+	ReviewsLineProductSlug(ctx context.Context, arg ReviewsLineProductSlugParams) (string, error)
 	ReviewsPublished(ctx context.Context, arg ReviewsPublishedParams) ([]ReviewsPublishedRow, error)
 	// Staff moderation: held reviews, oldest first, and published ones with open reports.
 	ReviewsQueue(ctx context.Context, limit int32) ([]ReviewsQueueRow, error)

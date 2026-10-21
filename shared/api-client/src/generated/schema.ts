@@ -1063,6 +1063,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/me/order-lines/{lineId}/review": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Review an item you received (verified purchase) */
+    post: operations["reviewOrderLine"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/me/orders": {
     parameters: {
       query?: never;
@@ -5633,6 +5650,13 @@ export interface components {
       /** Format: int64 */
       vatKobo: number;
     };
+    LineReviewInput: {
+      body?: string;
+      imageFileIds?: string[] | null;
+      /** Format: int32 */
+      rating: number;
+      title?: string;
+    };
     ListFinanceLedgerJournal: {
       items: components["schemas"]["FinanceLedgerJournal"][] | null;
       page: components["schemas"]["Page"];
@@ -10029,6 +10053,41 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  reviewOrderLine: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        lineId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["LineReviewInput"];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MyReview"];
+        };
       };
       /** @description Error */
       default: {

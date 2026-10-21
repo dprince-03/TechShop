@@ -48,6 +48,14 @@ type ReviewInput struct {
 	ImageIDs    []uuid.UUID `json:"imageFileIds,omitempty" maxItems:"5" doc:"Files uploaded with purpose review_image"`
 }
 
+// LineReviewInput is a review of a received item (the order line identifies the product).
+type LineReviewInput struct {
+	Rating   int16       `json:"rating" minimum:"1" maximum:"5"`
+	Title    string      `json:"title,omitempty" maxLength:"120"`
+	Body     string      `json:"body,omitempty" maxLength:"3000"`
+	ImageIDs []uuid.UUID `json:"imageFileIds,omitempty" maxItems:"5"`
+}
+
 // Submit records a review. It publishes at once unless a rule holds it for moderation.
 func (s *Service) Submit(ctx context.Context, userID uuid.UUID, slug string, in ReviewInput) (MyReview, error) {
 	var out MyReview
@@ -105,6 +113,20 @@ func (s *Service) Submit(ctx context.Context, userID uuid.UUID, slug string, in 
 		return nil
 	})
 	return out, err
+}
+
+// SubmitForLine reviews the product of one of the caller's delivered order lines (a verified
+// purchase), so order pages needn't know product slugs.
+func (s *Service) SubmitForLine(ctx context.Context, userID, lineID uuid.UUID, in ReviewInput) (MyReview, error) {
+	slug, err := s.d.Q.ReviewsLineProductSlug(ctx, store.ReviewsLineProductSlugParams{LineID: lineID, UserID: &userID})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return MyReview{}, httpx.NotFound("Order item")
+	}
+	if err != nil {
+		return MyReview{}, err
+	}
+	in.OrderLineID = &lineID
+	return s.Submit(ctx, userID, slug, in)
 }
 
 func checkImages(ctx context.Context, q *store.Queries, userID uuid.UUID, ids []uuid.UUID) error {

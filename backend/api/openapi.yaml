@@ -4006,6 +4006,30 @@ components:
         - vatKobo
         - available
       type: object
+    LineReviewInput:
+      additionalProperties: false
+      properties:
+        body:
+          maxLength: 3000
+          type: string
+        imageFileIds:
+          items:
+            type: string
+          maxItems: 5
+          type:
+            - array
+            - "null"
+        rating:
+          format: int32
+          maximum: 5
+          minimum: 1
+          type: integer
+        title:
+          maxLength: 120
+          type: string
+      required:
+        - rating
+      type: object
     ListFinanceLedgerJournal:
       additionalProperties: false
       properties:
@@ -11796,6 +11820,39 @@ paths:
       summary: Mark one as read
       tags:
         - Notifications
+  /api/v1/me/order-lines/{lineId}/review:
+    post:
+      operationId: reviewOrderLine
+      parameters:
+        - in: path
+          name: lineId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LineReviewInput"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyReview"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Review an item you received (verified purchase)
+      tags:
+        - Reviews
   /api/v1/me/orders:
     get:
       operationId: listMyOrders

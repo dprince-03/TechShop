@@ -222,9 +222,11 @@ export {
   api,
   API_URL,
   customerToken,
+  deliveredOrder,
   latestCode,
   peekCode,
   seed,
   staffToken,
+  tokenForPhone,
   totp,
 } from "../../../../shared/api-client/test/kit";

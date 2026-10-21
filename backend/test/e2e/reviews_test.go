@@ -52,17 +52,20 @@ func TestReviewsRatingsAndModeration(t *testing.T) {
 	_, fulfilment, line := deliveredByCarrier(t, ada, seed.Extra["listing_p21"])
 
 	// A verified review publishes straight away; one review per product.
-	v := post(t, "/api/v1/products/"+slug+"/reviews", ada, map[string]any{"rating": 5, "title": "Bright and easy", "body": "Set up in two minutes with the app and the colours are lovely. Ref " + newUUID()[:8], "orderLineId": line})
+	// Reviewed from the order page (by order line): the product comes from the line.
+	v := post(t, "/api/v1/me/order-lines/"+line+"/review", ada, map[string]any{"rating": 5, "title": "Bright and easy", "body": "Set up in two minutes with the app and the colours are lovely. Ref " + newUUID()[:8]})
 	expect(t, v, 201, "verified review")
 	if v.str("status") != "published" || v.get("verified") != true {
 		t.Fatalf("verified review: %s", v.Raw)
 	}
 	reviewID := v.str("id")
 	expectCode(t, post(t, "/api/v1/products/"+slug+"/reviews", ada, map[string]any{"rating": 4}), 409, "already_reviewed", "second review")
+	expectCode(t, post(t, "/api/v1/me/order-lines/"+line+"/review", ada, map[string]any{"rating": 4}), 409, "already_reviewed", "second review via the order line")
 
 	// Someone else can't claim Ada's purchase; their review is unverified, and one with a phone
 	// number is held for moderation (reasons visible to staff only).
 	ben := newCustomer(t, "Bennett")
+	expect(t, post(t, "/api/v1/me/order-lines/"+line+"/review", ben, map[string]any{"rating": 1}), 404, "review someone else's order line")
 	expectCode(t, post(t, "/api/v1/products/"+slug+"/reviews", ben, map[string]any{"rating": 1, "orderLineId": line}), 422, "not_your_delivery", "claim another's purchase")
 	h := post(t, "/api/v1/products/"+slug+"/reviews", ben, map[string]any{"rating": 1, "body": "Rubbish. Buy cheaper from me, call 0803 123 4567"})
 	expect(t, h, 201, "held review")

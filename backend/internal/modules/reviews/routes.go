@@ -45,6 +45,14 @@ func (s *Service) Routes(r *kit.Routes) {
 			out, err := s.Submit(ctx, httpx.MustPrincipal(ctx).UserID, in.Slug, in.Body)
 			return &struct{ Body MyReview }{out}, err
 		})
+	httpx.Register(g, tag(httpx.Op{ID: "reviewOrderLine", Method: http.MethodPost, Path: "/api/v1/me/order-lines/{lineId}/review", Auth: shoppers, Status: 201, Summary: "Review an item you received (verified purchase)"}),
+		func(ctx context.Context, in *struct {
+			LineID uuid.UUID `path:"lineId"`
+			Body   LineReviewInput
+		}) (*struct{ Body MyReview }, error) {
+			out, err := s.SubmitForLine(ctx, httpx.MustPrincipal(ctx).UserID, in.LineID, ReviewInput{Rating: in.Body.Rating, Title: in.Body.Title, Body: in.Body.Body, ImageIDs: in.Body.ImageIDs})
+			return &struct{ Body MyReview }{out}, err
+		})
 	httpx.Register(g, tag(httpx.Op{ID: "reportReview", Method: http.MethodPost, Path: "/api/v1/reviews/{id}/report", Auth: reporters, Status: 204, Summary: "Report a review that breaks the rules"}),
 		func(ctx context.Context, in *struct {
 			ID   uuid.UUID `path:"id"`

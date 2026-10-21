@@ -186,3 +186,51 @@ export async function riderToken(): Promise<string> {
   if (!v.tokens) throw new Error("rider not signed in");
   return v.tokens.accessToken;
 }
+
+/** An access token for a phone number on an audience, signing the person up if they're new. */
+export async function tokenForPhone(phone: string, audience: "market" | "seller" = "market", firstName = "Test"): Promise<string> {
+  const before = await peekCode(phone);
+  const ch = await api.post("/api/v1/auth/otp/request", { body: { phone, purpose: "login" } });
+  const code = await latestCode(phone, before);
+  const v = await api.post("/api/v1/auth/otp/verify", { body: { challengeId: ch.challengeId, code, audience } });
+  if (v.tokens) return v.tokens.accessToken;
+  const s = await api.post("/api/v1/auth/otp/signup", { body: { signupToken: v.signupToken!, firstName, lastName: "Customer", audience, deviceName: "e2e" } });
+  return s.accessToken;
+}
+
+/**
+ * A delivered order for one listing: bought for a Kano address (outside rider zones, so it ships
+ * by the fake carrier), picked, packed, manifested and tracked to delivered. TechShop listings only.
+ */
+export async function deliveredOrder(token: string, listingId: string) {
+  const cart = await api.get("/api/v1/cart", { token });
+  for (const l of cart.lines ?? []) await api.delete("/api/v1/cart/items/{id}", { token, path: { id: l.cartItemId } });
+  await api.post("/api/v1/cart/items", { token, body: { listingId, quantity: 1 } });
+  const address = await api.post("/api/v1/me/addresses", { token, body: { recipientName: "Halima Bello", phone: "+2348031234570", line1: "5 Murtala Mohammed Way", city: "Kano", stateCode: "KN" } });
+  const quote = await api.post("/api/v1/checkout/preview", { token, body: { addressId: address.id } });
+  const placed = await api.post("/api/v1/orders", { token, idempotencyKey: crypto.randomUUID(), body: { addressId: address.id, priceHash: quote.priceHash, provider: "paystack" } });
+  await fetch(`${API_URL}/dev/pay/paystack/${placed.payment.reference}/success`, { method: "POST" });
+  const until = async (what: string, ok: () => Promise<boolean>) => {
+    for (let i = 0; i < 60; i++) {
+      if (await ok()) return;
+      await sleep(300);
+    }
+    throw new Error(`timed out waiting for ${what}`);
+  };
+  const number = placed.orderNumber;
+  const order = () => api.get("/api/v1/me/orders/{number}", { token, path: { number } });
+  await until("payment", async () => (await order()).status === "paid");
+  const packed = await pickAndPack(number);
+  const staff = await staffToken("admin");
+  const carriers = (await api.get("/api/v1/staff/wms/carriers", { token: staff })) ?? [];
+  const carrierId = carriers.find((c) => c.code === "fake")!.id;
+  const manifest = await api.post("/api/v1/staff/wms/manifests", { token: staff, body: { warehouseId: seed().extra.warehouseIkejaId, carrierId, labels: [packed.parcel!.labelCode] } });
+  await api.post("/api/v1/staff/wms/manifests/{id}/sign", { token: staff, path: { id: manifest.id }, body: { signedByName: "Courier" } });
+  for (const status of ["in_transit", "delivered"]) {
+    const ev = (await (await fetch(`${API_URL}/dev/carriers/fake/${packed.shipment!.trackingNumber}/${status}`, { method: "POST" })).json()) as { raw: string; signature: string };
+    await fetch(`${API_URL}/api/v1/webhooks/carriers/fake`, { method: "POST", headers: { "x-carrier-signature": ev.signature, "Content-Type": "application/json" }, body: ev.raw });
+  }
+  await until("delivery", async () => (await order()).status === "delivered");
+  const f = (await order()).fulfilments![0];
+  return { orderNumber: number, fulfilmentId: f.id, lineId: f.lines![0].id };
+}

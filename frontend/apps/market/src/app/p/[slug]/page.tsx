@@ -25,5 +25,6 @@ export default async function ProductPage(props: PageProps<"/p/[slug]">) {
   await connection();
   const product = await getProduct((await props.params).slug);
   if (!product) notFound();
-  return <ProductDetail product={product} />;
+  const verified = (await props.searchParams).reviews === "verified";
+  return <ProductDetail product={product} verifiedReviews={verified} />;
 }
