@@ -224,6 +224,33 @@ func (s *Service) Commission(ctx context.Context, tx *uow.Tx, fulfilmentID, sell
 	return err
 }
 
+// PayoutPaid settles what TechShop owed a seller once the provider confirms the transfer:
+// seller_payable is debited and the payouts bank account credited (payments-finance.md §9).
+func (s *Service) PayoutPaid(ctx context.Context, tx *uow.Tx, payoutID, sellerID uuid.UUID, amount int64) error {
+	_, _, err := s.Post(ctx, tx, Journal{Key: "payout:" + payoutID.String() + ":paid", Kind: "payout", RefType: "payout", RefID: payoutID,
+		Lines: []Line{{SellerPayable(sellerID), amount}, {BankPayouts, -amount}}})
+	return err
+}
+
+// PayoutReversed undoes a paid payout the bank sent back: the seller is owed the money again.
+func (s *Service) PayoutReversed(ctx context.Context, tx *uow.Tx, payoutID uuid.UUID) error {
+	j, err := tx.Q.FinanceGetJournalByKey(ctx, "payout:"+payoutID.String()+":paid")
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil // never booked as paid: nothing to undo
+	}
+	if err != nil {
+		return err
+	}
+	if _, err := s.Reverse(ctx, tx, j.ID, "Payout transfer reversed by the bank", nil); err != nil {
+		var p *httpx.Problem
+		if errors.As(err, &p) && p.Code == "already_reversed" {
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
 // RefundApprove moves an approved refund into liability:customer_refunds, reversing the
 // order's sale credits pro rata (revenue, VAT, seller payables, delivery) so the right party
 // bears it. TechShop-funded promotion expense is reversed in the same proportion.

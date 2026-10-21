@@ -55,7 +55,8 @@ returning id;
 select * from payments.payment_events where id = $1;
 
 -- name: PaymentsMarkEventProcessed :exec
-update payments.payment_events set processed_at = now(), payment_id = coalesce(payment_id, sqlc.narg('payment_id')) where id = $1;
+update payments.payment_events set processed_at = now(), payment_id = coalesce(payment_id, sqlc.narg('payment_id')),
+  payout_id = coalesce(payout_id, sqlc.narg('payout_id')) where id = $1;
 
 -- name: PaymentsCreateRefund :one
 insert into payments.refunds (payment_id, order_id, return_request_id, amount_kobo, method, reason, requested_by)

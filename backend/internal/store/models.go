@@ -698,32 +698,39 @@ type FinanceLedgerJournal struct {
 
 // [finance] Transfers of earnings to a seller's bank account (journal posted only on success).
 type FinancePayout struct {
-	ID                uuid.UUID  `json:"id"`
-	BatchID           *uuid.UUID `json:"batchId"`
-	SellerID          uuid.UUID  `json:"sellerId"`
-	BankAccountID     uuid.UUID  `json:"bankAccountId"`
-	AmountKobo        int64      `json:"amountKobo"`
-	Currency          string     `json:"currency"`
-	Status            string     `json:"status"`
-	ScheduledFor      time.Time  `json:"scheduledFor"`
-	PaidAt            *time.Time `json:"paidAt"`
-	ProviderReference *string    `json:"providerReference"`
-	FailureReason     *string    `json:"failureReason"`
-	CreatedAt         time.Time  `json:"createdAt"`
-	UpdatedAt         time.Time  `json:"updatedAt"`
+	ID            uuid.UUID  `json:"id"`
+	BatchID       *uuid.UUID `json:"batchId"`
+	SellerID      uuid.UUID  `json:"sellerId"`
+	BankAccountID uuid.UUID  `json:"bankAccountId"`
+	AmountKobo    int64      `json:"amountKobo"`
+	Currency      string     `json:"currency"`
+	Status        string     `json:"status"`
+	ScheduledFor  time.Time  `json:"scheduledFor"`
+	PaidAt        *time.Time `json:"paidAt"`
+	// Our transfer reference sent to the provider (the payout id), so retries never pay twice.
+	ProviderReference *string   `json:"providerReference"`
+	FailureReason     *string   `json:"failureReason"`
+	CreatedAt         time.Time `json:"createdAt"`
+	UpdatedAt         time.Time `json:"updatedAt"`
+	// The provider's own code for the transfer.
+	TransferCode *string `json:"transferCode"`
+	Attempts     int32   `json:"attempts"`
 }
 
 // [finance] A payout run: prepared by one finance person, approved by a different one (with MFA step-up).
 type FinancePayoutBatch struct {
-	ID          uuid.UUID  `json:"id"`
-	Status      string     `json:"status"`
-	PreparedBy  uuid.UUID  `json:"preparedBy"`
-	ApprovedBy  *uuid.UUID `json:"approvedBy"`
-	ApprovedAt  *time.Time `json:"approvedAt"`
-	TotalKobo   int64      `json:"totalKobo"`
-	PayoutCount int32      `json:"payoutCount"`
-	CreatedAt   time.Time  `json:"createdAt"`
-	UpdatedAt   time.Time  `json:"updatedAt"`
+	ID               uuid.UUID  `json:"id"`
+	Status           string     `json:"status"`
+	PreparedBy       uuid.UUID  `json:"preparedBy"`
+	ApprovedBy       *uuid.UUID `json:"approvedBy"`
+	ApprovedAt       *time.Time `json:"approvedAt"`
+	TotalKobo        int64      `json:"totalKobo"`
+	PayoutCount      int32      `json:"payoutCount"`
+	CreatedAt        time.Time  `json:"createdAt"`
+	UpdatedAt        time.Time  `json:"updatedAt"`
+	SubmittedAt      *time.Time `json:"submittedAt"`
+	SecondApprovedBy *uuid.UUID `json:"secondApprovedBy"`
+	SecondApprovedAt *time.Time `json:"secondApprovedAt"`
 }
 
 // [finance] Reasons a seller is not paid out right now (e.g. 24 hours after a bank or credential change).
@@ -2497,6 +2504,8 @@ type SalesOrderLine struct {
 	DeviceUnitID  *uuid.UUID `json:"deviceUnitId"`
 	CancelledAt   *time.Time `json:"cancelledAt"`
 	CreatedAt     time.Time  `json:"createdAt"`
+	// Marketplace lines: what the seller is owed before commission (net price plus any TechShop-funded discount), set at payment capture.
+	SellerEarningKobo *int64 `json:"sellerEarningKobo"`
 }
 
 // [sales] Every order and fulfilment status change and who made it (shown on tracking).

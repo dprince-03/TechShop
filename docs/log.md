@@ -602,3 +602,28 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
   - Backend e2e: 27/27 pass, including the new `TestSellerDropoffToDelivery`. It covers the Lagos rider job, Kano carrier delivery, late hand-over cancel and refund, store refusal, unknown label, double scan, and the seller token refused. `go test ./internal/modules/sales` passes, including the deadline unit test. Lint: 0 issues.
   - Seller web e2e: 2/2. Staff web e2e: 16/16. Seller and staff typecheck and lint pass.
   - Screenshots of the new panels were not taken this session.
+
+## 2026-10-21 — Seller payouts (branch feat/m4-seller-payouts)
+
+- **Backend (commit 35f6c4d):**
+  - Migration 00030: `order_lines.seller_earning_kobo`, batch `submitted_at` and second approver, payout `transfer_code` and `attempts`.
+  - New `internal/modules/payouts` (rules, service, jobs, routes, dto, seller views).
+  - Paystack transfer adapter plus dev fake in `payments/transfers.go`. Transfer webhooks are relayed as `transfer.updated`.
+  - Ledger gains `PayoutPaid` and `PayoutReversed`.
+  - Seller routes: `/seller/shops/{id}/balance`, `/payouts`, `/payouts/{id}`.
+  - Staff routes: `/staff/finance/payout-batches` (prepare, list, get, exclude, submit, approve, cancel) and payout holds.
+  - Dev routes: `/dev/payouts/age/{seller}` and `/dev/transfers/{ref}/{event}`.
+  - API types renamed (`PayoutBatch`, `BatchPayout`, `SellerBalance`, `PayoutItem`, `SkippedSeller`) after a Huma schema name clash with an existing `Item`.
+- **Web:**
+  - Seller Centre › Payouts shows the balance (available, pending, holds in plain words), payout history, a statement page, and payout accounts. The nav label is now "Payouts".
+  - Staff Finance gains a Payouts tab (prepare, list) and a batch page (submit, approve with step-up, leave a seller out, optionally with a hold, cancel).
+- **Test stack:** the scratchpad was cleared between sessions, so `stack.sh` was rebuilt from the transcript. It now migrates as the owner, creates `techshop_app`, and runs the worker in-process. The test stack sets `PAYOUT_APPROVAL_THRESHOLD_KOBO=50000000` so the two-approver path runs.
+- **Verification:**
+  - Backend e2e on a fresh stack: 28/28.
+    - New `TestSellerPayoutBatch` covers: pending until the window passes, the new-account hold, a manual hold skipping the seller (officers can't release it), prepare → submit → two approvals (same approver refused), one paid and one bank-refused payout, statement, replayed transfer webhooks changing nothing, and no double payment in the next batch.
+  - Database checks on the test stack: one payout journal per paid payout, none for the failed one; the two-approver batch recorded both approvers.
+  - Unit tests: payout rules, plus the Paystack transfer adapter against a local stand-in (queued, duplicate-reference retry resolved by verify, refused, status mapping).
+  - Lint: 0 issues.
+  - Web: Seller Centre 2/2, staff 17/17. Typecheck and lint clean.
+  - A back-to-back third e2e run hit the checkout rate limit (429) for the shared seeded customer. That is expected behaviour, not a regression.
+  - Screenshots not taken.

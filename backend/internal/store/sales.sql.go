@@ -26,7 +26,7 @@ func (q *Queries) FulfilmentSLABreaches30d(ctx context.Context, sellerID uuid.UU
 }
 
 const salesBindDeviceUnit = `-- name: SalesBindDeviceUnit :one
-update sales.order_lines set device_unit_id = $2 where id = $1 and device_unit_id is null and quantity = 1 returning id, order_id, fulfilment_id, listing_id, seller_id, variant_id, product_name, variant_name, sku, condition, quantity, unit_price_kobo, discount_kobo, line_total_kobo, vat_kobo, commission_bps, device_unit_id, cancelled_at, created_at
+update sales.order_lines set device_unit_id = $2 where id = $1 and device_unit_id is null and quantity = 1 returning id, order_id, fulfilment_id, listing_id, seller_id, variant_id, product_name, variant_name, sku, condition, quantity, unit_price_kobo, discount_kobo, line_total_kobo, vat_kobo, commission_bps, device_unit_id, cancelled_at, created_at, seller_earning_kobo
 `
 
 type SalesBindDeviceUnitParams struct {
@@ -58,12 +58,13 @@ func (q *Queries) SalesBindDeviceUnit(ctx context.Context, arg SalesBindDeviceUn
 		&i.DeviceUnitID,
 		&i.CancelledAt,
 		&i.CreatedAt,
+		&i.SellerEarningKobo,
 	)
 	return i, err
 }
 
 const salesCancelLine = `-- name: SalesCancelLine :one
-update sales.order_lines set cancelled_at = now() where id = $1 and order_id = $2 and cancelled_at is null returning id, order_id, fulfilment_id, listing_id, seller_id, variant_id, product_name, variant_name, sku, condition, quantity, unit_price_kobo, discount_kobo, line_total_kobo, vat_kobo, commission_bps, device_unit_id, cancelled_at, created_at
+update sales.order_lines set cancelled_at = now() where id = $1 and order_id = $2 and cancelled_at is null returning id, order_id, fulfilment_id, listing_id, seller_id, variant_id, product_name, variant_name, sku, condition, quantity, unit_price_kobo, discount_kobo, line_total_kobo, vat_kobo, commission_bps, device_unit_id, cancelled_at, created_at, seller_earning_kobo
 `
 
 type SalesCancelLineParams struct {
@@ -94,6 +95,7 @@ func (q *Queries) SalesCancelLine(ctx context.Context, arg SalesCancelLineParams
 		&i.DeviceUnitID,
 		&i.CancelledAt,
 		&i.CreatedAt,
+		&i.SellerEarningKobo,
 	)
 	return i, err
 }
@@ -310,7 +312,7 @@ const salesCreateLine = `-- name: SalesCreateLine :one
 insert into sales.order_lines (order_id, fulfilment_id, listing_id, seller_id, variant_id, product_name, variant_name, sku, condition, quantity,
   unit_price_kobo, discount_kobo, line_total_kobo, vat_kobo, commission_bps)
 values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-returning id, order_id, fulfilment_id, listing_id, seller_id, variant_id, product_name, variant_name, sku, condition, quantity, unit_price_kobo, discount_kobo, line_total_kobo, vat_kobo, commission_bps, device_unit_id, cancelled_at, created_at
+returning id, order_id, fulfilment_id, listing_id, seller_id, variant_id, product_name, variant_name, sku, condition, quantity, unit_price_kobo, discount_kobo, line_total_kobo, vat_kobo, commission_bps, device_unit_id, cancelled_at, created_at, seller_earning_kobo
 `
 
 type SalesCreateLineParams struct {
@@ -370,6 +372,7 @@ func (q *Queries) SalesCreateLine(ctx context.Context, arg SalesCreateLineParams
 		&i.DeviceUnitID,
 		&i.CancelledAt,
 		&i.CreatedAt,
+		&i.SellerEarningKobo,
 	)
 	return i, err
 }
@@ -537,7 +540,7 @@ func (q *Queries) SalesFulfilmentHandlingDays(ctx context.Context, fulfilmentID 
 }
 
 const salesFulfilmentLines = `-- name: SalesFulfilmentLines :many
-select id, order_id, fulfilment_id, listing_id, seller_id, variant_id, product_name, variant_name, sku, condition, quantity, unit_price_kobo, discount_kobo, line_total_kobo, vat_kobo, commission_bps, device_unit_id, cancelled_at, created_at from sales.order_lines where fulfilment_id = $1 order by created_at
+select id, order_id, fulfilment_id, listing_id, seller_id, variant_id, product_name, variant_name, sku, condition, quantity, unit_price_kobo, discount_kobo, line_total_kobo, vat_kobo, commission_bps, device_unit_id, cancelled_at, created_at, seller_earning_kobo from sales.order_lines where fulfilment_id = $1 order by created_at
 `
 
 func (q *Queries) SalesFulfilmentLines(ctx context.Context, fulfilmentID uuid.UUID) ([]SalesOrderLine, error) {
@@ -569,6 +572,7 @@ func (q *Queries) SalesFulfilmentLines(ctx context.Context, fulfilmentID uuid.UU
 			&i.DeviceUnitID,
 			&i.CancelledAt,
 			&i.CreatedAt,
+			&i.SellerEarningKobo,
 		); err != nil {
 			return nil, err
 		}
@@ -656,7 +660,7 @@ func (q *Queries) SalesGetGuestCart(ctx context.Context, sessionTokenHash []byte
 }
 
 const salesGetLine = `-- name: SalesGetLine :one
-select id, order_id, fulfilment_id, listing_id, seller_id, variant_id, product_name, variant_name, sku, condition, quantity, unit_price_kobo, discount_kobo, line_total_kobo, vat_kobo, commission_bps, device_unit_id, cancelled_at, created_at from sales.order_lines where id = $1
+select id, order_id, fulfilment_id, listing_id, seller_id, variant_id, product_name, variant_name, sku, condition, quantity, unit_price_kobo, discount_kobo, line_total_kobo, vat_kobo, commission_bps, device_unit_id, cancelled_at, created_at, seller_earning_kobo from sales.order_lines where id = $1
 `
 
 func (q *Queries) SalesGetLine(ctx context.Context, id uuid.UUID) (SalesOrderLine, error) {
@@ -682,6 +686,7 @@ func (q *Queries) SalesGetLine(ctx context.Context, id uuid.UUID) (SalesOrderLin
 		&i.DeviceUnitID,
 		&i.CancelledAt,
 		&i.CreatedAt,
+		&i.SellerEarningKobo,
 	)
 	return i, err
 }
@@ -1149,7 +1154,7 @@ func (q *Queries) SalesOrderHistory(ctx context.Context, orderID uuid.UUID) ([]S
 }
 
 const salesOrderLines = `-- name: SalesOrderLines :many
-select id, order_id, fulfilment_id, listing_id, seller_id, variant_id, product_name, variant_name, sku, condition, quantity, unit_price_kobo, discount_kobo, line_total_kobo, vat_kobo, commission_bps, device_unit_id, cancelled_at, created_at from sales.order_lines where order_id = $1 order by created_at
+select id, order_id, fulfilment_id, listing_id, seller_id, variant_id, product_name, variant_name, sku, condition, quantity, unit_price_kobo, discount_kobo, line_total_kobo, vat_kobo, commission_bps, device_unit_id, cancelled_at, created_at, seller_earning_kobo from sales.order_lines where order_id = $1 order by created_at
 `
 
 func (q *Queries) SalesOrderLines(ctx context.Context, orderID uuid.UUID) ([]SalesOrderLine, error) {
@@ -1181,6 +1186,7 @@ func (q *Queries) SalesOrderLines(ctx context.Context, orderID uuid.UUID) ([]Sal
 			&i.DeviceUnitID,
 			&i.CancelledAt,
 			&i.CreatedAt,
+			&i.SellerEarningKobo,
 		); err != nil {
 			return nil, err
 		}
@@ -1757,6 +1763,20 @@ type SalesSetPackByParams struct {
 
 func (q *Queries) SalesSetPackBy(ctx context.Context, arg SalesSetPackByParams) error {
 	_, err := q.db.Exec(ctx, salesSetPackBy, arg.ID, arg.PackBy)
+	return err
+}
+
+const salesSetSellerEarning = `-- name: SalesSetSellerEarning :exec
+update sales.order_lines set seller_earning_kobo = $2 where id = $1
+`
+
+type SalesSetSellerEarningParams struct {
+	ID                uuid.UUID `json:"id"`
+	SellerEarningKobo *int64    `json:"sellerEarningKobo"`
+}
+
+func (q *Queries) SalesSetSellerEarning(ctx context.Context, arg SalesSetSellerEarningParams) error {
+	_, err := q.db.Exec(ctx, salesSetSellerEarning, arg.ID, arg.SellerEarningKobo)
 	return err
 }
 

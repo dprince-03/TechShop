@@ -719,16 +719,18 @@ func (q *Queries) PaymentsListRefunds(ctx context.Context, arg PaymentsListRefun
 }
 
 const paymentsMarkEventProcessed = `-- name: PaymentsMarkEventProcessed :exec
-update payments.payment_events set processed_at = now(), payment_id = coalesce(payment_id, $2) where id = $1
+update payments.payment_events set processed_at = now(), payment_id = coalesce(payment_id, $2),
+  payout_id = coalesce(payout_id, $3) where id = $1
 `
 
 type PaymentsMarkEventProcessedParams struct {
 	ID        uuid.UUID  `json:"id"`
 	PaymentID *uuid.UUID `json:"paymentId"`
+	PayoutID  *uuid.UUID `json:"payoutId"`
 }
 
 func (q *Queries) PaymentsMarkEventProcessed(ctx context.Context, arg PaymentsMarkEventProcessedParams) error {
-	_, err := q.db.Exec(ctx, paymentsMarkEventProcessed, arg.ID, arg.PaymentID)
+	_, err := q.db.Exec(ctx, paymentsMarkEventProcessed, arg.ID, arg.PaymentID, arg.PayoutID)
 	return err
 }
 

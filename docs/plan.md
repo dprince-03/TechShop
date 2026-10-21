@@ -705,3 +705,37 @@ Build order: 2–3 (returns) → 1 (hand-over, unblocks delivery, payouts, selle
 A packed seller parcel must be dropped at a TechShop warehouse or hub (not a retail store) within **24 hours of packing**. A deadline that falls on a Sunday (WAT) moves to Monday. If it's missed, the SLA job cancels the order as `late_handover`, refunds the customer, and the breach counts toward the three-strike rule. Source: Jumia Nigeria vendor FAQ, which gives 24 hours to drop off after ready-to-ship (vendor.jumia.com/black-friday-ops-faq; dated 2018). Senegal and Egypt allow 48 hours from the order (vendorhub.jumia.sn/?p=146, sell.jumia.com). 24 hours after packing sits inside both. Sunday is skipped because Jumia's own SLA excludes Sundays.
 
 Later: rider pickup from the seller's address (needs seller pickup addresses), and a seller notification when the hub scans a parcel in.
+
+## 2026-10-21 — Seller payouts: how the amount and approvals work
+
+The rules come from `payments-finance.md` §9 and existing config: Tuesday/Friday runs, ₦5,000 minimum, 7-day return window, second approver above `PAYOUT_APPROVAL_THRESHOLD_KOBO`. The build decisions are:
+
+- **Amount = earnings of eligible orders, capped by the ledger.**
+  - **Eligible:** delivered, past the return window, no open return.
+  - **Earnings:** each marketplace line's `seller_earning_kobo` (snapshotted at capture: net price plus any TechShop-funded discount) minus the line's snapshot commission.
+  - **Cap:** the seller's live `seller_payable` balance, less money already in other payouts, less earnings not yet payable.
+  - **Why:** refunds and chargebacks already booked against the seller are netted off without separate bookkeeping. The ledger stays the single truth.
+- **Holds are worked out live:**
+  - shop not active (unverified or suspended);
+  - no verified default account;
+  - default account under 24 hours old;
+  - owner's password, phone, email or MFA changed in the last 24 hours;
+  - open seller risk case;
+  - negative available balance;
+  - stored `finance.payout_holds` rows.
+  - Officers can place holds. Only `payouts.approve` (a manager) can release one.
+- **Dual control:**
+  - A batch is prepared and submitted by `payouts.prepare` (a finance officer).
+  - It is approved by `payouts.approve`, which is sensitive, so a fresh MFA is needed. The approver is never the preparer; the API checks this and the database enforces it.
+  - Above the threshold, two different managers approve. The first approval is recorded and the batch waits.
+- **Transfers:**
+  - They use Paystack Transfers: a `nuban` recipient once per account, then `POST /transfer` from the balance with **our payout ID as the reference**, so a retry can never pay twice. The outcome is checked with `GET /transfer/verify/{reference}`.
+  - Webhooks (`transfer.success`, `transfer.failed`, `transfer.reversed`) come through the existing signed webhook intake. They only prompt a re-check, and the webhook body is never trusted.
+  - A 10-minute sweep re-checks payouts stuck in processing.
+  - The payout journal (`payout:{id}:paid`) is posted only on success. A failure releases the orders for the next run. A reversal after success reverses the journal.
+  - Sources: Paystack Single Transfers guide (paystack.com/docs/transfers/single-transfers), Paystack Transfer API reference (docs-v2.paystack.com/docs/api/transfer).
+  - Live keys, and turning off the transfer OTP on the Paystack account, are the owner's to do before go-live.
+- **Later:**
+  - an automatic batch on payout days (needs a system preparer that can't also approve);
+  - monthly commission invoices with VAT;
+  - per-seller payout statements as PDF.

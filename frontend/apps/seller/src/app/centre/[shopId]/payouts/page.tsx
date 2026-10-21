@@ -4,13 +4,16 @@ import { connection } from "next/server";
 import { Status, Table } from "@techshop/ui/components";
 
 import { makeDefault, removeAccount } from "@/features/payouts/actions";
+import { Balance } from "@/features/payouts/components/Balance";
+import { payoutStatus } from "@/features/payouts/status";
 import { BankAccountForm } from "@/features/payouts/components/BankAccountForm";
 import { RowAction } from "@/components/RowAction";
 import { requireShop, sellerApi } from "@/features/session/server";
 import { ShopPage } from "@/features/shops/components/ShopPage";
+import { dateOnly, naira } from "@/lib/format";
 
 export const metadata: Metadata = {
-  title: "Payout accounts | TechShop Seller Centre",
+  title: "Payouts | TechShop Seller Centre",
 };
 
 const match = {
@@ -44,13 +47,74 @@ export default async function PayoutsPage(
   const accounts = o.bankAccounts ?? [];
   const bankName = new Map((banks ?? []).map((b) => [b.code, b.name]));
   const canManage = shop.role === "owner" || shop.role === "finance";
+  const [balance, history] = canManage
+    ? await Promise.all([
+        api.get("/api/v1/seller/shops/{shopId}/balance", {
+          path: { shopId },
+          init: { cache: "no-store" },
+        }),
+        api.get("/api/v1/seller/shops/{shopId}/payouts", {
+          path: { shopId },
+          init: { cache: "no-store" },
+        }),
+      ])
+    : [null, null];
   return (
     <ShopPage
       shop={shop}
       section="payouts"
-      title="Payout accounts"
-      lead="Where we pay your earnings. A new account can receive payouts 24 hours after it’s added."
+      title="Payouts"
+      lead="What you’ve earned, when it’s paid, and where we send it."
     >
+      {balance && history ? (
+        <>
+          <Balance b={balance} />
+          <section aria-labelledby="history-title" className="stack">
+            <h2 id="history-title" className="text-xl">
+              Payout history
+            </h2>
+            <Table
+              caption="Payouts"
+              rows={history.items ?? []}
+              rowKey={(p) => p.id}
+              href={(p) => `${here}/${p.id}`}
+              empty={{
+                title: "No payouts yet",
+                body: "Your first payout comes after your first delivered order passes the 7-day return window.",
+              }}
+              columns={[
+                {
+                  label: "Date",
+                  cell: (p) =>
+                    dateOnly.format(new Date(p.paidAt ?? p.scheduledFor)),
+                },
+                {
+                  label: "Amount",
+                  numeric: true,
+                  cell: (p) => naira(p.amount),
+                },
+                { label: "To", cell: (p) => `••••${p.accountLast4}` },
+                {
+                  label: "Status",
+                  cell: (p) => {
+                    const st = payoutStatus[p.status];
+                    return <Status label={st.label} tone={st.tone} />;
+                  },
+                },
+              ]}
+            />
+          </section>
+        </>
+      ) : (
+        <p className="text-sm text-muted">
+          Only the shop owner or a finance member can see the balance and
+          payouts.
+        </p>
+      )}
+      <h2 className="text-xl">Payout accounts</h2>
+      <p className="text-sm text-muted">
+        A new account can receive payouts 24 hours after it’s added.
+      </p>
       <Table
         caption="Payout accounts"
         rows={accounts}

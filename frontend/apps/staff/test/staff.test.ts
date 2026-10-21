@@ -86,6 +86,7 @@ describe("portal", () => {
     for (const tab of [
       "overview",
       "refunds",
+      "payouts",
       "reconciliation",
       "ledger",
       "periods",
@@ -455,5 +456,41 @@ describe("operations modules", () => {
     assert.equal(add.value.ok, true, add.value.message);
     const html = (await b.get("/search-tuning")).html;
     assert.match(textOf(html), new RegExp(word));
+  });
+});
+
+describe("payouts", () => {
+  test("a finance officer prepares a batch; it opens and can be cancelled", async () => {
+    const b = await signIn("finance_officer");
+    assert.match(
+      textOf((await b.get("/finance?tab=payouts")).html),
+      /Seller payouts/,
+    );
+    const prep = await b.action<{ ok: boolean; message: string }>(
+      "/finance",
+      "prepareBatch",
+      [],
+      { url: "/finance?tab=payouts" },
+    );
+    assert.equal(prep.value.ok, true, prep.value.message);
+    assert.match(prep.value.message, /^Draft batch: \d+ payouts?, ₦/);
+    const list = textOf((await b.get("/finance?tab=payouts")).html);
+    assert.match(list, /Draft/);
+    const batches = await api.get("/api/v1/staff/finance/payout-batches", {
+      query: { status: "draft" },
+      token: await staffToken("finance_officer"),
+    });
+    const id = batches.items![0].id;
+    const page = textOf((await b.get(`/finance/payouts/${id}`)).html);
+    assert.match(page, /Payout batch/);
+    assert.match(page, /Cancel batch/);
+    assert.doesNotMatch(page, /Approve/); // officers prepare; managers approve
+    const cancel = await b.action<{ ok: boolean; message: string }>(
+      "/finance/payouts/[id]",
+      "cancelBatch",
+      [id],
+      { url: `/finance/payouts/${id}` },
+    );
+    assert.equal(cancel.value.ok, true, cancel.value.message);
   });
 });
