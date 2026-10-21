@@ -3574,6 +3574,51 @@ components:
         - createdAt
         - updatedAt
       type: object
+    InviteInput:
+      additionalProperties: false
+      properties:
+        email:
+          format: email
+          maxLength: 254
+          type: string
+        phone:
+          description: Nigerian mobile number; or give an email
+          maxLength: 20
+          type: string
+        role:
+          enum:
+            - owner
+            - manager
+            - staff
+            - finance
+          type: string
+      required:
+        - role
+      type: object
+    InvitePreview:
+      additionalProperties: false
+      properties:
+        expiresAt:
+          format: date-time
+          type: string
+        role:
+          enum:
+            - owner
+            - manager
+            - staff
+            - finance
+          type: string
+        sentTo:
+          description: "Masked: accept from the account with this phone or email"
+          type: string
+        shop:
+          type: string
+      required:
+        - shop
+        - role
+        - expiresAt
+        - sentTo
+      type: object
     InviteStart:
       additionalProperties: false
       properties:
@@ -8604,6 +8649,16 @@ components:
         - searches
         - lastSeen
       type: object
+    SellerAcceptInviteRequest:
+      additionalProperties: false
+      properties:
+        token:
+          maxLength: 100
+          minLength: 20
+          type: string
+      required:
+        - token
+      type: object
     SellerBalance:
       additionalProperties: false
       properties:
@@ -8774,6 +8829,16 @@ components:
         - failureReason
         - createdAt
       type: object
+    SellerPreviewInviteRequest:
+      additionalProperties: false
+      properties:
+        token:
+          maxLength: 100
+          minLength: 20
+          type: string
+      required:
+        - token
+      type: object
     SellerRespondToReviewRequest:
       additionalProperties: false
       properties:
@@ -8849,6 +8914,19 @@ components:
           type: integer
       required:
         - stock
+      type: object
+    SellerSetMemberRoleRequest:
+      additionalProperties: false
+      properties:
+        role:
+          enum:
+            - owner
+            - manager
+            - staff
+            - finance
+          type: string
+      required:
+        - role
       type: object
     SessionDTO:
       additionalProperties: false
@@ -8929,6 +9007,25 @@ components:
         - stateCode
         - city
         - createdAt
+      type: object
+    ShopTeam:
+      additionalProperties: false
+      properties:
+        invites:
+          items:
+            $ref: "#/components/schemas/TeamInvite"
+          type:
+            - array
+            - "null"
+        members:
+          items:
+            $ref: "#/components/schemas/TeamMember"
+          type:
+            - array
+            - "null"
+      required:
+        - members
+        - invites
       type: object
     SkippedSeller:
       additionalProperties: false
@@ -9781,6 +9878,76 @@ components:
         - secret
         - otpauthUrl
       type: object
+    TeamInvite:
+      additionalProperties: false
+      properties:
+        contact:
+          description: Masked phone, or email
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        expired:
+          type: boolean
+        expiresAt:
+          format: date-time
+          type: string
+        id:
+          type: string
+        invitedBy:
+          type: string
+        link:
+          description: Development only; otherwise the link is only sent to the invitee
+          type: string
+        role:
+          enum:
+            - owner
+            - manager
+            - staff
+            - finance
+          type: string
+      required:
+        - id
+        - contact
+        - role
+        - invitedBy
+        - expiresAt
+        - expired
+        - createdAt
+      type: object
+    TeamMember:
+      additionalProperties: false
+      properties:
+        contact:
+          description: Masked phone, or email
+          type: string
+        firstName:
+          type: string
+        hasAuthenticator:
+          type: boolean
+        joinedAt:
+          format: date-time
+          type: string
+        lastName:
+          type: string
+        role:
+          enum:
+            - owner
+            - manager
+            - staff
+            - finance
+          type: string
+        userId:
+          type: string
+      required:
+        - userId
+        - firstName
+        - lastName
+        - role
+        - contact
+        - hasAuthenticator
+        - joinedAt
+      type: object
     ToggleSavedResponse:
       additionalProperties: false
       properties:
@@ -10152,6 +10319,9 @@ components:
     VerifyOTPResult:
       additionalProperties: false
       properties:
+        mfaToken:
+          description: "mfa_required: send with an authenticator code to /auth/mfa/totp (valid 2 minutes)"
+          type: string
         signupToken:
           description: Send with your name to /auth/otp/signup (valid 15 minutes)
           type: string
@@ -10159,6 +10329,7 @@ components:
           enum:
             - signed_in
             - needs_profile
+            - mfa_required
           type: string
         tokens:
           $ref: "#/components/schemas/TokenPair"
@@ -13708,6 +13879,60 @@ paths:
       summary: Where to drop packed parcels
       tags:
         - Seller Centre · Orders
+  /api/v1/seller/invites/accept:
+    post:
+      operationId: sellerAcceptInvite
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SellerAcceptInviteRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Shop"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Join the shop (from the account the invite was sent to)
+      tags:
+        - Seller Centre · Team
+  /api/v1/seller/invites/preview:
+    post:
+      operationId: sellerPreviewInvite
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SellerPreviewInviteRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvitePreview"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: The shop and role an invite is for
+      tags:
+        - Seller Centre · Team
   /api/v1/seller/shops:
     get:
       operationId: sellerMyShops
@@ -14560,6 +14785,192 @@ paths:
       summary: Answer a review publicly (once)
       tags:
         - Seller Centre · Reviews
+  /api/v1/seller/shops/{shopId}/team:
+    get:
+      operationId: sellerTeam
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShopTeam"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Members and open invites (owners and managers)
+      tags:
+        - Seller Centre · Team
+  /api/v1/seller/shops/{shopId}/team/invites:
+    post:
+      operationId: sellerInvite
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InviteInput"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamInvite"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Invite someone by phone or email (link valid 7 days)
+      tags:
+        - Seller Centre · Team
+  /api/v1/seller/shops/{shopId}/team/invites/{inviteId}:
+    delete:
+      operationId: sellerRevokeInvite
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: inviteId
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Cancel an invite
+      tags:
+        - Seller Centre · Team
+  /api/v1/seller/shops/{shopId}/team/invites/{inviteId}/resend:
+    post:
+      operationId: sellerResendInvite
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: inviteId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamInvite"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Send a new link (the old one stops working; 7 more days)
+      tags:
+        - Seller Centre · Team
+  /api/v1/seller/shops/{shopId}/team/members/{userId}:
+    delete:
+      operationId: sellerRemoveMember
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Remove a member (or leave the shop yourself)
+      tags:
+        - Seller Centre · Team
+  /api/v1/seller/shops/{shopId}/team/members/{userId}/role:
+    put:
+      operationId: sellerSetMemberRole
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SellerSetMemberRoleRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShopTeam"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Change a member's role
+      tags:
+        - Seller Centre · Team
   /api/v1/staff/admin/audit-log:
     get:
       description: Requires permission `admin.audit_view`.

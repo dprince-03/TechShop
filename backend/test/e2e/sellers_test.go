@@ -11,6 +11,13 @@ import (
 // sellerSignup creates a brand-new seller login (OTP sign-up on the seller audience).
 func sellerSignup(t *testing.T, first, last string) string {
 	t.Helper()
+	tok, _ := sellerSignupPhone(t, first, last)
+	return tok
+}
+
+// sellerSignupPhone is sellerSignup that also returns the new account's phone.
+func sellerSignupPhone(t *testing.T, first, last string) (string, string) {
+	t.Helper()
 	phone := randomPhone()
 	r := post(t, "/api/v1/auth/otp/request", "", map[string]any{"phone": phone})
 	expect(t, r, 200, "seller otp request")
@@ -19,7 +26,7 @@ func sellerSignup(t *testing.T, first, last string) string {
 	expect(t, v, 200, "seller otp verify")
 	s := post(t, "/api/v1/auth/otp/signup", "", map[string]any{"signupToken": v.str("signupToken"), "firstName": first, "lastName": last, "audience": "seller", "deviceName": "e2e"})
 	expect(t, s, 200, "seller signup")
-	return s.str("accessToken")
+	return s.str("accessToken"), phone
 }
 
 // kycFile uploads a finished KYC document and returns its file ID.

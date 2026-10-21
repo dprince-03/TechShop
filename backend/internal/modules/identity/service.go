@@ -205,9 +205,10 @@ func (s *Service) runKeep(ctx context.Context, fn func(tx *uow.Tx) error) error 
 
 // VerifyOTPResult is either a session or a request to complete the profile (new number).
 type VerifyOTPResult struct {
-	Status      string     `json:"status" enum:"signed_in,needs_profile"`
+	Status      string     `json:"status" enum:"signed_in,needs_profile,mfa_required"`
 	Tokens      *TokenPair `json:"tokens,omitempty"`
 	SignupToken string     `json:"signupToken,omitempty" doc:"Send with your name to /auth/otp/signup (valid 15 minutes)"`
+	MFAToken    string     `json:"mfaToken,omitempty" doc:"mfa_required: send with an authenticator code to /auth/mfa/totp (valid 2 minutes)"`
 }
 
 // VerifyOTP checks the code and signs in (or asks for a name for a new number).
@@ -233,6 +234,14 @@ func (s *Service) VerifyOTP(ctx context.Context, challengeID uuid.UUID, code str
 			return httpx.Forbidden("Staff sign in with work email, password and authenticator.")
 		}
 		_ = tx.Q.IdentityMarkPhoneVerified(ctx, u.ID)
+		// An account with an authenticator (seller finance members, anyone who turned it on)
+		// needs it here too: a texted code alone isn't enough.
+		if f, err := tx.Q.IdentityGetTOTPFactor(ctx, u.ID); err == nil && f.ConfirmedAt != nil {
+			res = &VerifyOTPResult{Status: "mfa_required", MFAToken: s.mfaToken(u.ID, dev.Audience)}
+			return nil
+		} else if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			return err
+		}
 		tp, err := s.createSession(ctx, tx, u.ID, dev, []string{"otp"}, nil)
 		if err != nil {
 			return err

@@ -41,6 +41,7 @@ var codeTemplates = map[string]map[string]string{
 	"refund_processed":  {"push": "We've refunded {{.amount}} for {{.order}}.", "email": "We've refunded {{.amount}} for {{.order}}. It can take 3-5 working days to reach you."},
 	"payment_partial":   {"sms": "TechShop: we received {{.received}} for {{.order}}. Please send the remaining {{.remaining}} to the same account."},
 	"seller_new_order":  {"push": "New order {{.order}}: accept it within 24 hours.", "email": "You have a new order {{.order}}. Accept it within 24 hours in Seller Centre."},
+	"seller_invite":     {"sms": "{{.inviter}} invited you to help run {{.shop}} on TechShop as {{.role}}. Accept within 7 days: {{.link}}", "email": "{{.inviter}} invited you to help run {{.shop}} on TechShop Seller Centre as {{.role}}. Accept within 7 days: {{.link}}"},
 	"seller_kyc_result": {"email": "Your TechShop seller application was {{.result}}. {{.note}}"},
 	"payout_sent":       {"email": "We've sent {{.amount}} to your bank account ending {{.last4}}.", "push": "Payout of {{.amount}} sent."},
 	"payout_failed":     {"email": "We couldn't pay {{.amount}} to your bank account: {{.reason}}. Please update your bank details."},

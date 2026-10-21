@@ -12,6 +12,24 @@ import (
 	"github.com/google/uuid"
 )
 
+const sellersAcceptInvite = `-- name: SellersAcceptInvite :execrows
+update sellers.seller_invites set accepted_by = $2, accepted_at = now()
+where id = $1 and accepted_at is null and revoked_at is null and expires_at > now()
+`
+
+type SellersAcceptInviteParams struct {
+	ID         uuid.UUID  `json:"id"`
+	AcceptedBy *uuid.UUID `json:"acceptedBy"`
+}
+
+func (q *Queries) SellersAcceptInvite(ctx context.Context, arg SellersAcceptInviteParams) (int64, error) {
+	result, err := q.db.Exec(ctx, sellersAcceptInvite, arg.ID, arg.AcceptedBy)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const sellersAddMember = `-- name: SellersAddMember :exec
 insert into sellers.seller_members (seller_id, user_id, role) values ($1, $2, $3)
 on conflict (seller_id, user_id) do update set role = excluded.role
@@ -154,6 +172,49 @@ func (q *Queries) SellersCreate(ctx context.Context, arg SellersCreateParams) (S
 	return i, err
 }
 
+const sellersCreateInvite = `-- name: SellersCreateInvite :one
+insert into sellers.seller_invites (seller_id, phone, email, role, token_hash, invited_by, expires_at)
+values ($1, $2, $3, $4, $5, $6, $7) returning id, seller_id, phone, email, role, token_hash, invited_by, expires_at, accepted_by, accepted_at, revoked_at, created_at
+`
+
+type SellersCreateInviteParams struct {
+	SellerID  uuid.UUID `json:"sellerId"`
+	Phone     *string   `json:"phone"`
+	Email     *string   `json:"email"`
+	Role      string    `json:"role"`
+	TokenHash []byte    `json:"tokenHash"`
+	InvitedBy uuid.UUID `json:"invitedBy"`
+	ExpiresAt time.Time `json:"expiresAt"`
+}
+
+func (q *Queries) SellersCreateInvite(ctx context.Context, arg SellersCreateInviteParams) (SellersSellerInvite, error) {
+	row := q.db.QueryRow(ctx, sellersCreateInvite,
+		arg.SellerID,
+		arg.Phone,
+		arg.Email,
+		arg.Role,
+		arg.TokenHash,
+		arg.InvitedBy,
+		arg.ExpiresAt,
+	)
+	var i SellersSellerInvite
+	err := row.Scan(
+		&i.ID,
+		&i.SellerID,
+		&i.Phone,
+		&i.Email,
+		&i.Role,
+		&i.TokenHash,
+		&i.InvitedBy,
+		&i.ExpiresAt,
+		&i.AcceptedBy,
+		&i.AcceptedAt,
+		&i.RevokedAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const sellersDeleteBankAccount = `-- name: SellersDeleteBankAccount :execrows
 delete from sellers.seller_bank_accounts where id = $1 and seller_id = $2 and not is_default
 `
@@ -248,6 +309,35 @@ func (q *Queries) SellersGetFirstParty(ctx context.Context) (SellersSeller, erro
 	return i, err
 }
 
+const sellersGetInvite = `-- name: SellersGetInvite :one
+select id, seller_id, phone, email, role, token_hash, invited_by, expires_at, accepted_by, accepted_at, revoked_at, created_at from sellers.seller_invites where id = $1 and seller_id = $2
+`
+
+type SellersGetInviteParams struct {
+	ID       uuid.UUID `json:"id"`
+	SellerID uuid.UUID `json:"sellerId"`
+}
+
+func (q *Queries) SellersGetInvite(ctx context.Context, arg SellersGetInviteParams) (SellersSellerInvite, error) {
+	row := q.db.QueryRow(ctx, sellersGetInvite, arg.ID, arg.SellerID)
+	var i SellersSellerInvite
+	err := row.Scan(
+		&i.ID,
+		&i.SellerID,
+		&i.Phone,
+		&i.Email,
+		&i.Role,
+		&i.TokenHash,
+		&i.InvitedBy,
+		&i.ExpiresAt,
+		&i.AcceptedBy,
+		&i.AcceptedAt,
+		&i.RevokedAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const sellersGetKyc = `-- name: SellersGetKyc :one
 select id, seller_id, status, id_type, id_number_encrypted, id_number_hmac, id_number_last4, encryption_key_id, cac_rc_number, tin, verification_provider, verification_ref, verified_at, reviewed_by, reviewed_at, rejection_reason, created_at, updated_at from sellers.seller_kyc_submissions where id = $1
 `
@@ -306,6 +396,17 @@ func (q *Queries) SellersGetKycForUpdate(ctx context.Context, id uuid.UUID) (Sel
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const sellersHasAuthenticator = `-- name: SellersHasAuthenticator :one
+select exists (select 1 from identity.user_mfa_factors where user_id = $1 and kind = 'totp' and confirmed_at is not null)::boolean
+`
+
+func (q *Queries) SellersHasAuthenticator(ctx context.Context, userID uuid.UUID) (bool, error) {
+	row := q.db.QueryRow(ctx, sellersHasAuthenticator, userID)
+	var column_1 bool
+	err := row.Scan(&column_1)
+	return column_1, err
 }
 
 const sellersInsertBankAccount = `-- name: SellersInsertBankAccount :one
@@ -425,6 +526,50 @@ type SellersInsertKycDocumentParams struct {
 func (q *Queries) SellersInsertKycDocument(ctx context.Context, arg SellersInsertKycDocumentParams) error {
 	_, err := q.db.Exec(ctx, sellersInsertKycDocument, arg.SubmissionID, arg.Kind, arg.FileID)
 	return err
+}
+
+const sellersInviteByToken = `-- name: SellersInviteByToken :one
+select i.id, i.seller_id, i.phone, i.email, i.role, i.token_hash, i.invited_by, i.expires_at, i.accepted_by, i.accepted_at, i.revoked_at, i.created_at, s.display_name, s.status as shop_status from sellers.seller_invites i join sellers.sellers s on s.id = i.seller_id
+where i.token_hash = $1
+`
+
+type SellersInviteByTokenRow struct {
+	ID          uuid.UUID  `json:"id"`
+	SellerID    uuid.UUID  `json:"sellerId"`
+	Phone       *string    `json:"phone"`
+	Email       *string    `json:"email"`
+	Role        string     `json:"role"`
+	TokenHash   []byte     `json:"tokenHash"`
+	InvitedBy   uuid.UUID  `json:"invitedBy"`
+	ExpiresAt   time.Time  `json:"expiresAt"`
+	AcceptedBy  *uuid.UUID `json:"acceptedBy"`
+	AcceptedAt  *time.Time `json:"acceptedAt"`
+	RevokedAt   *time.Time `json:"revokedAt"`
+	CreatedAt   time.Time  `json:"createdAt"`
+	DisplayName string     `json:"displayName"`
+	ShopStatus  string     `json:"shopStatus"`
+}
+
+func (q *Queries) SellersInviteByToken(ctx context.Context, tokenHash []byte) (SellersInviteByTokenRow, error) {
+	row := q.db.QueryRow(ctx, sellersInviteByToken, tokenHash)
+	var i SellersInviteByTokenRow
+	err := row.Scan(
+		&i.ID,
+		&i.SellerID,
+		&i.Phone,
+		&i.Email,
+		&i.Role,
+		&i.TokenHash,
+		&i.InvitedBy,
+		&i.ExpiresAt,
+		&i.AcceptedBy,
+		&i.AcceptedAt,
+		&i.RevokedAt,
+		&i.CreatedAt,
+		&i.DisplayName,
+		&i.ShopStatus,
+	)
+	return i, err
 }
 
 const sellersKycDocuments = `-- name: SellersKycDocuments :many
@@ -555,6 +700,61 @@ func (q *Queries) SellersMembers(ctx context.Context, sellerID uuid.UUID) ([]Sel
 	return items, nil
 }
 
+const sellersOpenInvites = `-- name: SellersOpenInvites :many
+select i.id, i.seller_id, i.phone, i.email, i.role, i.token_hash, i.invited_by, i.expires_at, i.accepted_by, i.accepted_at, i.revoked_at, i.created_at, u.first_name as invited_by_first_name from sellers.seller_invites i join identity.users u on u.id = i.invited_by
+where i.seller_id = $1 and i.accepted_at is null and i.revoked_at is null order by i.created_at desc
+`
+
+type SellersOpenInvitesRow struct {
+	ID                 uuid.UUID  `json:"id"`
+	SellerID           uuid.UUID  `json:"sellerId"`
+	Phone              *string    `json:"phone"`
+	Email              *string    `json:"email"`
+	Role               string     `json:"role"`
+	TokenHash          []byte     `json:"tokenHash"`
+	InvitedBy          uuid.UUID  `json:"invitedBy"`
+	ExpiresAt          time.Time  `json:"expiresAt"`
+	AcceptedBy         *uuid.UUID `json:"acceptedBy"`
+	AcceptedAt         *time.Time `json:"acceptedAt"`
+	RevokedAt          *time.Time `json:"revokedAt"`
+	CreatedAt          time.Time  `json:"createdAt"`
+	InvitedByFirstName string     `json:"invitedByFirstName"`
+}
+
+func (q *Queries) SellersOpenInvites(ctx context.Context, sellerID uuid.UUID) ([]SellersOpenInvitesRow, error) {
+	rows, err := q.db.Query(ctx, sellersOpenInvites, sellerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []SellersOpenInvitesRow{}
+	for rows.Next() {
+		var i SellersOpenInvitesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.SellerID,
+			&i.Phone,
+			&i.Email,
+			&i.Role,
+			&i.TokenHash,
+			&i.InvitedBy,
+			&i.ExpiresAt,
+			&i.AcceptedBy,
+			&i.AcceptedAt,
+			&i.RevokedAt,
+			&i.CreatedAt,
+			&i.InvitedByFirstName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const sellersOtherSellersWithAccount = `-- name: SellersOtherSellersWithAccount :one
 select count(distinct seller_id) from sellers.seller_bank_accounts where account_number_hmac = $1 and seller_id <> $2
 `
@@ -585,6 +785,17 @@ func (q *Queries) SellersOtherSellersWithIDNumber(ctx context.Context, arg Selle
 	var count int64
 	err := row.Scan(&count)
 	return count, err
+}
+
+const sellersOwnerCount = `-- name: SellersOwnerCount :one
+select count(*)::int from sellers.seller_members where seller_id = $1 and role = 'owner'
+`
+
+func (q *Queries) SellersOwnerCount(ctx context.Context, sellerID uuid.UUID) (int32, error) {
+	row := q.db.QueryRow(ctx, sellersOwnerCount, sellerID)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
 }
 
 const sellersRegisterShop = `-- name: SellersRegisterShop :one
@@ -629,6 +840,53 @@ func (q *Queries) SellersRegisterShop(ctx context.Context, arg SellersRegisterSh
 		&i.CommissionOverrideBps,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const sellersRemoveMember = `-- name: SellersRemoveMember :execrows
+delete from sellers.seller_members where seller_id = $1 and user_id = $2
+`
+
+type SellersRemoveMemberParams struct {
+	SellerID uuid.UUID `json:"sellerId"`
+	UserID   uuid.UUID `json:"userId"`
+}
+
+func (q *Queries) SellersRemoveMember(ctx context.Context, arg SellersRemoveMemberParams) (int64, error) {
+	result, err := q.db.Exec(ctx, sellersRemoveMember, arg.SellerID, arg.UserID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const sellersRenewInvite = `-- name: SellersRenewInvite :one
+update sellers.seller_invites set token_hash = $2, expires_at = $3 where id = $1 and accepted_at is null and revoked_at is null returning id, seller_id, phone, email, role, token_hash, invited_by, expires_at, accepted_by, accepted_at, revoked_at, created_at
+`
+
+type SellersRenewInviteParams struct {
+	ID        uuid.UUID `json:"id"`
+	TokenHash []byte    `json:"tokenHash"`
+	ExpiresAt time.Time `json:"expiresAt"`
+}
+
+func (q *Queries) SellersRenewInvite(ctx context.Context, arg SellersRenewInviteParams) (SellersSellerInvite, error) {
+	row := q.db.QueryRow(ctx, sellersRenewInvite, arg.ID, arg.TokenHash, arg.ExpiresAt)
+	var i SellersSellerInvite
+	err := row.Scan(
+		&i.ID,
+		&i.SellerID,
+		&i.Phone,
+		&i.Email,
+		&i.Role,
+		&i.TokenHash,
+		&i.InvitedBy,
+		&i.ExpiresAt,
+		&i.AcceptedBy,
+		&i.AcceptedAt,
+		&i.RevokedAt,
+		&i.CreatedAt,
 	)
 	return i, err
 }
@@ -678,6 +936,23 @@ func (q *Queries) SellersReviewKyc(ctx context.Context, arg SellersReviewKycPara
 	return i, err
 }
 
+const sellersRevokeInvite = `-- name: SellersRevokeInvite :execrows
+update sellers.seller_invites set revoked_at = now() where id = $1 and seller_id = $2 and accepted_at is null and revoked_at is null
+`
+
+type SellersRevokeInviteParams struct {
+	ID       uuid.UUID `json:"id"`
+	SellerID uuid.UUID `json:"sellerId"`
+}
+
+func (q *Queries) SellersRevokeInvite(ctx context.Context, arg SellersRevokeInviteParams) (int64, error) {
+	result, err := q.db.Exec(ctx, sellersRevokeInvite, arg.ID, arg.SellerID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const sellersSetDefaultBank = `-- name: SellersSetDefaultBank :execrows
 update sellers.seller_bank_accounts set is_default = true where id = $1 and seller_id = $2
 `
@@ -693,6 +968,28 @@ func (q *Queries) SellersSetDefaultBank(ctx context.Context, arg SellersSetDefau
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const sellersSetMemberRole = `-- name: SellersSetMemberRole :one
+update sellers.seller_members set role = $3 where seller_id = $1 and user_id = $2 returning seller_id, user_id, role, created_at
+`
+
+type SellersSetMemberRoleParams struct {
+	SellerID uuid.UUID `json:"sellerId"`
+	UserID   uuid.UUID `json:"userId"`
+	Role     string    `json:"role"`
+}
+
+func (q *Queries) SellersSetMemberRole(ctx context.Context, arg SellersSetMemberRoleParams) (SellersSellerMember, error) {
+	row := q.db.QueryRow(ctx, sellersSetMemberRole, arg.SellerID, arg.UserID, arg.Role)
+	var i SellersSellerMember
+	err := row.Scan(
+		&i.SellerID,
+		&i.UserID,
+		&i.Role,
+		&i.CreatedAt,
+	)
+	return i, err
 }
 
 const sellersSetStatus = `-- name: SellersSetStatus :one
@@ -865,6 +1162,55 @@ func (q *Queries) SellersStaffList(ctx context.Context, arg SellersStaffListPara
 			&i.UpdatedAt,
 			&i.KycStatus,
 			&i.KycSubmittedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const sellersTeam = `-- name: SellersTeam :many
+
+select m.user_id, m.role, m.created_at, u.first_name, u.last_name, u.phone, u.email,
+       exists (select 1 from identity.user_mfa_factors f where f.user_id = m.user_id and f.kind = 'totp' and f.confirmed_at is not null)::boolean as has_authenticator
+from sellers.seller_members m join identity.users u on u.id = m.user_id
+where m.seller_id = $1 order by m.created_at
+`
+
+type SellersTeamRow struct {
+	UserID           uuid.UUID `json:"userId"`
+	Role             string    `json:"role"`
+	CreatedAt        time.Time `json:"createdAt"`
+	FirstName        string    `json:"firstName"`
+	LastName         string    `json:"lastName"`
+	Phone            *string   `json:"phone"`
+	Email            *string   `json:"email"`
+	HasAuthenticator bool      `json:"hasAuthenticator"`
+}
+
+// ---- Team: members and invites (identity-access.md §7.3)
+func (q *Queries) SellersTeam(ctx context.Context, sellerID uuid.UUID) ([]SellersTeamRow, error) {
+	rows, err := q.db.Query(ctx, sellersTeam, sellerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []SellersTeamRow{}
+	for rows.Next() {
+		var i SellersTeamRow
+		if err := rows.Scan(
+			&i.UserID,
+			&i.Role,
+			&i.CreatedAt,
+			&i.FirstName,
+			&i.LastName,
+			&i.Phone,
+			&i.Email,
+			&i.HasAuthenticator,
 		); err != nil {
 			return nil, err
 		}

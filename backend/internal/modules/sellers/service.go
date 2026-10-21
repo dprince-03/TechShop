@@ -148,9 +148,10 @@ func (s *Service) MyShops(ctx context.Context, userID uuid.UUID) ([]Shop, error)
 	return out, err
 }
 
-// inShop runs fn in a transaction scoped to one shop: the caller must hold one of roles, and
-// app.seller_id is set so row-level security hides every other shop. A shop the caller doesn't
-// belong to is reported as not found (its existence isn't revealed).
+// inShop runs fn in a transaction scoped to one shop: the caller must hold one of roles (a
+// finance member also needs an authenticator), and app.seller_id is set so row-level security
+// hides every other shop. A shop the caller doesn't belong to is reported as not found (its
+// existence isn't revealed).
 func (s *Service) inShop(ctx context.Context, shopID uuid.UUID, roles []string, fn func(tx *uow.Tx, shop store.SellersSeller, role string) error) error {
 	userID := httpx.MustPrincipal(ctx).UserID
 	return s.d.Runner.Run(ctx, func(tx *uow.Tx) error {
@@ -166,6 +167,15 @@ func (s *Service) inShop(ctx context.Context, shopID uuid.UUID, roles []string, 
 		}
 		if !slices.Contains(roles, role) {
 			return httpx.Forbidden("Your role in this shop can't do that.")
+		}
+		if role == "finance" { // finance members see payouts and bank accounts: authenticator first
+			ok, err := tx.Q.SellersHasAuthenticator(ctx, userID)
+			if err != nil {
+				return err
+			}
+			if !ok {
+				return errAuthenticatorRequired("Finance members must")
+			}
 		}
 		shop, err := tx.Q.SellersGet(ctx, shopID)
 		if err != nil {

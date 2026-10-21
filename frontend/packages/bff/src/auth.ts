@@ -211,6 +211,10 @@ export function createAuthFlow(bff: Bff) {
       });
       if (r.status === "signed_in" && r.tokens)
         return finish(r.tokens, flow.next ?? "/");
+      if (r.status === "mfa_required" && r.mfaToken) {
+        await saveFlow({ kind: "totp", mfaToken: r.mfaToken, next: flow.next });
+        return { step: "totp" };
+      }
       await saveFlow({ ...flow, kind: "signup", signupToken: r.signupToken });
       return { step: "profile" };
     } catch (e) {

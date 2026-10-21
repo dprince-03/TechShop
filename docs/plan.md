@@ -739,3 +739,14 @@ The rules come from `payments-finance.md` §9 and existing config: Tuesday/Frida
   - an automatic batch on payout days (needs a system preparer that can't also approve);
   - monthly commission invoices with VAT;
   - per-seller payout statements as PDF.
+
+## 2026-10-21 — Seller teams built; authenticator now asked after phone-code sign-in
+
+- **Teams follow §7.3 and decision 4.**
+  - **Invites:** sent by phone or email, single use, valid 7 days. Re-sending issues a new link and the old one stops working. Only the hash is stored. One open invite per person per shop.
+  - **Accepting:** only from the account the invite was sent to (same phone or email), so a forwarded link can't add a stranger.
+  - **Owners:** managers can't invite, change or remove owners, and a shop always keeps one owner.
+  - **Finance members:** must have an authenticator to join, to be given the role, and every time they open a shop screen.
+- **Security gap found and fixed:** phone-code sign-in never asked for an authenticator, even when one was set up. Only password sign-in did. `POST /auth/otp/verify` now returns `mfa_required` with an `mfaToken` for such accounts. Web sign-in continues to its existing authenticator step. The customer app, which has no authenticator screen yet, says to sign in on the website. Today only staff and seller members can turn on an authenticator.
+- **Seller Centre:** a Team page, an invite acceptance page (`/invite/{token}`), and Account › Security for setting up an authenticator. Setup uses a typed setup key plus an `otpauth://` link; there's no QR code, since that would mean a new dependency. Recovery codes are shown once.
+- **Config:** new `SELLER_APP_URL` setting builds the invite links.

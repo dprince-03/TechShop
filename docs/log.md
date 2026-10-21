@@ -627,3 +627,29 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
   - Web: Seller Centre 2/2, staff 17/17. Typecheck and lint clean.
   - A back-to-back third e2e run hit the checkout rate limit (429) for the shared seeded customer. That is expected behaviour, not a regression.
   - Screenshots not taken.
+
+## 2026-10-21 — Seller teams and the authenticator after phone-code sign-in (branch feat/m4-seller-team)
+
+- **CI:** PR #6's Mobile check failed on `expo-doctor` because new SDK 57 patches came out (expo 57.0.31, expo-router 57.0.29, expo-location 57.0.22). Fixed with `npx expo install --fix` in both apps (commit on feat/m4-seller-payouts). All four PR #6 checks pass.
+- **Backend:**
+  - Migration 00031: `sellers.seller_invites` with RLS.
+  - Team queries; `sellers/team.go` and `team_routes.go` (team, invite, resend, revoke, role, remove/leave, invite preview and accept).
+  - `inShop` refuses finance members without an authenticator.
+  - Identity `VerifyOTP` now returns `mfa_required`.
+  - `SELLER_APP_URL` setting; `seller_invite` template (SMS and email).
+- **Web:**
+  - Seller Centre: Team page and nav item, `/invite/[token]`, `/account/security`.
+  - BFF phone-code flow continues to the authenticator step.
+  - Customer app message for `mfa_required`.
+- **Verification:**
+  - New e2e `TestSellerTeamInvites` covers:
+    - phone and contact validation; duplicate invite refused;
+    - texted link; re-send kills the old link; masked preview;
+    - stranger refused; single use; manager can't invite or remove an owner; last owner can't leave;
+    - finance refused without an authenticator, then joins; manager can't see money;
+    - role change to finance needs an authenticator; staff can't see the team;
+    - revoke; leaving the team;
+    - phone-code sign-in for an authenticator account returns `mfa_required`; a wrong code is refused; the right one signs in.
+  - Identity tests still pass.
+  - Seller web 2/2, now including the invite → accept flow. Market web 16/16. Contract 46/46.
+  - All web apps typecheck and lint clean. Backend lint 0 issues; unit tests pass.

@@ -22,6 +22,7 @@ type Config struct {
 	Port              string   `env:"PORT" envDefault:"8080"`
 	InternalAddr      string   `env:"INTERNAL_ADDR" envDefault:":8081"`
 	AppBaseURL        string   `env:"APP_BASE_URL" envDefault:"http://localhost:8080"`
+	SellerAppURL      string   `env:"SELLER_APP_URL" envDefault:"http://localhost:4104"` // Seller Centre, for links in emails and texts (team invites)
 	LogLevel          string   `env:"LOG_LEVEL" envDefault:"info"`
 	TrustedProxies    []string `env:"TRUSTED_PROXIES" envSeparator:"," envDefault:"127.0.0.1"`
 	WorkerInProcess   bool     `env:"WORKER_IN_PROCESS" envDefault:"true"`
