@@ -6,10 +6,15 @@
 select ol.id, ol.order_id, ol.fulfilment_id, ol.listing_id, ol.variant_id, ol.product_name, ol.variant_name, ol.condition,
        ol.quantity, ol.unit_price_kobo, ol.line_total_kobo, ol.device_unit_id, ol.cancelled_at,
        f.status as fulfilment_status, f.fulfilled_by, f.delivered_at, f.seller_id,
+       c.slug as category_slug, coalesce(pc.slug, '') as parent_category_slug,
        coalesce((select sum(ri.quantity) from aftersales.return_items ri
                  join aftersales.return_requests rr on rr.id = ri.return_request_id
                  where ri.order_line_id = ol.id and rr.status <> 'rejected'), 0)::int as already_returned
 from sales.order_lines ol join sales.fulfilments f on f.id = ol.fulfilment_id
+join catalog.product_variants v on v.id = ol.variant_id
+join catalog.products p on p.id = v.product_id
+join catalog.categories c on c.id = p.category_id
+left join catalog.categories pc on pc.id = c.parent_id
 where ol.order_id = $1
 order by ol.created_at;
 
@@ -33,7 +38,8 @@ where r.rma_number = $1;
 select * from aftersales.return_requests where rma_number = $1 for update;
 
 -- name: AftersalesItems :many
-select ri.id, ri.order_line_id, ri.quantity, ol.product_name, ol.variant_name, ol.condition, ol.variant_id, ol.listing_id,
+select ri.id, ri.order_line_id, ri.quantity, ol.fulfilment_id, f.delivery_fee_kobo,
+       (select coalesce(sum(quantity), 0) from sales.order_lines x where x.fulfilment_id = ol.fulfilment_id and x.cancelled_at is null)::int as fulfilment_units, ol.product_name, ol.variant_name, ol.condition, ol.variant_id, ol.listing_id,
        ol.unit_price_kobo, ol.line_total_kobo, ol.quantity as line_quantity, ol.device_unit_id, f.seller_id,
        ins.grade, ins.disposition, ins.imei_match, ins.inspected_at
 from aftersales.return_items ri

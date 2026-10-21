@@ -32,18 +32,17 @@ type Return struct {
 	AutoApproved    bool         `json:"autoApproved"`
 	RejectionReason *string      `json:"rejectionReason"`
 	Items           []ReturnItem `json:"items"`
-	Refund          int64        `json:"refund" doc:"Kobo, total for the items"`
+	Refund          int64        `json:"refund" doc:"Kobo: the items, plus delivery when a whole parcel comes back for an our-fault reason"`
 	CreatedAt       time.Time    `json:"createdAt"`
 }
 
 func returnView(r store.AftersalesGetReturnRow, items []store.AftersalesItemsRow) Return {
-	out := Return{RMA: r.RmaNumber, OrderNumber: r.OrderNumber, Reason: r.Reason, Details: r.Details, Method: r.ReturnMethod, Status: r.Status,
+	out := Return{Refund: refundTotal(r.Reason, items), RMA: r.RmaNumber, OrderNumber: r.OrderNumber, Reason: r.Reason, Details: r.Details, Method: r.ReturnMethod, Status: r.Status,
 		AutoApproved: r.AutoApproved, RejectionReason: r.RejectionReason, CreatedAt: r.CreatedAt, Items: make([]ReturnItem, len(items))}
 	for i, it := range items {
 		refund := lineRefund(it.LineTotalKobo, it.LineQuantity, it.Quantity)
 		out.Items[i] = ReturnItem{ID: it.ID, OrderLineID: it.OrderLineID, ProductName: it.ProductName, VariantName: it.VariantName,
 			Quantity: it.Quantity, Refund: refund, Serialised: it.DeviceUnitID != nil, Grade: it.Grade, Disposition: it.Disposition}
-		out.Refund += refund
 	}
 	return out
 }

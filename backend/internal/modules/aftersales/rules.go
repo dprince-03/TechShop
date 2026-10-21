@@ -11,9 +11,27 @@ import (
 // be returned. Later problems go to warranty.
 const returnWindow = 7 * 24 * time.Hour
 
-// problemReasons are the reasons the 7-day window covers. Change-of-mind returns wait for the
-// owner's policy (the plan leaves it to them), so they're refused for now.
-var problemReasons = map[string]bool{"faulty": true, "damaged": true, "not_as_described": true, "wrong_item": true}
+// ourFault are the reasons that are TechShop's (or the seller's) fault: refunded in full,
+// including the delivery fee, and eligible for auto-approval (FCCPA s.122; docs/plan.md 2026-10-21).
+var ourFault = map[string]bool{"faulty": true, "damaged": true, "not_as_described": true, "wrong_item": true}
+
+// noChangeOfMind lists category slugs that can't be returned on a change of mind for hygiene
+// reasons (in-ear audio here; underwear and cosmetics if those categories are ever added).
+var noChangeOfMind = map[string]bool{"audio": true, "underwear": true, "cosmetics": true}
+
+// changeOfMindAllowed: sealed items outside the hygiene categories (category or its parent).
+func changeOfMindAllowed(category, parent string, unopened bool) bool {
+	return unopened && !noChangeOfMind[category] && !noChangeOfMind[parent]
+}
+
+// deliveryRefund is the delivery fee returned when a whole parcel comes back for an our-fault
+// reason; a partial return keeps it (the parcel was still delivered for the other items).
+func deliveryRefund(reason string, fee int64, returnedUnits, parcelUnits int32) int64 {
+	if !ourFault[reason] || returnedUnits < parcelUnits {
+		return 0
+	}
+	return fee
+}
 
 // highReturnRate is the share of delivered orders returned in 90 days above which a customer
 // isn't auto-approved (trust-safety.md §3: "returns > 30 % of orders in 90 days").

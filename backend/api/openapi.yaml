@@ -7422,7 +7422,7 @@ components:
         reason:
           type: string
         refund:
-          description: Kobo, total for the items
+          description: "Kobo: the items, plus delivery when a whole parcel comes back for an our-fault reason"
           format: int64
           type: integer
         rejectionReason:
@@ -7471,7 +7471,7 @@ components:
             - array
             - "null"
         method:
-          description: How the item comes back
+          description: "How the item comes back (change of mind: store drop-off only)"
           enum:
             - pickup
             - store_dropoff
@@ -7484,6 +7484,9 @@ components:
             - wrong_item
             - change_of_mind
           type: string
+        unopened:
+          description: "Change of mind only: the customer confirms the item is unopened with seals intact"
+          type: boolean
       required:
         - items
         - reason

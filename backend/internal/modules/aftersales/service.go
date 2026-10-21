@@ -56,17 +56,22 @@ type ReturnItemInput struct {
 
 // ReturnInput is a customer's return request.
 type ReturnInput struct {
-	Items   []ReturnItemInput `json:"items" minItems:"1" maxItems:"20"`
-	Reason  string            `json:"reason" enum:"faulty,damaged,not_as_described,wrong_item,change_of_mind"`
-	Details string            `json:"details,omitempty" maxLength:"1000"`
-	Method  string            `json:"method" enum:"pickup,store_dropoff" doc:"How the item comes back"`
+	Items    []ReturnItemInput `json:"items" minItems:"1" maxItems:"20"`
+	Reason   string            `json:"reason" enum:"faulty,damaged,not_as_described,wrong_item,change_of_mind"`
+	Details  string            `json:"details,omitempty" maxLength:"1000"`
+	Method   string            `json:"method" enum:"pickup,store_dropoff" doc:"How the item comes back (change of mind: store drop-off only)"`
+	Unopened bool              `json:"unopened,omitempty" doc:"Change of mind only: the customer confirms the item is unopened with seals intact"`
 }
 
 // RequestReturn records a return for items of the caller's own delivered order. Problem
 // returns within 7 days from customers in good standing are approved straight away.
 func (s *Service) RequestReturn(ctx context.Context, userID uuid.UUID, orderNumber string, in ReturnInput) (Return, error) {
-	if !problemReasons[in.Reason] {
-		return Return{}, httpx.Invalid("change_of_mind_unavailable", "Change-of-mind returns aren’t available yet. If the item is faulty, damaged, wrong or not as described, choose that reason.")
+	changeOfMind := in.Reason == "change_of_mind"
+	if changeOfMind && in.Method != "store_dropoff" {
+		return Return{}, httpx.Invalid("dropoff_only", "Change-of-mind returns are brought to a TechShop store.")
+	}
+	if changeOfMind && !in.Unopened {
+		return Return{}, httpx.Invalid("must_be_unopened", "Change-of-mind returns must be unopened with the seals intact.")
 	}
 	var out Return
 	err := s.d.Runner.Run(ctx, func(tx *uow.Tx) error {
@@ -95,6 +100,8 @@ func (s *Service) RequestReturn(ctx context.Context, userID uuid.UUID, orderNumb
 				return httpx.Conflict("seller_return_unavailable", "Returns for items shipped by a marketplace seller aren’t open yet. Contact support and we’ll help.")
 			case !withinWindow(l.DeliveredAt, now):
 				return httpx.Invalid("return_window_closed", "The 7-day return window has passed. If it’s faulty, make a warranty claim.")
+			case changeOfMind && !changeOfMindAllowed(l.CategorySlug, l.ParentCategorySlug, in.Unopened):
+				return httpx.Invalid("not_returnable", l.ProductName+" can’t be returned on a change of mind (hygiene). If it’s faulty, choose that reason.")
 			case it.Quantity > l.Quantity-l.AlreadyReturned:
 				return httpx.Invalid("too_many", fmt.Sprintf("You can return at most %d of %s.", max(l.Quantity-l.AlreadyReturned, 0), l.ProductName))
 			}
@@ -104,7 +111,8 @@ func (s *Service) RequestReturn(ctx context.Context, userID uuid.UUID, orderNumb
 		if err != nil {
 			return err
 		}
-		auto := goodStanding(int(st.Returns90d), int(st.Orders90d), int(st.OpenCases))
+		// Only our-fault returns are auto-approved (orders-fulfilment.md §7); change of mind waits for support.
+		auto := ourFault[in.Reason] && goodStanding(int(st.Returns90d), int(st.Orders90d), int(st.OpenCases))
 		status := "requested"
 		if auto {
 			status = "approved"
@@ -141,7 +149,9 @@ func (s *Service) Decide(ctx context.Context, rma, decision, reason string) (Ret
 		if err != nil {
 			return httpx.NotFound("Return")
 		}
-		if r.Status != "requested" {
+		// A change-of-mind item that arrives opened can still be rejected at receipt (it goes back).
+		lateReject := decision == "reject" && r.Reason == "change_of_mind" && r.Status == "received"
+		if r.Status != "requested" && !lateReject {
 			return httpx.Conflict("bad_transition", "This return was already "+humanise(r.Status)+".")
 		}
 		status, why := "approved", (*string)(nil)
@@ -298,8 +308,8 @@ func (s *Service) swapFraud(ctx context.Context, tx *uow.Tx, r store.AftersalesR
 	return tx.Audit("return.serial_mismatch", "return", r.ID.String(), map[string]string{"scanned": scanned})
 }
 
-// Refund raises the refund for an inspected return: the price paid for each returned item
-// (faulty returns are refunded in full; no restocking fee).
+// Refund raises the refund for an inspected return: the price paid for each returned item, plus
+// the delivery fee when a whole parcel comes back for an our-fault reason. No restocking fee.
 func (s *Service) Refund(ctx context.Context, rma string) (Return, error) {
 	actor := httpx.MustPrincipal(ctx).UserID
 	var out Return
@@ -315,10 +325,7 @@ func (s *Service) Refund(ctx context.Context, rma string) (Return, error) {
 		if err != nil {
 			return err
 		}
-		var amount int64
-		for _, it := range items {
-			amount += lineRefund(it.LineTotalKobo, it.LineQuantity, it.Quantity)
-		}
+		amount := refundTotal(r.Reason, items)
 		if _, err := s.pay.RequestReturnRefund(ctx, tx, r.OrderID, r.ID, amount, "Return "+r.RmaNumber, &actor); err != nil {
 			return err
 		}
@@ -355,3 +362,19 @@ func optional(s string) *string {
 }
 
 func humanise(s string) string { return strings.ReplaceAll(s, "_", " ") }
+
+// refundTotal is the money back for a return (see Refund).
+func refundTotal(reason string, items []store.AftersalesItemsRow) int64 {
+	var amount int64
+	units := map[uuid.UUID]int32{}
+	fees := map[uuid.UUID]store.AftersalesItemsRow{}
+	for _, it := range items {
+		amount += lineRefund(it.LineTotalKobo, it.LineQuantity, it.Quantity)
+		units[it.FulfilmentID] += it.Quantity
+		fees[it.FulfilmentID] = it
+	}
+	for fid, it := range fees {
+		amount += deliveryRefund(reason, it.DeliveryFeeKobo, units[fid], it.FulfilmentUnits)
+	}
+	return amount
+}

@@ -7146,7 +7146,7 @@ export interface components {
       reason: string;
       /**
        * Format: int64
-       * @description Kobo, total for the items
+       * @description Kobo: the items, plus delivery when a whole parcel comes back for an our-fault reason
        */
       refund: number;
       rejectionReason: string | null;
@@ -7167,7 +7167,7 @@ export interface components {
       details?: string;
       items: components["schemas"]["ReturnItemInput"][] | null;
       /**
-       * @description How the item comes back
+       * @description How the item comes back (change of mind: store drop-off only)
        * @enum {string}
        */
       method: "pickup" | "store_dropoff";
@@ -7178,6 +7178,8 @@ export interface components {
         | "not_as_described"
         | "wrong_item"
         | "change_of_mind";
+      /** @description Change of mind only: the customer confirms the item is unopened with seals intact */
+      unopened?: boolean;
     };
     ReturnItem: {
       disposition: string | null;

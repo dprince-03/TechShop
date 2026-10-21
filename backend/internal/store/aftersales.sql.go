@@ -230,7 +230,8 @@ func (q *Queries) AftersalesInsertInspection(ctx context.Context, arg Aftersales
 }
 
 const aftersalesItems = `-- name: AftersalesItems :many
-select ri.id, ri.order_line_id, ri.quantity, ol.product_name, ol.variant_name, ol.condition, ol.variant_id, ol.listing_id,
+select ri.id, ri.order_line_id, ri.quantity, ol.fulfilment_id, f.delivery_fee_kobo,
+       (select coalesce(sum(quantity), 0) from sales.order_lines x where x.fulfilment_id = ol.fulfilment_id and x.cancelled_at is null)::int as fulfilment_units, ol.product_name, ol.variant_name, ol.condition, ol.variant_id, ol.listing_id,
        ol.unit_price_kobo, ol.line_total_kobo, ol.quantity as line_quantity, ol.device_unit_id, f.seller_id,
        ins.grade, ins.disposition, ins.imei_match, ins.inspected_at
 from aftersales.return_items ri
@@ -242,23 +243,26 @@ order by ol.created_at
 `
 
 type AftersalesItemsRow struct {
-	ID            uuid.UUID  `json:"id"`
-	OrderLineID   uuid.UUID  `json:"orderLineId"`
-	Quantity      int32      `json:"quantity"`
-	ProductName   string     `json:"productName"`
-	VariantName   string     `json:"variantName"`
-	Condition     string     `json:"condition"`
-	VariantID     uuid.UUID  `json:"variantId"`
-	ListingID     uuid.UUID  `json:"listingId"`
-	UnitPriceKobo int64      `json:"unitPriceKobo"`
-	LineTotalKobo int64      `json:"lineTotalKobo"`
-	LineQuantity  int32      `json:"lineQuantity"`
-	DeviceUnitID  *uuid.UUID `json:"deviceUnitId"`
-	SellerID      uuid.UUID  `json:"sellerId"`
-	Grade         *string    `json:"grade"`
-	Disposition   *string    `json:"disposition"`
-	ImeiMatch     *bool      `json:"imeiMatch"`
-	InspectedAt   *time.Time `json:"inspectedAt"`
+	ID              uuid.UUID  `json:"id"`
+	OrderLineID     uuid.UUID  `json:"orderLineId"`
+	Quantity        int32      `json:"quantity"`
+	FulfilmentID    uuid.UUID  `json:"fulfilmentId"`
+	DeliveryFeeKobo int64      `json:"deliveryFeeKobo"`
+	FulfilmentUnits int32      `json:"fulfilmentUnits"`
+	ProductName     string     `json:"productName"`
+	VariantName     string     `json:"variantName"`
+	Condition       string     `json:"condition"`
+	VariantID       uuid.UUID  `json:"variantId"`
+	ListingID       uuid.UUID  `json:"listingId"`
+	UnitPriceKobo   int64      `json:"unitPriceKobo"`
+	LineTotalKobo   int64      `json:"lineTotalKobo"`
+	LineQuantity    int32      `json:"lineQuantity"`
+	DeviceUnitID    *uuid.UUID `json:"deviceUnitId"`
+	SellerID        uuid.UUID  `json:"sellerId"`
+	Grade           *string    `json:"grade"`
+	Disposition     *string    `json:"disposition"`
+	ImeiMatch       *bool      `json:"imeiMatch"`
+	InspectedAt     *time.Time `json:"inspectedAt"`
 }
 
 func (q *Queries) AftersalesItems(ctx context.Context, returnRequestID uuid.UUID) ([]AftersalesItemsRow, error) {
@@ -274,6 +278,9 @@ func (q *Queries) AftersalesItems(ctx context.Context, returnRequestID uuid.UUID
 			&i.ID,
 			&i.OrderLineID,
 			&i.Quantity,
+			&i.FulfilmentID,
+			&i.DeliveryFeeKobo,
+			&i.FulfilmentUnits,
 			&i.ProductName,
 			&i.VariantName,
 			&i.Condition,
@@ -333,33 +340,40 @@ const aftersalesReturnableLines = `-- name: AftersalesReturnableLines :many
 select ol.id, ol.order_id, ol.fulfilment_id, ol.listing_id, ol.variant_id, ol.product_name, ol.variant_name, ol.condition,
        ol.quantity, ol.unit_price_kobo, ol.line_total_kobo, ol.device_unit_id, ol.cancelled_at,
        f.status as fulfilment_status, f.fulfilled_by, f.delivered_at, f.seller_id,
+       c.slug as category_slug, coalesce(pc.slug, '') as parent_category_slug,
        coalesce((select sum(ri.quantity) from aftersales.return_items ri
                  join aftersales.return_requests rr on rr.id = ri.return_request_id
                  where ri.order_line_id = ol.id and rr.status <> 'rejected'), 0)::int as already_returned
 from sales.order_lines ol join sales.fulfilments f on f.id = ol.fulfilment_id
+join catalog.product_variants v on v.id = ol.variant_id
+join catalog.products p on p.id = v.product_id
+join catalog.categories c on c.id = p.category_id
+left join catalog.categories pc on pc.id = c.parent_id
 where ol.order_id = $1
 order by ol.created_at
 `
 
 type AftersalesReturnableLinesRow struct {
-	ID               uuid.UUID  `json:"id"`
-	OrderID          uuid.UUID  `json:"orderId"`
-	FulfilmentID     uuid.UUID  `json:"fulfilmentId"`
-	ListingID        uuid.UUID  `json:"listingId"`
-	VariantID        uuid.UUID  `json:"variantId"`
-	ProductName      string     `json:"productName"`
-	VariantName      string     `json:"variantName"`
-	Condition        string     `json:"condition"`
-	Quantity         int32      `json:"quantity"`
-	UnitPriceKobo    int64      `json:"unitPriceKobo"`
-	LineTotalKobo    int64      `json:"lineTotalKobo"`
-	DeviceUnitID     *uuid.UUID `json:"deviceUnitId"`
-	CancelledAt      *time.Time `json:"cancelledAt"`
-	FulfilmentStatus string     `json:"fulfilmentStatus"`
-	FulfilledBy      string     `json:"fulfilledBy"`
-	DeliveredAt      *time.Time `json:"deliveredAt"`
-	SellerID         uuid.UUID  `json:"sellerId"`
-	AlreadyReturned  int32      `json:"alreadyReturned"`
+	ID                 uuid.UUID  `json:"id"`
+	OrderID            uuid.UUID  `json:"orderId"`
+	FulfilmentID       uuid.UUID  `json:"fulfilmentId"`
+	ListingID          uuid.UUID  `json:"listingId"`
+	VariantID          uuid.UUID  `json:"variantId"`
+	ProductName        string     `json:"productName"`
+	VariantName        string     `json:"variantName"`
+	Condition          string     `json:"condition"`
+	Quantity           int32      `json:"quantity"`
+	UnitPriceKobo      int64      `json:"unitPriceKobo"`
+	LineTotalKobo      int64      `json:"lineTotalKobo"`
+	DeviceUnitID       *uuid.UUID `json:"deviceUnitId"`
+	CancelledAt        *time.Time `json:"cancelledAt"`
+	FulfilmentStatus   string     `json:"fulfilmentStatus"`
+	FulfilledBy        string     `json:"fulfilledBy"`
+	DeliveredAt        *time.Time `json:"deliveredAt"`
+	SellerID           uuid.UUID  `json:"sellerId"`
+	CategorySlug       string     `json:"categorySlug"`
+	ParentCategorySlug string     `json:"parentCategorySlug"`
+	AlreadyReturned    int32      `json:"alreadyReturned"`
 }
 
 // After-sales: returns (RMA). Plan: orders-fulfilment.md §7.
@@ -392,6 +406,8 @@ func (q *Queries) AftersalesReturnableLines(ctx context.Context, orderID uuid.UU
 			&i.FulfilledBy,
 			&i.DeliveredAt,
 			&i.SellerID,
+			&i.CategorySlug,
+			&i.ParentCategorySlug,
 			&i.AlreadyReturned,
 		); err != nil {
 			return nil, err
