@@ -3,6 +3,7 @@ import "server-only";
 import { refresh } from "next/cache";
 
 import { ApiError } from "@techshop/api-client";
+import { failure } from "@techshop/bff";
 
 /** What every staff mutation returns to its button or form. */
 export type StaffResult = {
@@ -35,33 +36,22 @@ export async function runStaffAction(
     refresh();
     return { ok: true, message: success };
   } catch (e) {
-    if (e instanceof ApiError) {
-      if (e.code === "step_up_required")
-        return {
-          ok: false,
-          stepUp: true,
-          message: "Confirm with your authenticator code to continue.",
-        };
-      if (e.status === 401)
-        return { ok: false, message: "Your session ended. Sign in again." };
-      const errors: Record<string, string> = {};
-      for (const f of e.fieldErrors) {
-        const name = (f.location ?? "").replace(/^body\./, "");
-        if (name) errors[name] = f.message ?? "Check this field.";
-      }
-      const message =
-        // The API's own explanation beats a generic one ("Someone other than the last editor…").
-        (e.code !== "forbidden" ? CODE_MESSAGES[e.code] : undefined) ??
-        (e.status < 500 && e.detail ? e.detail : undefined) ??
-        (e.status === 403 ? CODE_MESSAGES.forbidden : undefined) ??
-        "Something went wrong. Please try again.";
-      return {
-        ok: false,
-        message,
-        errors: Object.keys(errors).length ? errors : undefined,
-      };
-    }
-    return { ok: false, message: "Something went wrong. Please try again." };
+    // Staff-specific wording for the API's refusal codes; everything else as for any form.
+    if (
+      e instanceof ApiError &&
+      e.code !== "forbidden" &&
+      CODE_MESSAGES[e.code]
+    )
+      return { ok: false, message: CODE_MESSAGES[e.code] };
+    const f = failure(e);
+    if (e instanceof ApiError && e.status === 403 && !e.detail)
+      return { ok: false, message: CODE_MESSAGES.forbidden };
+    return {
+      ok: false,
+      message: f.message ?? "Something went wrong. Please try again.",
+      stepUp: f.stepUp,
+      errors: f.errors,
+    };
   }
 }
 

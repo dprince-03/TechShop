@@ -555,3 +555,7 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
 - Customer app `features/reviews`: product screen shows the weighted summary and latest reviews (verified first, seller answers) with "Report this review" (reasons) for signed-in shoppers; delivered parcels on the order screen get "Review {item}" (→ `/review/[lineId]`, uses the order-line endpoint) and "Rate {seller}".
 - **Verified on the Android emulator (Pixel_8, Expo Go)** against the local stack: product screen shows the reviews section; signed in by phone code as a fresh customer with a delivered order (prepared with the kit's `deliveredOrder`); order screen shows the review and rating controls; seller rated ("Thanks for rating the seller."); posting with no stars says "Choose 1 to 5 stars."; review posted live; another shopper's review reported ("A moderator will look at it."). Screenshot checked.
 - Mobile lint, typecheck (after regenerating Expo Router's typed routes), unit tests (5 + 4), Expo doctor 21/21, Android bundle export pass. Metro and the emulator stopped afterwards.
+
+## 2026-10-21 — Cleanup: one form-error helper
+
+- Market account actions and staff `runStaffAction` now use `failure()` from `@techshop/bff` (staff keeps its own wording for refusal codes such as `separation_of_duties` on top). Step-up, session-ended and field-error handling behave as before; field errors now come with "Check the highlighted fields." in staff too. Market e2e 16/16, staff e2e 16/16 after the change.
