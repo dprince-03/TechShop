@@ -1,11 +1,10 @@
 import Link from "next/link";
+import { Table, Status, humanise, type Tone } from "@techshop/ui/components";
 import { connection } from "next/server";
 
 import { ActionButton } from "@/components/ActionButton";
 import { Figures } from "@/components/Figures";
 import { PageHead } from "@/components/PageHead";
-import { Status, humanise, type Tone } from "@/components/Status";
-import { Table } from "@/components/Table";
 import { Tabs } from "@/components/Tabs";
 import {
   decideDevice,

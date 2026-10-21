@@ -16,6 +16,9 @@ const nextConfig: NextConfig = {
     "@techshop/ui",
   ],
   turbopack: { root: repoRoot },
+  // KYC documents (up to four, 10 MB each) are posted to a Server Action, which uploads them to
+  // storage; the browser never talks to the API directly.
+  experimental: { serverActions: { bodySizeLimit: "41mb" } },
   outputFileTracingRoot: repoRoot,
 };
 

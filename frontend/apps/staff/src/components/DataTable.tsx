@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import type { Tone } from "./Status";
+import type { Tone } from "@techshop/ui/components";
 
 import styles from "./DataTable.module.css";
 

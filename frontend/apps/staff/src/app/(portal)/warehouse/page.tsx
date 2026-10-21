@@ -1,10 +1,9 @@
 import Link from "next/link";
+import { Table, Status, humanise } from "@techshop/ui/components";
 import { connection } from "next/server";
 
 import { ActionButton } from "@/components/ActionButton";
 import { PageHead } from "@/components/PageHead";
-import { Status, humanise } from "@/components/Status";
-import { Table } from "@/components/Table";
 import { riders } from "@/features/dispatch/server";
 import { can, requireStaff } from "@/features/session/server";
 import { releaseWave } from "@/features/warehouse/actions";

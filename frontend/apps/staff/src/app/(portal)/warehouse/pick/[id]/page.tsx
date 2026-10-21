@@ -1,10 +1,9 @@
 import { notFound } from "next/navigation";
+import { Table, Status, humanise } from "@techshop/ui/components";
 import { connection } from "next/server";
 
 import { ActionButton } from "@/components/ActionButton";
 import { PageHead } from "@/components/PageHead";
-import { Status, humanise } from "@/components/Status";
-import { Table } from "@/components/Table";
 import { requireStaff } from "@/features/session/server";
 import { claimPickList } from "@/features/warehouse/actions";
 import { PackForm } from "@/features/warehouse/components/PackForm";

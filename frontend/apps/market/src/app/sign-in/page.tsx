@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { safeReturnPath } from "@techshop/bff";
-import { PageHeader } from "@techshop/ui/components";
+import { PageHeader, SignInForm } from "@techshop/ui/components";
 
-import { SignInForm } from "@/features/auth/components/SignInForm";
+import { signInStep } from "@/features/auth/actions";
 import { bff } from "@/lib/bff";
 
 export const metadata: Metadata = {
@@ -25,7 +25,7 @@ export default async function SignInPage(props: PageProps<"/sign-in">) {
           breadcrumbs={[{ label: "Home", href: "/" }, { label: "Sign in" }]}
         />
         <div className="card card--roomy">
-          <SignInForm next={next} />
+          <SignInForm next={next} action={signInStep} />
         </div>
       </div>
     </main>

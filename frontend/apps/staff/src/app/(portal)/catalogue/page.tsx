@@ -1,12 +1,11 @@
 import Link from "next/link";
+import { Table, Status, humanise } from "@techshop/ui/components";
 import { connection } from "next/server";
 
 import { sites } from "@techshop/ui/sites";
 
 import { ActionButton } from "@/components/ActionButton";
 import { PageHead } from "@/components/PageHead";
-import { Status, humanise } from "@/components/Status";
-import { Table } from "@/components/Table";
 import { Tabs } from "@/components/Tabs";
 import { decideSuggestion, reindex } from "@/features/catalogue/actions";
 import { ModerationActions } from "@/features/catalogue/components/ModerationActions";

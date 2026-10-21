@@ -10,6 +10,7 @@ import {
 } from "@techshop/api-client";
 
 import { seal, unseal } from "./crypto";
+import { safeReturnPath } from "./paths";
 import { forwardedFor } from "./client-ip";
 import type { Bff } from "./server";
 
@@ -385,6 +386,36 @@ export function createAuthFlow(bff: Bff) {
     }
   }
 
+  /**
+   * Runs the step a sign-in form posted (`intent` field), so each app's Server Action is a
+   * one-liner. `next` is validated here, never trusted from the form.
+   */
+  async function handle(form: FormData): Promise<AuthStep> {
+    const field = (name: string) => String(form.get(name) ?? "");
+    const next = safeReturnPath(field("next"));
+    switch (field("intent")) {
+      case "request-code":
+        return requestCode(field("phone"), next);
+      case "resend-code":
+        return resendCode();
+      case "verify-code":
+        return verifyCode(field("code"));
+      case "profile":
+        return completeProfile(field("firstName"), field("lastName"));
+      case "password":
+        return password(field("identifier"), field("password"), next);
+      case "device-code":
+        return verifyDevice(field("code"));
+      case "totp":
+        return verifyTotp(field("code"));
+      case "restart":
+        await clearFlow();
+        return { step: "start" };
+      default:
+        return { step: "start" };
+    }
+  }
+
   return {
     requestCode,
     resendCode,
@@ -395,5 +426,6 @@ export function createAuthFlow(bff: Bff) {
     verifyTotp,
     verifyRecovery,
     clearFlow,
+    handle,
   };
 }

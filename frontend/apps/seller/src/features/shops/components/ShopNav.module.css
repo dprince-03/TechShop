@@ -1,0 +1,30 @@
+.nav {
+  overflow-x: auto;
+  border-bottom: var(--border);
+}
+
+.list {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-md);
+  padding-inline: var(--space-3);
+  white-space: nowrap;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  border-bottom: 2px solid transparent;
+}
+
+.link:hover {
+  color: var(--color-text);
+}
+
+.link[aria-current="page"] {
+  color: var(--color-text);
+  font-weight: var(--weight-semibold);
+  border-bottom-color: var(--color-accent);
+}

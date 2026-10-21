@@ -1,9 +1,8 @@
 import { connection } from "next/server";
 
+import { Table, Status, humanise } from "@techshop/ui/components";
 import { ActionButton } from "@/components/ActionButton";
 import { PageHead } from "@/components/PageHead";
-import { Status, humanise } from "@/components/Status";
-import { Table } from "@/components/Table";
 import { Tabs } from "@/components/Tabs";
 import { resetMfa } from "@/features/admin/actions";
 import { RoleEditor } from "@/features/admin/components/RoleEditor";

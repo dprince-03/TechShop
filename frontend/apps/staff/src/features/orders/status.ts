@@ -1,4 +1,4 @@
-import type { Tone } from "@/components/Status";
+import type { Tone } from "@techshop/ui/components";
 
 export const orderTone: Record<string, Tone> = {
   pending_payment: "warning",

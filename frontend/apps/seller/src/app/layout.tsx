@@ -6,6 +6,9 @@ import { SiteFooter, SiteHeader } from "@techshop/ui/components";
 import { sites } from "@techshop/ui/sites";
 import "@techshop/ui/styles.css";
 
+import { signOut } from "@/features/auth/actions";
+import { bff } from "@/lib/bff";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -22,7 +25,8 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const session = await bff.getSession();
   return (
     <html
       lang="en-NG"
@@ -43,17 +47,28 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             { label: "Help", href: "/help" },
           ]}
           actions={
-            <>
-              <Link
-                href="/sign-in"
-                className="btn btn--ghost btn--sm hide-mobile"
-              >
-                Sign in
-              </Link>
-              <Link href="/register" className="btn btn--inverse btn--sm">
-                Start selling
-              </Link>
-            </>
+            session ? (
+              <>
+                <form action={signOut} className="hide-mobile">
+                  <button className="btn btn--ghost btn--sm">Sign out</button>
+                </form>
+                <Link href="/centre" className="btn btn--inverse btn--sm">
+                  Your shop
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/sign-in"
+                  className="btn btn--ghost btn--sm hide-mobile"
+                >
+                  Sign in
+                </Link>
+                <Link href="/register" className="btn btn--inverse btn--sm">
+                  Start selling
+                </Link>
+              </>
+            )
           }
         />
         {children}

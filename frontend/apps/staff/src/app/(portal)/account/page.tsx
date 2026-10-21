@@ -1,8 +1,8 @@
 import { connection } from "next/server";
 
+import { Table } from "@techshop/ui/components";
 import { ActionButton } from "@/components/ActionButton";
 import { PageHead } from "@/components/PageHead";
-import { Table } from "@/components/Table";
 import { revokeDevice, revokeOtherDevices } from "@/features/account/actions";
 import { signOut } from "@/features/auth/actions";
 import { requireStaff } from "@/features/session/server";

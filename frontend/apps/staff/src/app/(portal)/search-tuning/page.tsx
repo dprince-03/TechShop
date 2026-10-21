@@ -1,10 +1,9 @@
 import { connection } from "next/server";
 
+import { Table, humanise } from "@techshop/ui/components";
 import { ActionButton } from "@/components/ActionButton";
 import { Figures } from "@/components/Figures";
 import { PageHead } from "@/components/PageHead";
-import { humanise } from "@/components/Status";
-import { Table } from "@/components/Table";
 import { deleteSynonym } from "@/features/search-tuning/actions";
 import { SynonymForm } from "@/features/search-tuning/components/SynonymForm";
 import { requireStaff } from "@/features/session/server";

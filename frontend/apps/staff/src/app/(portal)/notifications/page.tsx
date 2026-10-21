@@ -1,7 +1,7 @@
 import { connection } from "next/server";
 
+import { Table } from "@techshop/ui/components";
 import { PageHead } from "@/components/PageHead";
-import { Table } from "@/components/Table";
 import { requireStaff } from "@/features/session/server";
 import { bff } from "@/lib/bff";
 import { formatDateTime } from "@/lib/format";

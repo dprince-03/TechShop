@@ -1,9 +1,8 @@
 import Link from "next/link";
+import { Table, Status, humanise } from "@techshop/ui/components";
 import { connection } from "next/server";
 
 import { PageHead } from "@/components/PageHead";
-import { Status, humanise } from "@/components/Status";
-import { Table } from "@/components/Table";
 import { Tabs } from "@/components/Tabs";
 import {
   AdjustForm,
