@@ -1,9 +1,7 @@
 // End-to-end tests for the staff portal: real pages and Server Actions over HTTP against
 // `next dev` (STAFF_URL) and the seeded local API.
 import assert from "node:assert/strict";
-import path from "node:path";
 import { describe, test } from "node:test";
-import { fileURLToPath } from "node:url";
 
 import {
   account,
@@ -14,26 +12,9 @@ import {
   seed,
   staffToken,
   textOf,
-  totp,
-  WebClient,
 } from "@techshop/testing";
 
-const APP_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
-const BASE = process.env.STAFF_URL ?? "http://localhost:4105";
-const browser = () => new WebClient(BASE, APP_DIR);
-
-// Each TOTP code works once; remember the last step used per account across tests.
-const usedStep = new Map<string, number>();
-async function freshCode(secret: string) {
-  for (;;) {
-    const step = Math.floor(Date.now() / 30_000);
-    if (usedStep.get(secret) !== step) {
-      usedStep.set(secret, step);
-      return totp(secret);
-    }
-    await new Promise((r) => setTimeout(r, 1000));
-  }
-}
+import { browser, signIn } from "./helpers";
 
 /** A random IMEI with a valid Luhn check digit (the API rejects bad check digits). */
 function imei(): string {
@@ -45,36 +26,6 @@ function imei(): string {
     return t + (v > 9 ? v - 9 : v);
   }, 0);
   return body.join("") + String((10 - (sum % 10)) % 10);
-}
-
-/** Signs a seeded staff member in through the real two-step sign-in action. */
-async function signIn(role: string, next = "/") {
-  const b = browser();
-  const a = account(role);
-  await b.get(`/sign-in?next=${encodeURIComponent(next)}`);
-  const step1 = await b.action<{ step: string }>("/sign-in", "staffSignIn", [
-    { step: "start" },
-    form({ intent: "password", email: a.email, password: a.password, next }),
-  ]);
-  assert.equal(step1.value.step, "totp", JSON.stringify(step1.value));
-  let step2 = await b.action<{ step: string; error?: string }>(
-    "/sign-in",
-    "staffSignIn",
-    [
-      { step: "totp" },
-      form({ intent: "totp", code: await freshCode(a.totpSecret!), next }),
-    ],
-  );
-  if (!step2.redirect && /already used/.test(step2.value?.error ?? "")) {
-    // An earlier run used this 30-second code; take the next one.
-    usedStep.set(a.totpSecret!, Math.floor(Date.now() / 30_000));
-    step2 = await b.action("/sign-in", "staffSignIn", [
-      { step: "totp" },
-      form({ intent: "totp", code: await freshCode(a.totpSecret!), next }),
-    ]);
-  }
-  assert.equal(step2.redirect, next, JSON.stringify(step2.value));
-  return b;
 }
 
 describe("staff sign-in", () => {
@@ -225,8 +176,10 @@ describe("catalogue, search and previews", () => {
     const s = textOf((await b.get("/search?q=TS-")).html);
     assert.match(s, /Orders/);
     assert.equal((await b.get("/notifications")).status, 200);
-    const v = textOf((await b.get("/vendors")).html);
+    // B2B (backend M6) is still a preview; Vendors went live in M4.
+    const v = textOf((await b.get("/b2b")).html);
     assert.match(v, /Preview: everything on this page is sample data/);
+    assert.doesNotMatch(textOf((await b.get("/vendors")).html), /sample data/);
     assert.equal((await b.get("/no-such-module")).status, 404);
   });
 
