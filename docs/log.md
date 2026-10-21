@@ -564,3 +564,9 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
 
 - The provider bank list (live mode) is cached in memory for 24 hours, and a stale list is served if the provider is down; before, each Seller Centre page fetched every page of Paystack's list.
 - Unit tests for the live Paystack calls against a local stand-in with the documented shapes: the bank list follows `meta.next` and skips inactive banks; name enquiry returns the account name and maps a failed lookup to `ErrAccountNotFound`.
+
+## 2026-10-21 — Full regression on fresh stacks (after M4 work)
+
+- **Run 1** (fresh stack): backend e2e ok (23 tests); api-client contract 46/46; market 15/16 (**1 failure**, test name not captured); staff 16/16; seller 2/2. Market re-run on the same stack: 16/16.
+- **Run 2** (fresh stack, same order, full market log kept): backend e2e ok; contract 46/46; market 16/16.
+- **Open:** one intermittent market e2e failure, cause unknown (not reproduced in two further runs). If it comes back, the full log in the run will name it.
