@@ -244,3 +244,6 @@ set accept_by = case when @which::text = 'accept' then now() - interval '1 minut
     pack_by = case when @which::text = 'pack' then now() - interval '1 minute' else pack_by end,
     handover_by = case when @which::text = 'handover' then now() - interval '1 minute' else handover_by end
 where id = @id;
+
+-- name: SalesSetSellerEarning :exec
+update sales.order_lines set seller_earning_kobo = $2 where id = $1;

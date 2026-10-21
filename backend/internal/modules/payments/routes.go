@@ -303,6 +303,22 @@ func (s *Service) devRoutes(e *gin.Engine) {
 		code, body := s.FakeComplete(c.Request.Context(), c.Param("provider"), c.Param("reference"), c.Param("outcome"), c.Query("amount"))
 		c.JSON(code, body)
 	})
+	// A signed Paystack-shaped transfer webhook (success | failed | reversed) for a payout reference.
+	e.POST("/dev/transfers/:reference/:event", func(c *gin.Context) {
+		prov, ok := s.providers["paystack"].(*Fake)
+		ev := c.Param("event")
+		if !ok || (ev != "success" && ev != "failed" && ev != "reversed") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "use /dev/transfers/{reference}/success|failed|reversed with the fake paystack"})
+			return
+		}
+		body, _ := json.Marshal(map[string]any{"event": "transfer." + ev, "data": map[string]any{"id": time.Now().UnixNano(), "reference": c.Param("reference"), "status": ev}})
+		dup, err := s.ReceiveWebhook(c.Request.Context(), "paystack", body, prov.Sign(body))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprint(err)})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"duplicate": dup, "raw": string(body), "signature": prov.Sign(body)})
+	})
 }
 
 // FakeComplete makes a fake provider send a signed charge webhook for a reference.

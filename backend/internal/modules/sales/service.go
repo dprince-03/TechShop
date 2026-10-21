@@ -466,6 +466,13 @@ func (s *Service) afterPaid(ctx context.Context, tx *uow.Tx, o store.SalesOrder,
 				x.TechShopFunded = l.DiscountKobo
 			}
 		}
+		if !x.FirstParty {
+			// What the seller earns before commission: the same figure credited to their payable.
+			earning := gross - l.DiscountKobo + x.TechShopFunded
+			if err := tx.Q.SalesSetSellerEarning(ctx, store.SalesSetSellerEarningParams{ID: l.ID, SellerEarningKobo: &earning}); err != nil {
+				return err
+			}
+		}
 		sl = append(sl, x)
 	}
 	if err := s.ledger.Sale(ctx, tx, pay.ID, o.ID, pay.Provider, paid, o.DeliveryFeeKobo, paid-o.TotalKobo, sl); err != nil {

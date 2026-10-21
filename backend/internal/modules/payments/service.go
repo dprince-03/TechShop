@@ -253,7 +253,18 @@ func (s *Service) ReceiveWebhook(ctx context.Context, provider string, body []by
 	return duplicate, err
 }
 
-// ProcessEvent handles one stored webhook: charge events re-verify the payment.
+// webhookReference reads the reference a stored webhook concerns.
+func (s *Service) webhookReference(provider string, body []byte) (string, error) {
+	p, ok := s.providers[provider]
+	if !ok {
+		return "", errors.New("unknown provider " + provider)
+	}
+	ev, err := p.ParseWebhook(body)
+	return ev.Reference, err
+}
+
+// ProcessEvent handles one stored webhook: charge events re-verify the payment; transfer
+// events hand over to payouts.
 func (s *Service) ProcessEvent(ctx context.Context, eventID uuid.UUID) error {
 	ev, err := s.d.Q.PaymentsGetEvent(ctx, eventID)
 	if err != nil {
@@ -265,6 +276,21 @@ func (s *Service) ProcessEvent(ctx context.Context, eventID uuid.UUID) error {
 	if strings.HasPrefix(ev.EventType, "charge.") && ev.PaymentID != nil {
 		if err := s.Reconcile(ctx, *ev.PaymentID); err != nil {
 			return err
+		}
+	}
+	if strings.HasPrefix(ev.EventType, "transfer.") {
+		// Payout transfers use the payout ID as their reference. The payouts module re-verifies
+		// the transfer with the provider; the webhook only says "look again".
+		ref, err := s.webhookReference(ev.Provider, ev.Payload)
+		if id, perr := uuid.Parse(ref); err == nil && perr == nil {
+			if _, err := s.d.Q.PayoutsGet(ctx, id); err != nil {
+				s.d.Logger.Warn("transfer webhook for an unknown payout", "reference", ref)
+				return s.d.Q.PaymentsMarkEventProcessed(ctx, store.PaymentsMarkEventProcessedParams{ID: ev.ID})
+			}
+			return s.d.Runner.Run(ctx, func(tx *uow.Tx) error {
+				tx.Emit("payout", id, "transfer.updated", map[string]any{"payoutId": id, "provider": ev.Provider, "event": ev.EventType})
+				return tx.Q.PaymentsMarkEventProcessed(ctx, store.PaymentsMarkEventProcessedParams{ID: ev.ID, PayoutID: &id})
+			})
 		}
 	}
 	return s.d.Q.PaymentsMarkEventProcessed(ctx, store.PaymentsMarkEventProcessedParams{ID: ev.ID, PaymentID: ev.PaymentID})

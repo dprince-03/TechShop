@@ -513,6 +513,55 @@ type Querier interface {
 	PaymentsStalePending(ctx context.Context, createdAt time.Time) ([]PaymentsPayment, error)
 	PaymentsSucceededForOrder(ctx context.Context, orderID *uuid.UUID) (PaymentsPayment, error)
 	PaymentsVirtualAccountForOrder(ctx context.Context, orderID *uuid.UUID) (PaymentsVirtualAccount, error)
+	PayoutsActiveHolds(ctx context.Context, sellerID uuid.UUID) ([]FinancePayoutHold, error)
+	PayoutsAddItem(ctx context.Context, arg PayoutsAddItemParams) error
+	PayoutsApproveBatch(ctx context.Context, arg PayoutsApproveBatchParams) (FinancePayoutBatch, error)
+	PayoutsBankAccount(ctx context.Context, id uuid.UUID) (SellersSellerBankAccount, error)
+	PayoutsBatchOpenCount(ctx context.Context, batchID *uuid.UUID) (int32, error)
+	PayoutsBatchPayouts(ctx context.Context, batchID *uuid.UUID) ([]PayoutsBatchPayoutsRow, error)
+	// Marketplace sellers with an unpaid delivered fulfilment (the batch builder checks the rest).
+	PayoutsCandidateSellers(ctx context.Context) ([]PayoutsCandidateSellersRow, error)
+	PayoutsCreateBatch(ctx context.Context, preparedBy uuid.UUID) (FinancePayoutBatch, error)
+	PayoutsCreateHold(ctx context.Context, arg PayoutsCreateHoldParams) (FinancePayoutHold, error)
+	PayoutsCreatePayout(ctx context.Context, arg PayoutsCreatePayoutParams) (FinancePayout, error)
+	// Security changes on the shop owner's account in the last 24 hours (account-takeover guard).
+	PayoutsCredentialChanges(ctx context.Context, id uuid.UUID) (int32, error)
+	PayoutsDefaultBank(ctx context.Context, sellerID uuid.UUID) (SellersSellerBankAccount, error)
+	PayoutsDelete(ctx context.Context, id uuid.UUID) error
+	// Development only (dev route): moves a seller's deliveries past the return window and their
+	// bank accounts past the 24-hour hold, so payouts can be tested without waiting a week.
+	PayoutsDevAgeSeller(ctx context.Context, sellerID uuid.UUID) error
+	PayoutsForSeller(ctx context.Context, arg PayoutsForSellerParams) ([]PayoutsForSellerRow, error)
+	// Seller payouts (docs/payments-finance.md §9). Amounts come from order lines and are capped by
+	// the seller's live ledger balance, so refunds and chargebacks already booked are netted off.
+	// Every unpaid-out fulfilment of a seller whose order was captured (a sale journal exists), with
+	// what it earns (line earnings minus commission) and whether it can be paid out yet: delivered,
+	// outside the return window and with no return still open on its items.
+	PayoutsFulfilmentEarnings(ctx context.Context, arg PayoutsFulfilmentEarningsParams) ([]PayoutsFulfilmentEarningsRow, error)
+	PayoutsGet(ctx context.Context, id uuid.UUID) (FinancePayout, error)
+	PayoutsGetBatch(ctx context.Context, id uuid.UUID) (FinancePayoutBatch, error)
+	PayoutsGetBatchForUpdate(ctx context.Context, id uuid.UUID) (FinancePayoutBatch, error)
+	PayoutsGetForUpdate(ctx context.Context, id uuid.UUID) (FinancePayout, error)
+	// Money already committed to payouts that haven't been paid (or failed) yet.
+	PayoutsInFlight(ctx context.Context, sellerID uuid.UUID) (int64, error)
+	PayoutsIsHoliday(ctx context.Context, date time.Time) (bool, error)
+	PayoutsItems(ctx context.Context, payoutID uuid.UUID) ([]PayoutsItemsRow, error)
+	PayoutsListBatches(ctx context.Context, arg PayoutsListBatchesParams) ([]FinancePayoutBatch, error)
+	PayoutsMarkFailed(ctx context.Context, arg PayoutsMarkFailedParams) (FinancePayout, error)
+	PayoutsMarkPaid(ctx context.Context, arg PayoutsMarkPaidParams) (FinancePayout, error)
+	PayoutsOpenRiskCases(ctx context.Context, subjectID uuid.UUID) (int32, error)
+	// What TechShop owes the seller right now per the ledger (credits are negative, so negate).
+	PayoutsPayableBalance(ctx context.Context, sellerID *uuid.UUID) (int64, error)
+	PayoutsRefreshBatchTotals(ctx context.Context, id uuid.UUID) (FinancePayoutBatch, error)
+	PayoutsReleaseHold(ctx context.Context, id uuid.UUID) (FinancePayoutHold, error)
+	// A failed payout gives its fulfilments back, so the next batch can pay them.
+	PayoutsReleaseItems(ctx context.Context, payoutID uuid.UUID) error
+	PayoutsSecondApprove(ctx context.Context, arg PayoutsSecondApproveParams) (FinancePayoutBatch, error)
+	PayoutsSetBatchStatus(ctx context.Context, arg PayoutsSetBatchStatusParams) (FinancePayoutBatch, error)
+	PayoutsSetProcessing(ctx context.Context, arg PayoutsSetProcessingParams) (FinancePayout, error)
+	PayoutsSetRecipientCode(ctx context.Context, arg PayoutsSetRecipientCodeParams) error
+	PayoutsStaleProcessing(ctx context.Context) ([]FinancePayout, error)
+	PayoutsSubmitBatch(ctx context.Context, id uuid.UUID) (FinancePayoutBatch, error)
 	// Behaviour events and identity links (docs/recommendations.md; consent-gated).
 	PersonalisationInsertEvent(ctx context.Context, arg []PersonalisationInsertEventParams) (int64, error)
 	PersonalisationLinkIdentity(ctx context.Context, arg PersonalisationLinkIdentityParams) error
@@ -632,6 +681,7 @@ type Querier interface {
 	SalesSetHandoverBy(ctx context.Context, arg SalesSetHandoverByParams) error
 	SalesSetOrderStatus(ctx context.Context, arg SalesSetOrderStatusParams) (SalesOrder, error)
 	SalesSetPackBy(ctx context.Context, arg SalesSetPackByParams) error
+	SalesSetSellerEarning(ctx context.Context, arg SalesSetSellerEarningParams) error
 	SalesStaffListOrders(ctx context.Context, arg SalesStaffListOrdersParams) ([]SalesStaffListOrdersRow, error)
 	// Best wholesale tier unit price for a quantity (null when no tier applies).
 	SalesTierPrice(ctx context.Context, arg SalesTierPriceParams) (int64, error)

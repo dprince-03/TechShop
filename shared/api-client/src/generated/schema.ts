@@ -1745,6 +1745,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/seller/shops/{shopId}/balance": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Money available, pending and on hold */
+    get: operations["sellerBalance"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/seller/shops/{shopId}/bank-accounts": {
     parameters: {
       query?: never;
@@ -2013,6 +2030,40 @@ export interface paths {
     put?: never;
     /** Mark as packed: returns the parcel label and the drop-off deadline */
     post: operations["sellerPackOrder"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/payouts": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Payouts, newest first */
+    get: operations["sellerPayouts"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/payouts/{payoutId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** A payout statement: the orders it covers */
+    get: operations["sellerPayout"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -2733,6 +2784,150 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/staff/finance/payout-batches": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * BatchPayout batches, newest first
+     * @description Requires permission `finance.view`.
+     */
+    get: operations["staffListPayoutBatches"];
+    put?: never;
+    /**
+     * Prepare a draft batch from every seller who can be paid now
+     * @description Requires permission `payouts.prepare`.
+     */
+    post: operations["staffPreparePayoutBatch"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/finance/payout-batches/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * A batch with its payouts
+     * @description Requires permission `finance.view`.
+     */
+    get: operations["staffGetPayoutBatch"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/finance/payout-batches/{id}/approve": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Approve a submitted batch (not its preparer; fresh MFA; two managers above the threshold)
+     * @description Requires permission `payouts.approve`.
+     */
+    post: operations["staffApprovePayoutBatch"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/finance/payout-batches/{id}/cancel": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Cancel a batch that isn't approved yet
+     * @description Requires permission `payouts.prepare`.
+     */
+    post: operations["staffCancelPayoutBatch"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/finance/payout-batches/{id}/payouts/{payoutId}/exclude": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Take a seller out of a draft batch (optionally holding later payouts too)
+     * @description Requires permission `payouts.prepare`.
+     */
+    post: operations["staffExcludePayout"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/finance/payout-batches/{id}/submit": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Send a draft batch for approval
+     * @description Requires permission `payouts.prepare`.
+     */
+    post: operations["staffSubmitPayoutBatch"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/finance/payout-holds/{id}/release": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Release a payout hold
+     * @description Requires permission `payouts.approve`.
+     */
+    post: operations["staffReleasePayoutHold"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/staff/finance/periods": {
     parameters: {
       query?: never;
@@ -2891,6 +3086,26 @@ export interface paths {
      * @description Requires permission `refunds.approve_small`.
      */
     post: operations["staffRejectRefund"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/finance/sellers/{sellerId}/payout-holds": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Hold a seller's payouts
+     * @description Requires permission `payouts.prepare`.
+     */
+    post: operations["staffHoldSellerPayouts"];
     delete?: never;
     options?: never;
     head?: never;
@@ -4458,6 +4673,26 @@ export interface components {
       accountNumber: string;
       bankCode: string;
     };
+    BatchPayout: {
+      accountLast4: string;
+      accountName: string;
+      /**
+       * Format: int64
+       * @description Kobo
+       */
+      amount: number;
+      bankCode: string;
+      failureReason: string | null;
+      id: string;
+      /** Format: date-time */
+      paidAt: string | null;
+      /** Format: date */
+      scheduledFor: string;
+      sellerId: string;
+      shop: string;
+      /** @enum {string} */
+      status: "scheduled" | "processing" | "paid" | "failed" | "on_hold";
+    };
     BoardJob: {
       /** Format: date-time */
       assignedAt: string | null;
@@ -5213,6 +5448,19 @@ export interface components {
       referenceType: string;
       reversesJournalId: string;
     };
+    FinancePayoutHold: {
+      /** Format: date-time */
+      createdAt: string;
+      createdBy: string;
+      id: string;
+      note: string | null;
+      reason: string;
+      /** Format: date-time */
+      releasedAt: string | null;
+      sellerId: string;
+      /** Format: date-time */
+      until: string | null;
+    };
     FinancePostAdjustmentRequest: {
       lines: components["schemas"]["Item5"][] | null;
       memo: string;
@@ -5910,6 +6158,10 @@ export interface components {
       items: components["schemas"]["Listing"][] | null;
       page: components["schemas"]["Page"];
     };
+    ListPayoutBatch: {
+      items: components["schemas"]["PayoutBatch"][] | null;
+      page: components["schemas"]["Page"];
+    };
     ListPublicReview: {
       items: components["schemas"]["PublicReview"][] | null;
       page: components["schemas"]["Page"];
@@ -5928,6 +6180,10 @@ export interface components {
     };
     ListSellerOrder: {
       items: components["schemas"]["SellerOrder"][] | null;
+      page: components["schemas"]["Page"];
+    };
+    ListSellerPayout: {
+      items: components["schemas"]["SellerPayout"][] | null;
       page: components["schemas"]["Page"];
     };
     ListSellerReview: {
@@ -6822,6 +7078,51 @@ export interface components {
       /** Format: date-time */
       updatedAt: string;
     };
+    PayoutBatch: {
+      /** Format: date-time */
+      approvedAt: string | null;
+      approvedBy: string;
+      /** Format: int32 */
+      count: number;
+      /** Format: date-time */
+      createdAt: string;
+      /** @description Above the threshold: the first of two approvers */
+      firstApprovedBy: string;
+      id: string;
+      needsTwoApprovers: boolean;
+      preparedBy: string;
+      /** @enum {string} */
+      status:
+        | "draft"
+        | "submitted"
+        | "approved"
+        | "processing"
+        | "done"
+        | "cancelled";
+      /** Format: date-time */
+      submittedAt: string | null;
+      /**
+       * Format: int64
+       * @description Kobo
+       */
+      total: number;
+    };
+    PayoutBatchDetail: {
+      batch: components["schemas"]["PayoutBatch"];
+      payouts: components["schemas"]["BatchPayout"][] | null;
+      /** @description Only when the batch was just prepared */
+      skipped?: components["schemas"]["SkippedSeller"][] | null;
+    };
+    PayoutItem: {
+      /**
+       * Format: int64
+       * @description Kobo: after commission
+       */
+      amount: number;
+      /** Format: date-time */
+      deliveredAt: string | null;
+      orderNumber: string;
+    };
     PickListView: {
       /** Format: date-time */
       createdAt: string;
@@ -7411,6 +7712,8 @@ export interface components {
       productName: string;
       /** Format: int32 */
       quantity: number;
+      /** Format: int64 */
+      sellerEarningKobo: number | null;
       sellerId: string;
       sku: string;
       /** Format: int64 */
@@ -7558,6 +7861,30 @@ export interface components {
       /** Format: int32 */
       searches: number;
     };
+    SellerBalance: {
+      /**
+       * Format: int64
+       * @description Kobo: payable in the next payout run
+       */
+      available: number;
+      holdReasons: string[] | null;
+      /**
+       * Format: int64
+       * @description Kobo: the smallest payout we send
+       */
+      minimum: number;
+      /**
+       * Format: date
+       * @description Payouts run on Tuesdays and Fridays, business days only
+       */
+      nextPayoutDay: string;
+      onHold: boolean;
+      /**
+       * Format: int64
+       * @description Kobo: earned, waiting for delivery or the return window
+       */
+      pending: number;
+    };
     SellerCancelOrderRequest: {
       note?: string;
       /** @enum {string} */
@@ -7593,6 +7920,25 @@ export interface components {
       recipientFirstName: string;
       stateCode: string;
       status: string;
+    };
+    SellerPayout: {
+      accountLast4: string;
+      /**
+       * Format: int64
+       * @description Kobo
+       */
+      amount: number;
+      /** Format: date-time */
+      createdAt: string;
+      failureReason: string | null;
+      id: string;
+      items?: components["schemas"]["PayoutItem"][] | null;
+      /** Format: date-time */
+      paidAt: string | null;
+      /** Format: date */
+      scheduledFor: string;
+      /** @enum {string} */
+      status: "scheduled" | "processing" | "paid" | "failed" | "on_hold";
     };
     SellerRespondToReviewRequest: {
       text: string;
@@ -7656,6 +8002,17 @@ export interface components {
       /** @enum {string} */
       type: "business" | "individual" | "first_party";
     };
+    SkippedSeller: {
+      /**
+       * Format: int64
+       * @description Kobo: what would have been paid
+       */
+      amount: number;
+      name: string;
+      /** @description Hold reasons, or below_minimum */
+      reasons: string[] | null;
+      sellerId: string;
+    };
     StaffAddProductImageRequest: {
       alt: string;
       fileId: string;
@@ -7675,6 +8032,11 @@ export interface components {
       reason: "adjustment" | "write_off" | "purchase_receipt";
       variantId: string;
       warehouseId: string;
+    };
+    StaffApprovePayoutBatchResponse: {
+      batch: components["schemas"]["PayoutBatch"];
+      /** @description True when the transfers have started; false when a second approver is still needed */
+      released: boolean;
     };
     StaffBankAccount: {
       /** @description The name the seller typed */
@@ -7808,8 +8170,24 @@ export interface components {
       /** @enum {string} */
       decision: "accepted" | "rejected";
     };
+    StaffExcludePayoutRequest: {
+      /** @description Also hold the seller's later payouts until finance releases it */
+      hold?: boolean;
+      /** @description Why (kept in the audit log) */
+      note: string;
+    };
     StaffGrantRoleRequest: {
       role: string;
+    };
+    StaffHoldSellerPayoutsRequest: {
+      note: string;
+      /** @enum {string} */
+      reason: "risk_case" | "enforcement" | "manual";
+      /**
+       * Format: date-time
+       * @description Releases itself at this time; empty = until released
+       */
+      until?: string;
     };
     StaffMarkGapRequest: {
       note?: string;
@@ -11759,6 +12137,37 @@ export interface operations {
       };
     };
   };
+  sellerBalance: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SellerBalance"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   sellerAddBankAccount: {
     parameters: {
       query?: never;
@@ -12367,6 +12776,72 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["SellerOrder"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerPayouts: {
+    parameters: {
+      query?: {
+        cursor?: string;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        shopId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ListSellerPayout"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerPayout: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+        payoutId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SellerPayout"];
         };
       };
       /** @description Error */
@@ -13555,6 +14030,266 @@ export interface operations {
       };
     };
   };
+  staffListPayoutBatches: {
+    parameters: {
+      query?: {
+        status?:
+          | "draft"
+          | "submitted"
+          | "approved"
+          | "processing"
+          | "done"
+          | "cancelled"
+          | "";
+        cursor?: string;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ListPayoutBatch"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffPreparePayoutBatch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PayoutBatchDetail"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffGetPayoutBatch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PayoutBatchDetail"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffApprovePayoutBatch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StaffApprovePayoutBatchResponse"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffCancelPayoutBatch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PayoutBatch"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffExcludePayout: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+        payoutId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StaffExcludePayoutRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PayoutBatchDetail"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffSubmitPayoutBatch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PayoutBatch"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffReleasePayoutHold: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FinancePayoutHold"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   financeListPeriods: {
     parameters: {
       query?: never;
@@ -13839,6 +14574,41 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["PaymentsRefund"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffHoldSellerPayouts: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        sellerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StaffHoldSellerPayoutsRequest"];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FinancePayoutHold"];
         };
       };
       /** @description Error */

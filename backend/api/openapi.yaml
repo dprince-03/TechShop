@@ -254,6 +254,58 @@ components:
         - accountNumber
         - accountName
       type: object
+    BatchPayout:
+      additionalProperties: false
+      properties:
+        accountLast4:
+          type: string
+        accountName:
+          type: string
+        amount:
+          description: Kobo
+          format: int64
+          type: integer
+        bankCode:
+          type: string
+        failureReason:
+          type:
+            - string
+            - "null"
+        id:
+          type: string
+        paidAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        scheduledFor:
+          format: date
+          type: string
+        sellerId:
+          type: string
+        shop:
+          type: string
+        status:
+          enum:
+            - scheduled
+            - processing
+            - paid
+            - failed
+            - on_hold
+          type: string
+      required:
+        - id
+        - sellerId
+        - shop
+        - amount
+        - status
+        - scheduledFor
+        - bankCode
+        - accountName
+        - accountLast4
+        - paidAt
+        - failureReason
+      type: object
     BoardJob:
       additionalProperties: false
       properties:
@@ -2196,6 +2248,44 @@ components:
         - memo
         - postedBy
         - postedAt
+      type: object
+    FinancePayoutHold:
+      additionalProperties: false
+      properties:
+        createdAt:
+          format: date-time
+          type: string
+        createdBy:
+          type: string
+        id:
+          type: string
+        note:
+          type:
+            - string
+            - "null"
+        reason:
+          type: string
+        releasedAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        sellerId:
+          type: string
+        until:
+          format: date-time
+          type:
+            - string
+            - "null"
+      required:
+        - id
+        - sellerId
+        - reason
+        - note
+        - until
+        - createdBy
+        - releasedAt
+        - createdAt
       type: object
     FinancePostAdjustmentRequest:
       additionalProperties: false
@@ -4144,6 +4234,21 @@ components:
         - items
         - page
       type: object
+    ListPayoutBatch:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/PayoutBatch"
+          type:
+            - array
+            - "null"
+        page:
+          $ref: "#/components/schemas/Page"
+      required:
+        - items
+        - page
+      type: object
     ListPublicReview:
       additionalProperties: false
       properties:
@@ -4210,6 +4315,21 @@ components:
         items:
           items:
             $ref: "#/components/schemas/SellerOrder"
+          type:
+            - array
+            - "null"
+        page:
+          $ref: "#/components/schemas/Page"
+      required:
+        - items
+        - page
+      type: object
+    ListSellerPayout:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/SellerPayout"
           type:
             - array
             - "null"
@@ -6484,6 +6604,103 @@ components:
         - createdAt
         - updatedAt
       type: object
+    PayoutBatch:
+      additionalProperties: false
+      properties:
+        approvedAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        approvedBy:
+          type: string
+        count:
+          format: int32
+          type: integer
+        createdAt:
+          format: date-time
+          type: string
+        firstApprovedBy:
+          description: "Above the threshold: the first of two approvers"
+          type: string
+        id:
+          type: string
+        needsTwoApprovers:
+          type: boolean
+        preparedBy:
+          type: string
+        status:
+          enum:
+            - draft
+            - submitted
+            - approved
+            - processing
+            - done
+            - cancelled
+          type: string
+        submittedAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        total:
+          description: Kobo
+          format: int64
+          type: integer
+      required:
+        - id
+        - status
+        - preparedBy
+        - submittedAt
+        - firstApprovedBy
+        - approvedBy
+        - approvedAt
+        - total
+        - count
+        - needsTwoApprovers
+        - createdAt
+      type: object
+    PayoutBatchDetail:
+      additionalProperties: false
+      properties:
+        batch:
+          $ref: "#/components/schemas/PayoutBatch"
+        payouts:
+          items:
+            $ref: "#/components/schemas/BatchPayout"
+          type:
+            - array
+            - "null"
+        skipped:
+          description: Only when the batch was just prepared
+          items:
+            $ref: "#/components/schemas/SkippedSeller"
+          type:
+            - array
+            - "null"
+      required:
+        - batch
+        - payouts
+      type: object
+    PayoutItem:
+      additionalProperties: false
+      properties:
+        amount:
+          description: "Kobo: after commission"
+          format: int64
+          type: integer
+        deliveredAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        orderNumber:
+          type: string
+      required:
+        - orderNumber
+        - amount
+        - deliveredAt
+      type: object
     PickListView:
       additionalProperties: false
       properties:
@@ -7967,6 +8184,11 @@ components:
         quantity:
           format: int32
           type: integer
+        sellerEarningKobo:
+          format: int64
+          type:
+            - integer
+            - "null"
         sellerId:
           type: string
         sku:
@@ -8001,6 +8223,7 @@ components:
         - deviceUnitId
         - cancelledAt
         - createdAt
+        - sellerEarningKobo
       type: object
     SalesOrderStatusHistory:
       additionalProperties: false
@@ -8381,6 +8604,41 @@ components:
         - searches
         - lastSeen
       type: object
+    SellerBalance:
+      additionalProperties: false
+      properties:
+        available:
+          description: "Kobo: payable in the next payout run"
+          format: int64
+          type: integer
+        holdReasons:
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        minimum:
+          description: "Kobo: the smallest payout we send"
+          format: int64
+          type: integer
+        nextPayoutDay:
+          description: Payouts run on Tuesdays and Fridays, business days only
+          format: date
+          type: string
+        onHold:
+          type: boolean
+        pending:
+          description: "Kobo: earned, waiting for delivery or the return window"
+          format: int64
+          type: integer
+      required:
+        - available
+        - pending
+        - onHold
+        - holdReasons
+        - minimum
+        - nextPayoutDay
+      type: object
     SellerCancelOrderRequest:
       additionalProperties: false
       properties:
@@ -8464,6 +8722,56 @@ components:
         - city
         - stateCode
         - cancelledReason
+        - createdAt
+      type: object
+    SellerPayout:
+      additionalProperties: false
+      properties:
+        accountLast4:
+          type: string
+        amount:
+          description: Kobo
+          format: int64
+          type: integer
+        createdAt:
+          format: date-time
+          type: string
+        failureReason:
+          type:
+            - string
+            - "null"
+        id:
+          type: string
+        items:
+          items:
+            $ref: "#/components/schemas/PayoutItem"
+          type:
+            - array
+            - "null"
+        paidAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        scheduledFor:
+          format: date
+          type: string
+        status:
+          enum:
+            - scheduled
+            - processing
+            - paid
+            - failed
+            - on_hold
+          type: string
+      required:
+        - id
+        - amount
+        - status
+        - scheduledFor
+        - paidAt
+        - accountLast4
+        - failureReason
         - createdAt
       type: object
     SellerRespondToReviewRequest:
@@ -8622,6 +8930,30 @@ components:
         - city
         - createdAt
       type: object
+    SkippedSeller:
+      additionalProperties: false
+      properties:
+        amount:
+          description: "Kobo: what would have been paid"
+          format: int64
+          type: integer
+        name:
+          type: string
+        reasons:
+          description: Hold reasons, or below_minimum
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        sellerId:
+          type: string
+      required:
+        - sellerId
+        - name
+        - reasons
+        - amount
+      type: object
     StaffAddProductImageRequest:
       additionalProperties: false
       properties:
@@ -8675,6 +9007,18 @@ components:
         - delta
         - reason
         - note
+      type: object
+    StaffApprovePayoutBatchResponse:
+      additionalProperties: false
+      properties:
+        batch:
+          $ref: "#/components/schemas/PayoutBatch"
+        released:
+          description: True when the transfers have started; false when a second approver is still needed
+          type: boolean
+      required:
+        - batch
+        - released
       type: object
     StaffBankAccount:
       additionalProperties: false
@@ -9032,6 +9376,20 @@ components:
       required:
         - decision
       type: object
+    StaffExcludePayoutRequest:
+      additionalProperties: false
+      properties:
+        hold:
+          description: Also hold the seller's later payouts until finance releases it
+          type: boolean
+        note:
+          description: Why (kept in the audit log)
+          maxLength: 500
+          minLength: 3
+          type: string
+      required:
+        - note
+      type: object
     StaffGrantRoleRequest:
       additionalProperties: false
       properties:
@@ -9039,6 +9397,27 @@ components:
           type: string
       required:
         - role
+      type: object
+    StaffHoldSellerPayoutsRequest:
+      additionalProperties: false
+      properties:
+        note:
+          maxLength: 500
+          minLength: 3
+          type: string
+        reason:
+          enum:
+            - risk_case
+            - enforcement
+            - manual
+          type: string
+        until:
+          description: Releases itself at this time; empty = until released
+          format: date-time
+          type: string
+      required:
+        - reason
+        - note
       type: object
     StaffMarkGapRequest:
       additionalProperties: false
@@ -13380,6 +13759,33 @@ paths:
       summary: Open a shop (waits for verification)
       tags:
         - Seller Centre
+  /api/v1/seller/shops/{shopId}/balance:
+    get:
+      operationId: sellerBalance
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SellerBalance"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Money available, pending and on hold
+      tags:
+        - Seller Centre · Payouts
   /api/v1/seller/shops/{shopId}/bank-accounts:
     post:
       operationId: sellerAddBankAccount
@@ -14012,6 +14418,76 @@ paths:
       summary: "Mark as packed: returns the parcel label and the drop-off deadline"
       tags:
         - Seller Centre · Orders
+  /api/v1/seller/shops/{shopId}/payouts:
+    get:
+      operationId: sellerPayouts
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+        - explode: false
+          in: query
+          name: cursor
+          schema:
+            type: string
+        - explode: false
+          in: query
+          name: limit
+          schema:
+            format: int64
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListSellerPayout"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Payouts, newest first
+      tags:
+        - Seller Centre · Payouts
+  /api/v1/seller/shops/{shopId}/payouts/{payoutId}:
+    get:
+      operationId: sellerPayout
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: payoutId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SellerPayout"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: "A payout statement: the orders it covers"
+      tags:
+        - Seller Centre · Payouts
   /api/v1/seller/shops/{shopId}/reviews:
     get:
       operationId: sellerListReviews
@@ -15159,6 +15635,253 @@ paths:
       summary: Re-verify a payment with its provider now
       tags:
         - Staff · Finance
+  /api/v1/staff/finance/payout-batches:
+    get:
+      description: Requires permission `finance.view`.
+      operationId: staffListPayoutBatches
+      parameters:
+        - explode: false
+          in: query
+          name: status
+          schema:
+            enum:
+              - draft
+              - submitted
+              - approved
+              - processing
+              - done
+              - cancelled
+              - ""
+            type: string
+        - explode: false
+          in: query
+          name: cursor
+          schema:
+            type: string
+        - explode: false
+          in: query
+          name: limit
+          schema:
+            format: int64
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListPayoutBatch"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: BatchPayout batches, newest first
+      tags:
+        - Staff · Payouts
+    post:
+      description: Requires permission `payouts.prepare`.
+      operationId: staffPreparePayoutBatch
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PayoutBatchDetail"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Prepare a draft batch from every seller who can be paid now
+      tags:
+        - Staff · Payouts
+  /api/v1/staff/finance/payout-batches/{id}:
+    get:
+      description: Requires permission `finance.view`.
+      operationId: staffGetPayoutBatch
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PayoutBatchDetail"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: A batch with its payouts
+      tags:
+        - Staff · Payouts
+  /api/v1/staff/finance/payout-batches/{id}/approve:
+    post:
+      description: Requires permission `payouts.approve`.
+      operationId: staffApprovePayoutBatch
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffApprovePayoutBatchResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Approve a submitted batch (not its preparer; fresh MFA; two managers above the threshold)
+      tags:
+        - Staff · Payouts
+  /api/v1/staff/finance/payout-batches/{id}/cancel:
+    post:
+      description: Requires permission `payouts.prepare`.
+      operationId: staffCancelPayoutBatch
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PayoutBatch"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Cancel a batch that isn't approved yet
+      tags:
+        - Staff · Payouts
+  /api/v1/staff/finance/payout-batches/{id}/payouts/{payoutId}/exclude:
+    post:
+      description: Requires permission `payouts.prepare`.
+      operationId: staffExcludePayout
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: payoutId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffExcludePayoutRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PayoutBatchDetail"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Take a seller out of a draft batch (optionally holding later payouts too)
+      tags:
+        - Staff · Payouts
+  /api/v1/staff/finance/payout-batches/{id}/submit:
+    post:
+      description: Requires permission `payouts.prepare`.
+      operationId: staffSubmitPayoutBatch
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PayoutBatch"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Send a draft batch for approval
+      tags:
+        - Staff · Payouts
+  /api/v1/staff/finance/payout-holds/{id}/release:
+    post:
+      description: Requires permission `payouts.approve`.
+      operationId: staffReleasePayoutHold
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinancePayoutHold"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Release a payout hold
+      tags:
+        - Staff · Payouts
   /api/v1/staff/finance/periods:
     get:
       description: Requires permission `finance.view`.
@@ -15442,6 +16165,40 @@ paths:
       summary: Reject a refund request
       tags:
         - Staff · Finance
+  /api/v1/staff/finance/sellers/{sellerId}/payout-holds:
+    post:
+      description: Requires permission `payouts.prepare`.
+      operationId: staffHoldSellerPayouts
+      parameters:
+        - in: path
+          name: sellerId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffHoldSellerPayoutsRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinancePayoutHold"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Hold a seller's payouts
+      tags:
+        - Staff · Payouts
   /api/v1/staff/finance/trial-balance:
     get:
       description: Requires permission `finance.view`.

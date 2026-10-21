@@ -21,6 +21,7 @@ func (s *Service) Routes(r *kit.Routes) {
 	s.listingRoutes(r)
 	s.orderRoutes(r)
 	s.reviewRoutes(r)
+	s.payoutRoutes(r)
 	g := r.Public
 	sel := func(o httpx.Op) httpx.Op { o.Tag = "Seller Centre"; o.Auth = sellerAud; return o }
 
