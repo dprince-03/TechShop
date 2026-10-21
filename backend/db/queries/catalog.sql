@@ -316,3 +316,21 @@ on conflict (listing_id, min_quantity) do update set unit_price_kobo = excluded.
 
 -- name: CatalogListTiers :many
 select * from catalog.price_tiers where listing_id = $1 order by min_quantity;
+
+-- name: CatalogSellerListingsPage :many
+-- A shop's own listings for Seller Centre, newest first (keyset by created_at).
+select l.*, v.name as variant_name, v.sku, p.name as product_name, p.slug as product_slug
+from catalog.listings l
+join catalog.product_variants v on v.id = l.variant_id
+join catalog.products p on p.id = v.product_id
+where l.seller_id = @seller_id
+  and (sqlc.narg('status')::text is null or l.status = sqlc.narg('status'))
+  and (sqlc.narg('before')::timestamptz is null or l.created_at < sqlc.narg('before'))
+order by l.created_at desc limit @lim;
+
+-- name: CatalogUpdateListingDetails :one
+-- Seller edits while a listing is a draft or has changes requested.
+update catalog.listings
+set grade = $2, condition_notes = $3, battery_health_pct = $4, warranty_provider = $5, warranty_months = $6, handling_days = $7
+where id = $1
+returning *;

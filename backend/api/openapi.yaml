@@ -176,6 +176,84 @@ components:
           format: date-time
           type: string
       type: object
+    Bank:
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+      required:
+        - code
+        - name
+      type: object
+    BankAccount:
+      additionalProperties: false
+      properties:
+        accountName:
+          description: The name the seller typed
+          type: string
+        accountNumberLast4:
+          type: string
+        bankCode:
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        id:
+          type: string
+        isDefault:
+          type: boolean
+        nameMatch:
+          description: Bank name vs the shop's legal holder
+          enum:
+            - match
+            - partial
+            - mismatch
+            - unknown
+          type: string
+        payoutsFrom:
+          description: New accounts are held for 24 hours before payouts can use them
+          format: date-time
+          type: string
+        resolvedAccountName:
+          description: The name the bank holds
+          type:
+            - string
+            - "null"
+        verified:
+          type: boolean
+      required:
+        - id
+        - bankCode
+        - accountName
+        - resolvedAccountName
+        - accountNumberLast4
+        - nameMatch
+        - verified
+        - isDefault
+        - payoutsFrom
+        - createdAt
+      type: object
+    BankInput:
+      additionalProperties: false
+      properties:
+        accountName:
+          maxLength: 100
+          minLength: 3
+          type: string
+        accountNumber:
+          description: 10-digit NUBAN; encrypted at rest
+          pattern: ^[0-9]{10}$
+          type: string
+        bankCode:
+          pattern: ^[0-9]{3,6}$
+          type: string
+      required:
+        - bankCode
+        - accountNumber
+        - accountName
+      type: object
     BoardJob:
       additionalProperties: false
       properties:
@@ -3696,6 +3774,116 @@ components:
         - createdAt
         - updatedAt
       type: object
+    Kyc:
+      additionalProperties: false
+      properties:
+        cacRcNumber:
+          type:
+            - string
+            - "null"
+        documents:
+          items:
+            $ref: "#/components/schemas/KycDocument"
+          type:
+            - array
+            - "null"
+        id:
+          type: string
+        idNumberLast4:
+          type: string
+        idType:
+          type: string
+        note:
+          description: The reviewer's reason (rejected) or request (needs_more_info)
+          type:
+            - string
+            - "null"
+        reviewedAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        status:
+          enum:
+            - submitted
+            - in_review
+            - approved
+            - rejected
+            - needs_more_info
+          type: string
+        submittedAt:
+          format: date-time
+          type: string
+        tin:
+          type:
+            - string
+            - "null"
+      required:
+        - id
+        - status
+        - idType
+        - idNumberLast4
+        - cacRcNumber
+        - tin
+        - note
+        - documents
+        - submittedAt
+        - reviewedAt
+      type: object
+    KycDocument:
+      additionalProperties: false
+      properties:
+        fileId:
+          type: string
+        kind:
+          enum:
+            - id_front
+            - id_back
+            - cac_certificate
+            - utility_bill
+            - selfie
+          type: string
+      required:
+        - kind
+        - fileId
+      type: object
+    KycInput:
+      additionalProperties: false
+      properties:
+        cacRcNumber:
+          description: Required for business sellers
+          maxLength: 20
+          type: string
+        documents:
+          description: Files uploaded with purpose kyc_document
+          items:
+            $ref: "#/components/schemas/KycDocument"
+          maxItems: 6
+          minItems: 1
+          type:
+            - array
+            - "null"
+        idNumber:
+          description: Encrypted at rest; only the last 4 digits are ever shown
+          maxLength: 30
+          minLength: 6
+          type: string
+        idType:
+          enum:
+            - nin
+            - nin_slip
+            - passport
+            - drivers_licence
+            - voters_card
+          type: string
+        tin:
+          maxLength: 20
+          type: string
+      required:
+        - idType
+        - idNumber
+        - documents
+      type: object
     Line:
       additionalProperties: false
       properties:
@@ -3815,6 +4003,21 @@ components:
         items:
           items:
             $ref: "#/components/schemas/SalesStaffListOrdersRow"
+          type:
+            - array
+            - "null"
+        page:
+          $ref: "#/components/schemas/Page"
+      required:
+        - items
+        - page
+      type: object
+    ListVendorRow:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/VendorRow"
           type:
             - array
             - "null"
@@ -4770,6 +4973,24 @@ components:
         - businesses
         - createdAt
       type: object
+    Member:
+      additionalProperties: false
+      properties:
+        createdAt:
+          format: date-time
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+        userId:
+          type: string
+      required:
+        - userId
+        - name
+        - role
+        - createdAt
+      type: object
     MergeCartRequest:
       additionalProperties: false
       properties:
@@ -4981,6 +5202,34 @@ components:
         - fulfilledBy
         - score
         - buyBox
+      type: object
+    Onboarding:
+      additionalProperties: false
+      properties:
+        bankAccounts:
+          items:
+            $ref: "#/components/schemas/BankAccount"
+          type:
+            - array
+            - "null"
+        kyc:
+          $ref: "#/components/schemas/Kyc"
+        nextStep:
+          description: What the seller should do next
+          enum:
+            - submit_kyc
+            - add_bank_account
+            - await_review
+            - fix_kyc
+            - done
+          type: string
+        shop:
+          $ref: "#/components/schemas/Shop"
+      required:
+        - shop
+        - kyc
+        - bankAccounts
+        - nextStep
       type: object
     OrderDetail:
       additionalProperties: false
@@ -6301,6 +6550,31 @@ components:
       required:
         - refreshToken
       type: object
+    RegisterInput:
+      additionalProperties: false
+      properties:
+        city:
+          maxLength: 60
+          minLength: 2
+          type: string
+        displayName:
+          maxLength: 60
+          minLength: 3
+          type: string
+        stateCode:
+          pattern: ^[A-Z]{2}$
+          type: string
+        type:
+          enum:
+            - business
+            - individual
+          type: string
+      required:
+        - type
+        - displayName
+        - stateCode
+        - city
+      type: object
     RegisterPushTokenRequest:
       additionalProperties: false
       properties:
@@ -6394,6 +6668,22 @@ components:
           type: string
       required:
         - provider
+      type: object
+    ReviewInput:
+      additionalProperties: false
+      properties:
+        decision:
+          enum:
+            - approved
+            - rejected
+            - needs_more_info
+          type: string
+        note:
+          description: Required unless approving; the seller sees it
+          maxLength: 500
+          type: string
+      required:
+        - decision
       type: object
     RevokeOtherSessionsResponse:
       additionalProperties: false
@@ -7157,6 +7447,57 @@ components:
         - createdAt
         - current
       type: object
+    Shop:
+      additionalProperties: false
+      properties:
+        city:
+          type:
+            - string
+            - "null"
+        createdAt:
+          format: date-time
+          type: string
+        displayName:
+          type: string
+        id:
+          type: string
+        role:
+          description: Your role in this shop
+          enum:
+            - owner
+            - manager
+            - staff
+            - finance
+          type: string
+        slug:
+          type: string
+        stateCode:
+          type:
+            - string
+            - "null"
+        status:
+          enum:
+            - pending_kyc
+            - active
+            - suspended
+            - closed
+          type: string
+        type:
+          enum:
+            - business
+            - individual
+            - first_party
+          type: string
+      required:
+        - id
+        - type
+        - displayName
+        - slug
+        - status
+        - stateCode
+        - city
+        - createdAt
+      type: object
     StaffAddProductImageRequest:
       additionalProperties: false
       properties:
@@ -7210,6 +7551,59 @@ components:
         - delta
         - reason
         - note
+      type: object
+    StaffBankAccount:
+      additionalProperties: false
+      properties:
+        accountName:
+          description: The name the seller typed
+          type: string
+        accountNumberLast4:
+          type: string
+        bankCode:
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        id:
+          type: string
+        isDefault:
+          type: boolean
+        nameMatch:
+          description: Bank name vs the shop's legal holder
+          enum:
+            - match
+            - partial
+            - mismatch
+            - unknown
+          type: string
+        otherSellersWithAccount:
+          description: "Other shops using the same account number: a banned seller returning?"
+          format: int64
+          type: integer
+        payoutsFrom:
+          description: New accounts are held for 24 hours before payouts can use them
+          format: date-time
+          type: string
+        resolvedAccountName:
+          description: The name the bank holds
+          type:
+            - string
+            - "null"
+        verified:
+          type: boolean
+      required:
+        - otherSellersWithAccount
+        - id
+        - bankCode
+        - accountName
+        - resolvedAccountName
+        - accountNumberLast4
+        - nameMatch
+        - verified
+        - isDefault
+        - payoutsFrom
+        - createdAt
       type: object
     StaffCreateAttributeRequest:
       additionalProperties: false
@@ -7641,6 +8035,24 @@ components:
         - status
         - resolution
       type: object
+    StaffRevealKycIdRequest:
+      additionalProperties: false
+      properties:
+        reason:
+          maxLength: 300
+          minLength: 10
+          type: string
+      required:
+        - reason
+      type: object
+    StaffRevealKycIdResponse:
+      additionalProperties: false
+      properties:
+        idNumber:
+          type: string
+      required:
+        - idNumber
+      type: object
     StaffSaveHelpRequest:
       additionalProperties: false
       properties:
@@ -8054,6 +8466,85 @@ components:
         - label
         - channel
         - sharePct
+      type: object
+    Vendor:
+      additionalProperties: false
+      properties:
+        bankAccounts:
+          items:
+            $ref: "#/components/schemas/StaffBankAccount"
+          type:
+            - array
+            - "null"
+        kyc:
+          $ref: "#/components/schemas/Kyc"
+        legalHolder:
+          description: Name bank accounts are compared with
+          type: string
+        members:
+          items:
+            $ref: "#/components/schemas/Member"
+          type:
+            - array
+            - "null"
+        otherSellersWithIdNumber:
+          description: Other shops that submitted the same ID number
+          format: int64
+          type: integer
+        shop:
+          $ref: "#/components/schemas/Shop"
+      required:
+        - shop
+        - legalHolder
+        - members
+        - kyc
+        - otherSellersWithIdNumber
+        - bankAccounts
+      type: object
+    VendorRow:
+      additionalProperties: false
+      properties:
+        city:
+          type:
+            - string
+            - "null"
+        createdAt:
+          format: date-time
+          type: string
+        displayName:
+          type: string
+        id:
+          type: string
+        kycStatus:
+          type:
+            - string
+            - "null"
+        kycSubmittedAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        slug:
+          type: string
+        stateCode:
+          type:
+            - string
+            - "null"
+        status:
+          type: string
+        type:
+          type: string
+      required:
+        - id
+        - type
+        - displayName
+        - slug
+        - status
+        - city
+        - stateCode
+        - kycStatus
+        - kycSubmittedAt
+        - createdAt
       type: object
     VerifyNewDeviceOtpRequest:
       additionalProperties: false
@@ -11337,6 +11828,231 @@ paths:
       summary: "Autocomplete: queries, categories, products"
       tags:
         - Catalogue
+  /api/v1/seller/banks:
+    get:
+      operationId: sellerBanks
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/Bank"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Banks payouts can go to
+      tags:
+        - Seller Centre
+  /api/v1/seller/shops:
+    get:
+      operationId: sellerMyShops
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/Shop"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Shops you belong to, with your role
+      tags:
+        - Seller Centre
+    post:
+      operationId: sellerRegisterShop
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Shop"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Open a shop (waits for verification)
+      tags:
+        - Seller Centre
+  /api/v1/seller/shops/{shopId}/bank-accounts:
+    post:
+      operationId: sellerAddBankAccount
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BankInput"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BankAccount"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Add a payout account (checked with the bank; owner or finance)
+      tags:
+        - Seller Centre
+  /api/v1/seller/shops/{shopId}/bank-accounts/{accountId}:
+    delete:
+      operationId: sellerDeleteBankAccount
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: accountId
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Remove an account that isn't the default
+      tags:
+        - Seller Centre
+  /api/v1/seller/shops/{shopId}/bank-accounts/{accountId}/default:
+    post:
+      operationId: sellerSetDefaultBank
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: accountId
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Pay out to this account
+      tags:
+        - Seller Centre
+  /api/v1/seller/shops/{shopId}/kyc:
+    post:
+      operationId: sellerSubmitKyc
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KycInput"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Kyc"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Submit identity and business verification (owner)
+      tags:
+        - Seller Centre
+  /api/v1/seller/shops/{shopId}/onboarding:
+    get:
+      operationId: sellerOnboarding
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Onboarding"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Verification and payout setup, with the next step
+      tags:
+        - Seller Centre
   /api/v1/staff/admin/audit-log:
     get:
       description: Requires permission `admin.audit_view`.
@@ -14192,6 +14908,165 @@ paths:
       summary: Deactivate a synonym
       tags:
         - Staff · Search
+  /api/v1/staff/vendors:
+    get:
+      description: Requires permission `vendors.view`.
+      operationId: staffListVendors
+      parameters:
+        - explode: false
+          in: query
+          name: status
+          schema:
+            enum:
+              - pending_kyc
+              - active
+              - suspended
+              - closed
+              - ""
+            type: string
+        - explode: false
+          in: query
+          name: kycStatus
+          schema:
+            enum:
+              - submitted
+              - in_review
+              - approved
+              - rejected
+              - needs_more_info
+              - ""
+            type: string
+        - explode: false
+          in: query
+          name: q
+          schema:
+            maxLength: 60
+            type: string
+        - explode: false
+          in: query
+          name: cursor
+          schema:
+            type: string
+        - explode: false
+          in: query
+          name: limit
+          schema:
+            format: int64
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListVendorRow"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Marketplace sellers, newest first
+      tags:
+        - Staff · Vendors
+  /api/v1/staff/vendors/kyc/{id}/reveal:
+    post:
+      description: Requires permission `vendors.reveal_id`.
+      operationId: staffRevealKycId
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffRevealKycIdRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffRevealKycIdResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Show the full ID number (reason required; audited)
+      tags:
+        - Staff · Vendors
+  /api/v1/staff/vendors/kyc/{id}/review:
+    post:
+      description: Requires permission `vendors.kyc_review`.
+      operationId: staffReviewKyc
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Kyc"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Approve, reject or ask for more information
+      tags:
+        - Staff · Vendors
+  /api/v1/staff/vendors/{id}:
+    get:
+      description: Requires permission `vendors.view`.
+      operationId: staffGetVendor
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vendor"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: A seller with KYC, bank accounts and duplicate signals
+      tags:
+        - Staff · Vendors
   /api/v1/staff/wms/carriers:
     get:
       description: Requires permission `fulfilment.pick`.

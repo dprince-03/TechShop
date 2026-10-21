@@ -1573,6 +1573,126 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/seller/banks": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Banks payouts can go to */
+    get: operations["sellerBanks"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Shops you belong to, with your role */
+    get: operations["sellerMyShops"];
+    put?: never;
+    /** Open a shop (waits for verification) */
+    post: operations["sellerRegisterShop"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/bank-accounts": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Add a payout account (checked with the bank; owner or finance) */
+    post: operations["sellerAddBankAccount"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/bank-accounts/{accountId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Remove an account that isn't the default */
+    delete: operations["sellerDeleteBankAccount"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/bank-accounts/{accountId}/default": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Pay out to this account */
+    post: operations["sellerSetDefaultBank"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/kyc": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Submit identity and business verification (owner) */
+    post: operations["sellerSubmitKyc"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/onboarding": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Verification and payout setup, with the next step */
+    get: operations["sellerOnboarding"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/staff/admin/audit-log": {
     parameters: {
       query?: never;
@@ -3273,6 +3393,86 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/staff/vendors": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Marketplace sellers, newest first
+     * @description Requires permission `vendors.view`.
+     */
+    get: operations["staffListVendors"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/vendors/kyc/{id}/reveal": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Show the full ID number (reason required; audited)
+     * @description Requires permission `vendors.reveal_id`.
+     */
+    post: operations["staffRevealKycId"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/vendors/kyc/{id}/review": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Approve, reject or ask for more information
+     * @description Requires permission `vendors.kyc_review`.
+     */
+    post: operations["staffReviewKyc"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/vendors/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * A seller with KYC, bank accounts and duplicate signals
+     * @description Requires permission `vendors.view`.
+     */
+    get: operations["staffGetVendor"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/staff/wms/carriers": {
     parameters: {
       query?: never;
@@ -3684,6 +3884,39 @@ export interface components {
        * @description Approve only: when to send (default now)
        */
       sendAt?: string;
+    };
+    Bank: {
+      code: string;
+      name: string;
+    };
+    BankAccount: {
+      /** @description The name the seller typed */
+      accountName: string;
+      accountNumberLast4: string;
+      bankCode: string;
+      /** Format: date-time */
+      createdAt: string;
+      id: string;
+      isDefault: boolean;
+      /**
+       * @description Bank name vs the shop's legal holder
+       * @enum {string}
+       */
+      nameMatch: "match" | "partial" | "mismatch" | "unknown";
+      /**
+       * Format: date-time
+       * @description New accounts are held for 24 hours before payouts can use them
+       */
+      payoutsFrom: string;
+      /** @description The name the bank holds */
+      resolvedAccountName: string | null;
+      verified: boolean;
+    };
+    BankInput: {
+      accountName: string;
+      /** @description 10-digit NUBAN; encrypted at rest */
+      accountNumber: string;
+      bankCode: string;
     };
     BoardJob: {
       /** Format: date-time */
@@ -5003,6 +5236,41 @@ export interface components {
       /** Format: date-time */
       updatedAt: string;
     };
+    Kyc: {
+      cacRcNumber: string | null;
+      documents: components["schemas"]["KycDocument"][] | null;
+      id: string;
+      idNumberLast4: string;
+      idType: string;
+      /** @description The reviewer's reason (rejected) or request (needs_more_info) */
+      note: string | null;
+      /** Format: date-time */
+      reviewedAt: string | null;
+      /** @enum {string} */
+      status:
+        "submitted" | "in_review" | "approved" | "rejected" | "needs_more_info";
+      /** Format: date-time */
+      submittedAt: string;
+      tin: string | null;
+    };
+    KycDocument: {
+      fileId: string;
+      /** @enum {string} */
+      kind:
+        "id_front" | "id_back" | "cac_certificate" | "utility_bill" | "selfie";
+    };
+    KycInput: {
+      /** @description Required for business sellers */
+      cacRcNumber?: string;
+      /** @description Files uploaded with purpose kyc_document */
+      documents: components["schemas"]["KycDocument"][] | null;
+      /** @description Encrypted at rest; only the last 4 digits are ever shown */
+      idNumber: string;
+      /** @enum {string} */
+      idType:
+        "nin" | "nin_slip" | "passport" | "drivers_licence" | "voters_card";
+      tin?: string;
+    };
     Line: {
       /** Format: int32 */
       available: number;
@@ -5047,6 +5315,10 @@ export interface components {
     };
     ListSalesStaffListOrdersRow: {
       items: components["schemas"]["SalesStaffListOrdersRow"][] | null;
+      page: components["schemas"]["Page"];
+    };
+    ListVendorRow: {
+      items: components["schemas"]["VendorRow"][] | null;
       page: components["schemas"]["Page"];
     };
     ListingInput: {
@@ -5406,6 +5678,13 @@ export interface components {
       /** @description Seller memberships */
       sellers: unknown;
     };
+    Member: {
+      /** Format: date-time */
+      createdAt: string;
+      name: string;
+      role: string;
+      userId: string;
+    };
     MergeCartRequest: {
       cartToken: string;
     };
@@ -5493,6 +5772,17 @@ export interface components {
       variantName: string;
       /** Format: int32 */
       warrantyMonths: number;
+    };
+    Onboarding: {
+      bankAccounts: components["schemas"]["BankAccount"][] | null;
+      kyc: components["schemas"]["Kyc"];
+      /**
+       * @description What the seller should do next
+       * @enum {string}
+       */
+      nextStep:
+        "submit_kyc" | "add_bank_account" | "await_review" | "fix_kyc" | "done";
+      shop: components["schemas"]["Shop"];
     };
     OrderDetail: {
       attributedNotificationId: string;
@@ -6000,6 +6290,13 @@ export interface components {
     RefreshTokensRequest: {
       refreshToken: string;
     };
+    RegisterInput: {
+      city: string;
+      displayName: string;
+      stateCode: string;
+      /** @enum {string} */
+      type: "business" | "individual";
+    };
     RegisterPushTokenRequest: {
       /** @enum {string} */
       app: "customer" | "logistics";
@@ -6043,6 +6340,12 @@ export interface components {
     RetryPaymentRequest: {
       /** @enum {string} */
       provider: "paystack" | "opay" | "moniepoint";
+    };
+    ReviewInput: {
+      /** @enum {string} */
+      decision: "approved" | "rejected" | "needs_more_info";
+      /** @description Required unless approving; the seller sees it */
+      note?: string;
     };
     RevokeOtherSessionsResponse: {
       /** Format: int64 */
@@ -6334,6 +6637,24 @@ export interface components {
       platform: string;
       userAgent?: string;
     };
+    Shop: {
+      city: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      displayName: string;
+      id: string;
+      /**
+       * @description Your role in this shop
+       * @enum {string}
+       */
+      role?: "owner" | "manager" | "staff" | "finance";
+      slug: string;
+      stateCode: string | null;
+      /** @enum {string} */
+      status: "pending_kyc" | "active" | "suspended" | "closed";
+      /** @enum {string} */
+      type: "business" | "individual" | "first_party";
+    };
     StaffAddProductImageRequest: {
       alt: string;
       fileId: string;
@@ -6353,6 +6674,34 @@ export interface components {
       reason: "adjustment" | "write_off" | "purchase_receipt";
       variantId: string;
       warehouseId: string;
+    };
+    StaffBankAccount: {
+      /** @description The name the seller typed */
+      accountName: string;
+      accountNumberLast4: string;
+      bankCode: string;
+      /** Format: date-time */
+      createdAt: string;
+      id: string;
+      isDefault: boolean;
+      /**
+       * @description Bank name vs the shop's legal holder
+       * @enum {string}
+       */
+      nameMatch: "match" | "partial" | "mismatch" | "unknown";
+      /**
+       * Format: int64
+       * @description Other shops using the same account number: a banned seller returning?
+       */
+      otherSellersWithAccount: number;
+      /**
+       * Format: date-time
+       * @description New accounts are held for 24 hours before payouts can use them
+       */
+      payoutsFrom: string;
+      /** @description The name the bank holds */
+      resolvedAccountName: string | null;
+      verified: boolean;
     };
     StaffCreateAttributeRequest: {
       /** @enum {string} */
@@ -6497,6 +6846,12 @@ export interface components {
       resolution: string;
       /** @enum {string} */
       status: "resolved" | "escalated";
+    };
+    StaffRevealKycIdRequest: {
+      reason: string;
+    };
+    StaffRevealKycIdResponse: {
+      idNumber: string;
     };
     StaffSaveHelpRequest: {
       blocks: unknown;
@@ -6657,6 +7012,33 @@ export interface components {
       sharePct: number;
       subject?: string;
       templateVersionId?: string;
+    };
+    Vendor: {
+      bankAccounts: components["schemas"]["StaffBankAccount"][] | null;
+      kyc: components["schemas"]["Kyc"];
+      /** @description Name bank accounts are compared with */
+      legalHolder: string;
+      members: components["schemas"]["Member"][] | null;
+      /**
+       * Format: int64
+       * @description Other shops that submitted the same ID number
+       */
+      otherSellersWithIdNumber: number;
+      shop: components["schemas"]["Shop"];
+    };
+    VendorRow: {
+      city: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      displayName: string;
+      id: string;
+      kycStatus: string | null;
+      /** Format: date-time */
+      kycSubmittedAt: string | null;
+      slug: string;
+      stateCode: string | null;
+      status: string;
+      type: string;
     };
     VerifyNewDeviceOtpRequest: {
       appVersion?: string;
@@ -9957,6 +10339,258 @@ export interface operations {
       };
     };
   };
+  sellerBanks: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Bank"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerMyShops: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Shop"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerRegisterShop: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RegisterInput"];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Shop"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerAddBankAccount: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["BankInput"];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BankAccount"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerDeleteBankAccount: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+        accountId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerSetDefaultBank: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+        accountId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerSubmitKyc: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["KycInput"];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Kyc"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerOnboarding: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Onboarding"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   staffListAuditLog: {
     parameters: {
       query?: {
@@ -12964,6 +13598,148 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffListVendors: {
+    parameters: {
+      query?: {
+        status?: "pending_kyc" | "active" | "suspended" | "closed" | "";
+        kycStatus?:
+          | "submitted"
+          | "in_review"
+          | "approved"
+          | "rejected"
+          | "needs_more_info"
+          | "";
+        q?: string;
+        cursor?: string;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ListVendorRow"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffRevealKycId: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StaffRevealKycIdRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StaffRevealKycIdResponse"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffReviewKyc: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReviewInput"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Kyc"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffGetVendor: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Vendor"];
+        };
       };
       /** @description Error */
       default: {

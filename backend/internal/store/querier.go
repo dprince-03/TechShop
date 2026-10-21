@@ -65,6 +65,8 @@ type Querier interface {
 	// promotions. Called by the outbox subscriber within seconds of a change (and nightly).
 	CatalogRefreshOfferSummary(ctx context.Context, arg CatalogRefreshOfferSummaryParams) error
 	CatalogSellerListingCount(ctx context.Context, sellerID uuid.UUID) (int32, error)
+	// A shop's own listings for Seller Centre, newest first (keyset by created_at).
+	CatalogSellerListingsPage(ctx context.Context, arg CatalogSellerListingsPageParams) ([]CatalogSellerListingsPageRow, error)
 	CatalogSetAttributeValue(ctx context.Context, arg CatalogSetAttributeValueParams) error
 	CatalogSetListingStatus(ctx context.Context, arg CatalogSetListingStatusParams) (CatalogListing, error)
 	CatalogSetListingStock(ctx context.Context, arg CatalogSetListingStockParams) (CatalogListing, error)
@@ -72,6 +74,8 @@ type Querier interface {
 	CatalogSuggestProducts(ctx context.Context, prefix *string) ([]CatalogSuggestProductsRow, error)
 	CatalogSuggestQueries(ctx context.Context, prefix string) ([]string, error)
 	CatalogSummaryByProduct(ctx context.Context, arg CatalogSummaryByProductParams) (CatalogProductOfferSummary, error)
+	// Seller edits while a listing is a draft or has changes requested.
+	CatalogUpdateListingDetails(ctx context.Context, arg CatalogUpdateListingDetailsParams) (CatalogListing, error)
 	CatalogUpdateListingPrice(ctx context.Context, arg CatalogUpdateListingPriceParams) (CatalogListing, error)
 	CatalogUpdateProduct(ctx context.Context, arg CatalogUpdateProductParams) (CatalogProduct, error)
 	CatalogUpsertAttributeDefinition(ctx context.Context, arg CatalogUpsertAttributeDefinitionParams) (CatalogAttributeDefinition, error)
@@ -584,11 +588,36 @@ type Querier interface {
 	SearchUpsertRedirect(ctx context.Context, arg SearchUpsertRedirectParams) (SearchSearchRedirect, error)
 	SearchZeroResults(ctx context.Context, limit int32) ([]SearchZeroResultsRow, error)
 	SellersAddMember(ctx context.Context, arg SellersAddMemberParams) error
+	SellersBankAccountExists(ctx context.Context, arg SellersBankAccountExistsParams) (bool, error)
+	SellersBankAccounts(ctx context.Context, sellerID uuid.UUID) ([]SellersSellerBankAccount, error)
+	SellersClearDefaultBank(ctx context.Context, sellerID uuid.UUID) error
+	SellersCountOwnedByUser(ctx context.Context, ownerUserID *uuid.UUID) (int64, error)
 	SellersCreate(ctx context.Context, arg SellersCreateParams) (SellersSeller, error)
+	SellersDeleteBankAccount(ctx context.Context, arg SellersDeleteBankAccountParams) (int64, error)
 	SellersGet(ctx context.Context, id uuid.UUID) (SellersSeller, error)
 	SellersGetBySlug(ctx context.Context, slug string) (SellersSeller, error)
 	// Sellers (marketplace shops, members, KYC, bank accounts). Plan: trust-safety.md §2.
 	SellersGetFirstParty(ctx context.Context) (SellersSeller, error)
+	SellersGetKyc(ctx context.Context, id uuid.UUID) (SellersSellerKycSubmission, error)
+	SellersGetKycForUpdate(ctx context.Context, id uuid.UUID) (SellersSellerKycSubmission, error)
+	SellersInsertBankAccount(ctx context.Context, arg SellersInsertBankAccountParams) (SellersSellerBankAccount, error)
+	SellersInsertKyc(ctx context.Context, arg SellersInsertKycParams) (SellersSellerKycSubmission, error)
+	SellersInsertKycDocument(ctx context.Context, arg SellersInsertKycDocumentParams) error
+	SellersKycDocuments(ctx context.Context, submissionID uuid.UUID) ([]SellersKycDocumentsRow, error)
+	SellersLatestKyc(ctx context.Context, sellerID uuid.UUID) (SellersSellerKycSubmission, error)
+	SellersMemberRole(ctx context.Context, arg SellersMemberRoleParams) (string, error)
+	SellersMembers(ctx context.Context, sellerID uuid.UUID) ([]SellersMembersRow, error)
+	SellersOtherSellersWithAccount(ctx context.Context, arg SellersOtherSellersWithAccountParams) (int64, error)
+	SellersOtherSellersWithIDNumber(ctx context.Context, arg SellersOtherSellersWithIDNumberParams) (int64, error)
+	// ---- Seller Centre (M4): shops, KYC, bank accounts. Seller requests run with app.seller_id set,
+	// so row-level security (00025) also scopes these tables to the caller's shop.
+	SellersRegisterShop(ctx context.Context, arg SellersRegisterShopParams) (SellersSeller, error)
+	SellersReviewKyc(ctx context.Context, arg SellersReviewKycParams) (SellersSellerKycSubmission, error)
+	SellersSetDefaultBank(ctx context.Context, arg SellersSetDefaultBankParams) (int64, error)
+	SellersSetStatus(ctx context.Context, arg SellersSetStatusParams) (SellersSeller, error)
+	SellersShopsForUser(ctx context.Context, userID uuid.UUID) ([]SellersShopsForUserRow, error)
+	SellersSlugTaken(ctx context.Context, slug string) (bool, error)
+	SellersStaffList(ctx context.Context, arg SellersStaffListParams) ([]SellersStaffListRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

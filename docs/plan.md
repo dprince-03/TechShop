@@ -616,3 +616,28 @@ Owner approved ("go") the proposed layout and these choices:
 - **Repository layer only where it earns its place**: new M4 code and complex modules; no pass-through wrappers over sqlc everywhere.
 - **Redis / MongoDB:** `pkg/database/` keeps room for `redis/` and `mongo/` beside `postgres/`; nothing added until a feature needs it.
 - Then M4 (marketplace) starts on top of this layout.
+
+## 2026-10-21 — M4 Marketplace: slices and slice 1 decisions
+
+Owner: "add RLS in M4"; work until 07:00, slice by slice (code, test, fix).
+
+**Slices** (each tested and committed on `feat/m4-marketplace`):
+0. Least-privilege DB users (done).
+1. Seller onboarding: open a shop, KYC submission, payout bank accounts, staff KYC review + RLS on `sellers.*`.
+2. Listings: sellers list offers on catalogue variants, price and stock; moderation; RLS on `catalog.listings`.
+3. Seller fulfilment: accept/ship orders, SLA events; RLS on `sales.fulfilments`.
+4. Reviews and ratings.
+5. Payouts (batches, dual approval, holds, ledger).
+6. Monnify and OPay adapters.
+7. Seller Centre and staff screens wired.
+
+**Slice 1 decisions** (from trust-safety.md §2, payments-finance.md §9, identity-access.md §7.3; nothing new invented):
+- One open shop per owner. Shops start `pending_kyc`; approval activates them.
+- Seller routes are scoped by path (`/seller/shops/{shopId}/…`). A non-member gets **404**, so other shops' existence isn't revealed.
+- KYC launch adapter is **manual review** (provider `manual`), as the plan says; a verification provider plugs in later.
+- Required documents: ID + selfie; businesses also CAC certificate and number. NIN format checked (11 digits); other IDs 6–20 letters/digits.
+- ID and account numbers: encrypted (sealer, AAD bound to the shop), blind index (`BLIND_INDEX_KEY`) for duplicate detection, last 4 shown. Full ID only via `vendors.reveal_id` (sensitive → MFA) with a reason; audited.
+- Bank accounts: name enquiry via Paystack `/bank/resolve` before saving (no network call inside a DB transaction). The name match (`match/partial/mismatch`) is **shown to reviewers, not auto-blocking**. New accounts carry a 24-hour payout hold (`payoutsFrom`).
+- Approval needs a verified bank account; reviewer may not be a member of the shop. The owner gets the existing `seller_kyc_result` email.
+- **RLS policy semantics:** rows are restricted only when `app.seller_id` is set (seller requests). Staff, customer and job requests are unaffected. This is defence in depth for seller endpoints, not a replacement for the API's checks.
+- Dev fake name enquiry: echoes the typed name; numbers starting 9 return a different holder; `0000000000` is not found.
