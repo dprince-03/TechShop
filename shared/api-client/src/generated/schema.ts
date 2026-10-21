@@ -1727,6 +1727,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/seller/invites/accept": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Join the shop (from the account the invite was sent to) */
+    post: operations["sellerAcceptInvite"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/invites/preview": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** The shop and role an invite is for */
+    post: operations["sellerPreviewInvite"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/seller/shops": {
     parameters: {
       query?: never;
@@ -2098,6 +2132,108 @@ export interface paths {
     put?: never;
     /** Answer a review publicly (once) */
     post: operations["sellerRespondToReview"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/team": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Members and open invites (owners and managers) */
+    get: operations["sellerTeam"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/team/invites": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Invite someone by phone or email (link valid 7 days) */
+    post: operations["sellerInvite"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/team/invites/{inviteId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Cancel an invite */
+    delete: operations["sellerRevokeInvite"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/team/invites/{inviteId}/resend": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Send a new link (the old one stops working; 7 more days) */
+    post: operations["sellerResendInvite"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/team/members/{userId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Remove a member (or leave the shop yourself) */
+    delete: operations["sellerRemoveMember"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/team/members/{userId}/role": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Change a member's role */
+    put: operations["sellerSetMemberRole"];
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -5922,6 +6058,23 @@ export interface components {
       /** Format: date-time */
       updatedAt: string;
     };
+    InviteInput: {
+      /** Format: email */
+      email?: string;
+      /** @description Nigerian mobile number; or give an email */
+      phone?: string;
+      /** @enum {string} */
+      role: "owner" | "manager" | "staff" | "finance";
+    };
+    InvitePreview: {
+      /** Format: date-time */
+      expiresAt: string;
+      /** @enum {string} */
+      role: "owner" | "manager" | "staff" | "finance";
+      /** @description Masked: accept from the account with this phone or email */
+      sentTo: string;
+      shop: string;
+    };
     InviteStart: {
       /** @description Send with the first authenticator code to finish */
       enrollToken: string;
@@ -7861,6 +8014,9 @@ export interface components {
       /** Format: int32 */
       searches: number;
     };
+    SellerAcceptInviteRequest: {
+      token: string;
+    };
     SellerBalance: {
       /**
        * Format: int64
@@ -7940,6 +8096,9 @@ export interface components {
       /** @enum {string} */
       status: "scheduled" | "processing" | "paid" | "failed" | "on_hold";
     };
+    SellerPreviewInviteRequest: {
+      token: string;
+    };
     SellerRespondToReviewRequest: {
       text: string;
     };
@@ -7972,6 +8131,10 @@ export interface components {
       /** Format: int32 */
       stock: number;
     };
+    SellerSetMemberRoleRequest: {
+      /** @enum {string} */
+      role: "owner" | "manager" | "staff" | "finance";
+    };
     SessionDTO: {
       audience: string;
       /** Format: date-time */
@@ -8001,6 +8164,10 @@ export interface components {
       status: "pending_kyc" | "active" | "suspended" | "closed";
       /** @enum {string} */
       type: "business" | "individual" | "first_party";
+    };
+    ShopTeam: {
+      invites: components["schemas"]["TeamInvite"][] | null;
+      members: components["schemas"]["TeamMember"][] | null;
     };
     SkippedSeller: {
       /**
@@ -8320,6 +8487,33 @@ export interface components {
       otpauthUrl: string;
       secret: string;
     };
+    TeamInvite: {
+      /** @description Masked phone, or email */
+      contact: string;
+      /** Format: date-time */
+      createdAt: string;
+      expired: boolean;
+      /** Format: date-time */
+      expiresAt: string;
+      id: string;
+      invitedBy: string;
+      /** @description Development only; otherwise the link is only sent to the invitee */
+      link?: string;
+      /** @enum {string} */
+      role: "owner" | "manager" | "staff" | "finance";
+    };
+    TeamMember: {
+      /** @description Masked phone, or email */
+      contact: string;
+      firstName: string;
+      hasAuthenticator: boolean;
+      /** Format: date-time */
+      joinedAt: string;
+      lastName: string;
+      /** @enum {string} */
+      role: "owner" | "manager" | "staff" | "finance";
+      userId: string;
+    };
     ToggleSavedResponse: {
       saved: boolean;
     };
@@ -8466,10 +8660,12 @@ export interface components {
       platform?: "web" | "ios" | "android";
     };
     VerifyOTPResult: {
+      /** @description mfa_required: send with an authenticator code to /auth/mfa/totp (valid 2 minutes) */
+      mfaToken?: string;
       /** @description Send with your name to /auth/otp/signup (valid 15 minutes) */
       signupToken?: string;
       /** @enum {string} */
-      status: "signed_in" | "needs_profile";
+      status: "signed_in" | "needs_profile" | "mfa_required";
       tokens?: components["schemas"]["TokenPair"];
     };
     VerifyOtpRequest: {
@@ -12075,6 +12271,72 @@ export interface operations {
       };
     };
   };
+  sellerAcceptInvite: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SellerAcceptInviteRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Shop"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerPreviewInvite: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SellerPreviewInviteRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InvitePreview"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   sellerMyShops: {
     parameters: {
       query?: never;
@@ -12911,6 +13173,200 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerTeam: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ShopTeam"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerInvite: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["InviteInput"];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TeamInvite"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerRevokeInvite: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+        inviteId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerResendInvite: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+        inviteId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TeamInvite"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerRemoveMember: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+        userId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerSetMemberRole: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+        userId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SellerSetMemberRoleRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ShopTeam"];
+        };
       };
       /** @description Error */
       default: {

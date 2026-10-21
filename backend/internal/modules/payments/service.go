@@ -51,8 +51,16 @@ func New(d *kit.Deps, sl *sales.Service, led *ledger.Service, n *notify.Service)
 	for _, name := range d.Cfg.PaymentsEnabledProviders {
 		if d.Cfg.PaymentsFake {
 			s.providers[name] = NewFake(name, s.fakeSecret(name), d.Cfg.AppBaseURL, s.fakeState)
-		} else if name == "paystack" {
-			s.providers[name] = NewPaystack(d.Cfg.PaystackSecretKey)
+		} else {
+			switch name {
+			case "paystack":
+				s.providers[name] = NewPaystack(d.Cfg.PaystackSecretKey)
+			case "moniepoint":
+				s.providers[name] = NewMonnify(d.Cfg.MonnifyAPIKey, d.Cfg.MonnifySecretKey, d.Cfg.MonnifyContractCode, d.Cfg.MonnifyBaseURL)
+			case "opay":
+				s.providers[name] = NewOPay(d.Cfg.OPayMerchantID, d.Cfg.OPayPublicKey, d.Cfg.OPaySecretKey, d.Cfg.OPayBaseURL,
+					strings.TrimRight(d.Cfg.AppBaseURL, "/")+"/api/v1/webhooks/opay")
+			}
 		}
 	}
 	sl.Pay = s
@@ -225,7 +233,7 @@ func (s *Service) ReceiveWebhook(ctx context.Context, provider string, body []by
 	if !ok {
 		return false, httpx.NotFound("Provider")
 	}
-	if signature == "" || !prov.VerifySignature(body, signature) {
+	if !prov.VerifySignature(body, signature) { // adapters refuse a missing signature (OPay signs inside the body)
 		s.d.Logger.Warn("webhook signature rejected", "provider", provider)
 		return false, httpx.E(401, "bad_signature", "Invalid webhook signature.")
 	}
@@ -277,6 +285,14 @@ func (s *Service) ProcessEvent(ctx context.Context, eventID uuid.UUID) error {
 		if err := s.Reconcile(ctx, *ev.PaymentID); err != nil {
 			return err
 		}
+	}
+	if strings.HasPrefix(ev.EventType, "refund.") {
+		// Refund webhooks differ by provider; they only prompt a status check of every
+		// pending refund, which asks each provider directly.
+		return s.d.Runner.Run(ctx, func(tx *uow.Tx) error {
+			tx.Enqueue(refundSweepArgs{All: true}, finance())
+			return tx.Q.PaymentsMarkEventProcessed(ctx, store.PaymentsMarkEventProcessedParams{ID: ev.ID, PaymentID: ev.PaymentID})
+		})
 	}
 	if strings.HasPrefix(ev.EventType, "transfer.") {
 		// Payout transfers use the payout ID as their reference. The payouts module re-verifies
@@ -646,7 +662,7 @@ func (s *Service) Execute(ctx context.Context, refundID uuid.UUID) error {
 		if _, err := s.d.Q.PaymentsSetRefundStatus(ctx, store.PaymentsSetRefundStatusParams{ID: r.ID, Status: "processing"}); err != nil {
 			return err
 		}
-		res, err = prov.Refund(ctx, derefStr(pay.ProviderReference), r.AmountKobo)
+		res, err = prov.Refund(ctx, derefStr(pay.ProviderReference), r.AmountKobo, r.ID.String())
 		if err != nil {
 			return err // River retries with backoff
 		}
@@ -661,6 +677,55 @@ func (s *Service) Execute(ctx context.Context, refundID uuid.UUID) error {
 			return err // completed by the provider's refund webhook
 		}
 		return s.completeRefund(ctx, tx, r, pay, res.Reference, storeCreditFor)
+	})
+}
+
+// SweepRefunds asks providers about refunds they accepted as pending (all of them, or those
+// untouched since before): processed ones are booked and the customer told; failed ones are
+// marked so finance can pay them another way.
+func (s *Service) SweepRefunds(ctx context.Context, before *time.Time) error {
+	rows, err := s.d.Q.PaymentsPendingRefunds(ctx, before)
+	if err != nil {
+		return err
+	}
+	for _, r := range rows {
+		if err := s.refreshRefund(ctx, r); err != nil {
+			s.d.Logger.Warn("refund status check failed", "refund", r.ID, "error", err)
+		}
+	}
+	return nil
+}
+
+func (s *Service) refreshRefund(ctx context.Context, r store.PaymentsRefund) error {
+	pay, err := s.d.Q.PaymentsGet(ctx, r.PaymentID)
+	if err != nil {
+		return err
+	}
+	prov, err := s.provider(pay.Provider)
+	if err != nil {
+		return err
+	}
+	res, err := prov.RefundStatus(ctx, derefStr(r.ProviderReference)) // network: outside the transaction
+	if err != nil {
+		return err
+	}
+	return s.d.Runner.Run(ctx, func(tx *uow.Tx) error {
+		cur, err := tx.Q.PaymentsGetRefundForUpdate(ctx, r.ID)
+		if err != nil || cur.Status != "processing" {
+			return err // already settled by another check
+		}
+		switch res.Status {
+		case "processed":
+			return s.completeRefund(ctx, tx, cur, pay, derefStr(cur.ProviderReference), nil)
+		case "failed":
+			_, err := tx.Q.PaymentsSetRefundStatus(ctx, store.PaymentsSetRefundStatusParams{ID: cur.ID, Status: "failed",
+				FailureReason: ptr("The provider couldn't complete the refund. Refund it another way (store credit or bank transfer).")})
+			if err != nil {
+				return err
+			}
+			return tx.Audit("refund.failed", "refund", cur.ID.String(), map[string]any{"provider": pay.Provider})
+		}
+		return nil // still pending: checked again on the next sweep
 	})
 }
 

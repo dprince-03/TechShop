@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 import {
   api,
   form,
+  API_URL,
   latestCode,
   peekCode,
   placePaidOrder,
@@ -60,6 +61,23 @@ async function signUp(
     next,
     `signup should land on ${next}: ${s3.raw.slice(-300)}`,
   );
+  return phone;
+}
+
+/** The invite link texted to a phone (development message log). */
+async function invitePath(phone: string): Promise<string> {
+  for (let i = 0; i < 40; i++) {
+    const r = await fetch(
+      `${API_URL}/dev/messages?to=${encodeURIComponent(phone)}`,
+    );
+    const list = (await r.json()) as { payload?: { body?: string } }[];
+    for (const m of list ?? []) {
+      const path = m.payload?.body?.match(/\/invite\/[A-Za-z0-9_-]+/)?.[0];
+      if (path) return path;
+    }
+    await new Promise((res) => setTimeout(res, 300));
+  }
+  throw new Error(`no invite texted to ${phone}`);
 }
 
 /** FormData with text fields and small image files (what the browser posts). */
@@ -338,9 +356,40 @@ describe("Seller Centre", () => {
 
     // Another seller can't open this shop's pages.
     const other = browser();
-    await signUp(other, "Kunle", "Ade");
+    const otherPhone = await signUp(other, "Kunle", "Ade");
     assert.equal((await other.get(`/centre/${shopId}`)).status, 404);
     assert.equal((await other.get(listingPath)).status, 404);
+
+    // The owner invites them as staff; they accept from the texted link and join.
+    const teamPage = `/centre/${shopId}/team`;
+    assert.match(textOf((await b.get(teamPage)).html), /Invite someone/);
+    const inv = await b.action<Result>(
+      "/centre/[shopId]/team",
+      "inviteMember",
+      [shopId, {}, form({ contact: otherPhone, role: "staff" })],
+      { url: teamPage },
+    );
+    assert.equal(inv.value.ok, true, JSON.stringify(inv.value));
+    assert.match(
+      textOf((await b.get(teamPage)).html),
+      /Invites waiting[\s\S]*Staff/,
+    );
+    const link = await invitePath(otherPhone);
+    const invite = textOf((await other.get(link)).html);
+    assert.match(invite, /You’re invited to help run/);
+    const joined = await other.action<Result>(
+      "/invite/[token]",
+      "acceptInvite",
+      [link.split("/").pop()!],
+      { url: link },
+    );
+    assert.equal(joined.redirect, `/centre/${shopId}`, joined.raw.slice(-300));
+    assert.equal((await other.get(`/centre/${shopId}/orders`)).status, 200);
+    assert.match(
+      textOf((await other.get(teamPage)).html),
+      /Only owners and managers can see and change the team/,
+    );
+    assert.equal((await other.get(listingPath)).status, 200);
   });
 
   test("Seller Centre pages need a session", async () => {

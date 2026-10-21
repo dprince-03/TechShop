@@ -2644,6 +2644,22 @@ type SellersSellerBankAccount struct {
 	UpdatedAt              time.Time  `json:"updatedAt"`
 }
 
+// [sellers] Invitations to join a shop's team (single-use link, 7 days, token hashed).
+type SellersSellerInvite struct {
+	ID         uuid.UUID  `json:"id"`
+	SellerID   uuid.UUID  `json:"sellerId"`
+	Phone      *string    `json:"phone"`
+	Email      *string    `json:"email"`
+	Role       string     `json:"role"`
+	TokenHash  []byte     `json:"tokenHash"`
+	InvitedBy  uuid.UUID  `json:"invitedBy"`
+	ExpiresAt  time.Time  `json:"expiresAt"`
+	AcceptedBy *uuid.UUID `json:"acceptedBy"`
+	AcceptedAt *time.Time `json:"acceptedAt"`
+	RevokedAt  *time.Time `json:"revokedAt"`
+	CreatedAt  time.Time  `json:"createdAt"`
+}
+
 // [sellers] Identity and business verification. ID numbers encrypted (NDPA); the HMAC finds the same ID across sellers.
 type SellersSellerKycSubmission struct {
 	ID                   uuid.UUID  `json:"id"`

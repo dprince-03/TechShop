@@ -739,3 +739,48 @@ The rules come from `payments-finance.md` §9 and existing config: Tuesday/Frida
   - an automatic batch on payout days (needs a system preparer that can't also approve);
   - monthly commission invoices with VAT;
   - per-seller payout statements as PDF.
+
+## 2026-10-21 — Seller teams built; authenticator now asked after phone-code sign-in
+
+- **Teams follow §7.3 and decision 4.**
+  - **Invites:** sent by phone or email, single use, valid 7 days. Re-sending issues a new link and the old one stops working. Only the hash is stored. One open invite per person per shop.
+  - **Accepting:** only from the account the invite was sent to (same phone or email), so a forwarded link can't add a stranger.
+  - **Owners:** managers can't invite, change or remove owners, and a shop always keeps one owner.
+  - **Finance members:** must have an authenticator to join, to be given the role, and every time they open a shop screen.
+- **Security gap found and fixed:** phone-code sign-in never asked for an authenticator, even when one was set up. Only password sign-in did. `POST /auth/otp/verify` now returns `mfa_required` with an `mfaToken` for such accounts. Web sign-in continues to its existing authenticator step. The customer app, which has no authenticator screen yet, says to sign in on the website. Today only staff and seller members can turn on an authenticator.
+- **Seller Centre:** a Team page, an invite acceptance page (`/invite/{token}`), and Account › Security for setting up an authenticator. Setup uses a typed setup key plus an `otpauth://` link; there's no QR code, since that would mean a new dependency. Recovery codes are shown once.
+- **Config:** new `SELLER_APP_URL` setting builds the invite links.
+
+## 2026-10-21 — Monnify and OPay live adapters (completes M4), and pending refunds
+
+Built from the providers' public material (decision 5). Live keys are the owner's to provide.
+
+### Monnify ("moniepoint", pay by transfer into a one-time account)
+
+- **Auth:** `POST /api/v1/auth/login` with Basic `apiKey:secretKey` returns a Bearer token. It's cached until a minute before expiry.
+- **Collecting:** `init-transaction` (transfer only), then `bank-transfer/init-payment` for the account number.
+- **Status:** `GET /api/v2/merchant/transactions/query?transactionReference=`.
+- **Refunds:** `POST /api/v1/refunds/initiate-refund`, with our refund ID as the `refundReference`. Status via `GET /api/v1/refunds/{ref}`.
+- **Webhooks:** `monnify-signature` = hex HMAC-SHA512 of the raw body with the secret key.
+- **Amounts are naira** with kobo as decimals. A third-party doc dump says kobo, but every SDK checked sends naira.
+- **Sources:** developers.monnify.com (blocks automated reading), so cross-checked against github.com/henryejemuta/laravel-monnify, github.com/jiyamathias/monnify-go and github.com/ken-de-nigerian/payzephyr.
+
+### OPay (Cashier hosted checkout)
+
+- **Create:** authenticates with `Bearer {public key}`.
+- **Status and refunds:** authenticate with `Bearer {hex HMAC-SHA512 of the exact JSON body, secret key}`. Every call sends `MerchantId`. Amounts are kobo.
+- **Refunds** go to the original method. OPay sends card, transfer and USSD refunds to a bank account instead and refuses them here; finance then refunds by store credit or bank transfer.
+- **Callbacks:** `{payload, sha512, type}`, where `sha512` = HMAC-SHA3-512 (secret key) of OPay's fixed callback string (v1 callback-signature page).
+  - OPay's own pages disagree on this algorithm. That is why a callback only prompts a signed status query, and the payment sweep re-checks anything a rejected callback missed.
+- **New settings:** `OPAY_PUBLIC_KEY` and `OPAY_BASE_URL`.
+- **Sources:** doc.opaycheckout.com (payment authentication, cashier create/status, refund create/status, callback signature v1 and v2), plus github.com/sin4ch/nigerian-fintech-llms-txt (opay).
+
+### Other changes
+
+- **Config:** both adapters refuse to start outside development without strong keys. The base URL defaults to each provider's sandbox; live URLs are set explicitly.
+- **Pending refunds (an existing gap, now fixed):**
+  - Before, a refund the provider accepted as "pending" stayed `processing` forever: refund webhooks weren't handled and nothing re-checked.
+  - Each provider now answers a refund-status query (Paystack `GET /refund/{id}`, Monnify, OPay).
+  - A 10-minute sweep completes or fails pending refunds, and any refund webhook triggers it at once.
+- **Hub drop-off:** the shop owner is now told (push and in-app) when the hub scans their parcel in.
+- **Still to do before go-live:** confirm both adapters against the providers' sandboxes; Paystack has the same open item.

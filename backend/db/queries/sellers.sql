@@ -116,3 +116,48 @@ order by s.created_at desc limit $1;
 select m.user_id, m.role, m.created_at, u.first_name, u.last_name
 from sellers.seller_members m join identity.users u on u.id = m.user_id
 where m.seller_id = $1 order by m.created_at;
+
+-- ---- Team: members and invites (identity-access.md §7.3)
+
+-- name: SellersTeam :many
+select m.user_id, m.role, m.created_at, u.first_name, u.last_name, u.phone, u.email,
+       exists (select 1 from identity.user_mfa_factors f where f.user_id = m.user_id and f.kind = 'totp' and f.confirmed_at is not null)::boolean as has_authenticator
+from sellers.seller_members m join identity.users u on u.id = m.user_id
+where m.seller_id = $1 order by m.created_at;
+
+-- name: SellersHasAuthenticator :one
+select exists (select 1 from identity.user_mfa_factors where user_id = $1 and kind = 'totp' and confirmed_at is not null)::boolean;
+
+-- name: SellersOwnerCount :one
+select count(*)::int from sellers.seller_members where seller_id = $1 and role = 'owner';
+
+-- name: SellersSetMemberRole :one
+update sellers.seller_members set role = $3 where seller_id = $1 and user_id = $2 returning *;
+
+-- name: SellersRemoveMember :execrows
+delete from sellers.seller_members where seller_id = $1 and user_id = $2;
+
+-- name: SellersCreateInvite :one
+insert into sellers.seller_invites (seller_id, phone, email, role, token_hash, invited_by, expires_at)
+values ($1, $2, $3, $4, $5, $6, $7) returning *;
+
+-- name: SellersOpenInvites :many
+select i.*, u.first_name as invited_by_first_name from sellers.seller_invites i join identity.users u on u.id = i.invited_by
+where i.seller_id = $1 and i.accepted_at is null and i.revoked_at is null order by i.created_at desc;
+
+-- name: SellersGetInvite :one
+select * from sellers.seller_invites where id = $1 and seller_id = $2;
+
+-- name: SellersInviteByToken :one
+select i.*, s.display_name, s.status as shop_status from sellers.seller_invites i join sellers.sellers s on s.id = i.seller_id
+where i.token_hash = $1;
+
+-- name: SellersRenewInvite :one
+update sellers.seller_invites set token_hash = $2, expires_at = $3 where id = $1 and accepted_at is null and revoked_at is null returning *;
+
+-- name: SellersRevokeInvite :execrows
+update sellers.seller_invites set revoked_at = now() where id = $1 and seller_id = $2 and accepted_at is null and revoked_at is null;
+
+-- name: SellersAcceptInvite :execrows
+update sellers.seller_invites set accepted_by = $2, accepted_at = now()
+where id = $1 and accepted_at is null and revoked_at is null and expires_at > now();

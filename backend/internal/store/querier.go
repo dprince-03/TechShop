@@ -498,6 +498,8 @@ type Querier interface {
 	PaymentsMarkEventProcessed(ctx context.Context, arg PaymentsMarkEventProcessedParams) error
 	PaymentsOrderRefunds(ctx context.Context, orderID uuid.UUID) ([]PaymentsRefund, error)
 	PaymentsOrderWithCustomer(ctx context.Context, id uuid.UUID) (PaymentsOrderWithCustomerRow, error)
+	// Refunds the provider accepted but hasn't finished (left in processing with its reference).
+	PaymentsPendingRefunds(ctx context.Context, olderThan *time.Time) ([]PaymentsRefund, error)
 	// Circuit breaker: 5 failures in a row open the breaker for this provider.
 	PaymentsRecordFailure(ctx context.Context, provider string) (PaymentsProviderHealth, error)
 	PaymentsRecordSuccess(ctx context.Context, provider string) error
@@ -705,37 +707,50 @@ type Querier interface {
 	SearchUpsertGap(ctx context.Context, arg SearchUpsertGapParams) (SearchCatalogueGap, error)
 	SearchUpsertRedirect(ctx context.Context, arg SearchUpsertRedirectParams) (SearchSearchRedirect, error)
 	SearchZeroResults(ctx context.Context, limit int32) ([]SearchZeroResultsRow, error)
+	SellersAcceptInvite(ctx context.Context, arg SellersAcceptInviteParams) (int64, error)
 	SellersAddMember(ctx context.Context, arg SellersAddMemberParams) error
 	SellersBankAccountExists(ctx context.Context, arg SellersBankAccountExistsParams) (bool, error)
 	SellersBankAccounts(ctx context.Context, sellerID uuid.UUID) ([]SellersSellerBankAccount, error)
 	SellersClearDefaultBank(ctx context.Context, sellerID uuid.UUID) error
 	SellersCountOwnedByUser(ctx context.Context, ownerUserID *uuid.UUID) (int64, error)
 	SellersCreate(ctx context.Context, arg SellersCreateParams) (SellersSeller, error)
+	SellersCreateInvite(ctx context.Context, arg SellersCreateInviteParams) (SellersSellerInvite, error)
 	SellersDeleteBankAccount(ctx context.Context, arg SellersDeleteBankAccountParams) (int64, error)
 	SellersGet(ctx context.Context, id uuid.UUID) (SellersSeller, error)
 	SellersGetBySlug(ctx context.Context, slug string) (SellersSeller, error)
 	// Sellers (marketplace shops, members, KYC, bank accounts). Plan: trust-safety.md §2.
 	SellersGetFirstParty(ctx context.Context) (SellersSeller, error)
+	SellersGetInvite(ctx context.Context, arg SellersGetInviteParams) (SellersSellerInvite, error)
 	SellersGetKyc(ctx context.Context, id uuid.UUID) (SellersSellerKycSubmission, error)
 	SellersGetKycForUpdate(ctx context.Context, id uuid.UUID) (SellersSellerKycSubmission, error)
+	SellersHasAuthenticator(ctx context.Context, userID uuid.UUID) (bool, error)
 	SellersInsertBankAccount(ctx context.Context, arg SellersInsertBankAccountParams) (SellersSellerBankAccount, error)
 	SellersInsertKyc(ctx context.Context, arg SellersInsertKycParams) (SellersSellerKycSubmission, error)
 	SellersInsertKycDocument(ctx context.Context, arg SellersInsertKycDocumentParams) error
+	SellersInviteByToken(ctx context.Context, tokenHash []byte) (SellersInviteByTokenRow, error)
 	SellersKycDocuments(ctx context.Context, submissionID uuid.UUID) ([]SellersKycDocumentsRow, error)
 	SellersLatestKyc(ctx context.Context, sellerID uuid.UUID) (SellersSellerKycSubmission, error)
 	SellersMemberRole(ctx context.Context, arg SellersMemberRoleParams) (string, error)
 	SellersMembers(ctx context.Context, sellerID uuid.UUID) ([]SellersMembersRow, error)
+	SellersOpenInvites(ctx context.Context, sellerID uuid.UUID) ([]SellersOpenInvitesRow, error)
 	SellersOtherSellersWithAccount(ctx context.Context, arg SellersOtherSellersWithAccountParams) (int64, error)
 	SellersOtherSellersWithIDNumber(ctx context.Context, arg SellersOtherSellersWithIDNumberParams) (int64, error)
+	SellersOwnerCount(ctx context.Context, sellerID uuid.UUID) (int32, error)
 	// ---- Seller Centre (M4): shops, KYC, bank accounts. Seller requests run with app.seller_id set,
 	// so row-level security (00025) also scopes these tables to the caller's shop.
 	SellersRegisterShop(ctx context.Context, arg SellersRegisterShopParams) (SellersSeller, error)
+	SellersRemoveMember(ctx context.Context, arg SellersRemoveMemberParams) (int64, error)
+	SellersRenewInvite(ctx context.Context, arg SellersRenewInviteParams) (SellersSellerInvite, error)
 	SellersReviewKyc(ctx context.Context, arg SellersReviewKycParams) (SellersSellerKycSubmission, error)
+	SellersRevokeInvite(ctx context.Context, arg SellersRevokeInviteParams) (int64, error)
 	SellersSetDefaultBank(ctx context.Context, arg SellersSetDefaultBankParams) (int64, error)
+	SellersSetMemberRole(ctx context.Context, arg SellersSetMemberRoleParams) (SellersSellerMember, error)
 	SellersSetStatus(ctx context.Context, arg SellersSetStatusParams) (SellersSeller, error)
 	SellersShopsForUser(ctx context.Context, userID uuid.UUID) ([]SellersShopsForUserRow, error)
 	SellersSlugTaken(ctx context.Context, slug string) (bool, error)
 	SellersStaffList(ctx context.Context, arg SellersStaffListParams) ([]SellersStaffListRow, error)
+	// ---- Team: members and invites (identity-access.md §7.3)
+	SellersTeam(ctx context.Context, sellerID uuid.UUID) ([]SellersTeamRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

@@ -95,6 +95,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           setStep("profile");
           return null;
         }
+        if (r.status === "mfa_required")
+          return "This account uses an authenticator app, which this app doesn’t support yet. Sign in on the TechShop website.";
         if (!r.tokens) return "We couldn’t sign you in. Try again.";
         await session.accept(r.tokens);
         await loadMe();

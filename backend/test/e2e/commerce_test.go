@@ -362,6 +362,26 @@ func TestRefundsDualControl(t *testing.T) {
 	expectCode(t, over, 422, "refund_too_large", "refund above captured")
 	// Support can't approve refunds at all.
 	expect(t, post(t, "/api/v1/staff/finance/refunds/"+id+"/approve", staffLogin(t, "support_agent"), nil), 403, "support can't approve")
+
+	// A refund the provider accepts as pending stays processing until the sweep confirms it
+	// (the fake answers "pending" for amounts ending in 99 kobo).
+	req2 := call(t, req{method: "POST", path: "/api/v1/staff/finance/refunds", token: officer, headers: map[string]string{"Idempotency-Key": newKey()},
+		body: map[string]any{"orderNumber": number2, "amountKobo": 12_399, "reason": "pending refund at the provider"}})
+	expect(t, req2, 201, "request pending refund")
+	expect(t, post(t, "/api/v1/staff/finance/refunds/"+req2.str("id")+"/approve", staffLogin(t, "finance_manager"), nil), 200, "approve pending refund")
+	statusOf := func(id string) string {
+		for _, r := range get(t, "/api/v1/staff/finance/refunds", officer).List {
+			if m := r.(map[string]any); m["id"] == id {
+				return m["status"].(string)
+			}
+		}
+		return ""
+	}
+	waitFor(t, "refund accepted as pending", 15*time.Second, func() bool { return statusOf(req2.str("id")) == "processing" })
+	expect(t, post(t, "/dev/refunds/sweep", "", nil), 200, "sweep")
+	if st := statusOf(req2.str("id")); st != "succeeded" {
+		t.Fatalf("the sweep should complete the pending refund, it is %s", st)
+	}
 	trialBalanced(t)
 }
 

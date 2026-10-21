@@ -34,8 +34,13 @@ func TestOutsideDevelopmentRefusesWeakSettings(t *testing.T) {
 		"cannot be 'log'":           func(c *Config) { c.SMSProvider = "log" },
 		"default or short password": func(c *Config) { c.DatabaseURL = "postgres://techshop:techshop@db/techshop" },
 		"PAYSTACK_SECRET_KEY":       func(c *Config) { c.PaystackSecretKey = "" },
-		"has no live adapter":       func(c *Config) { c.PaymentsEnabledProviders = []string{"paystack", "opay"} },
-		"APP_ENV must be":           func(c *Config) { c.Env = "prod" },
+		"has no live adapter":       func(c *Config) { c.PaymentsEnabledProviders = []string{"paystack", "flutterwave"} },
+		"OPAY_PUBLIC_KEY":           func(c *Config) { c.PaymentsEnabledProviders = []string{"paystack", "opay"} },
+		"MONNIFY_CONTRACT_CODE": func(c *Config) {
+			c.PaymentsEnabledProviders = []string{"moniepoint"}
+			c.MonnifyAPIKey, c.MonnifySecretKey = strong, strong
+		},
+		"APP_ENV must be": func(c *Config) { c.Env = "prod" },
 	}
 	for want, breakIt := range cases {
 		c := prod()
@@ -44,6 +49,16 @@ func TestOutsideDevelopmentRefusesWeakSettings(t *testing.T) {
 		if err == nil || !strings.Contains(err.Error(), want) {
 			t.Errorf("want error containing %q, got %v", want, err)
 		}
+	}
+}
+
+func TestAllThreeProvidersWithKeysPass(t *testing.T) {
+	c := prod()
+	c.PaymentsEnabledProviders = []string{"paystack", "opay", "moniepoint"}
+	c.OPayMerchantID, c.OPayPublicKey, c.OPaySecretKey, c.OPayBaseURL = "256612345678901", "OPAYPUB"+strong, "OPAYPRV"+strong, "https://liveapi.opaycheckout.com"
+	c.MonnifyAPIKey, c.MonnifySecretKey, c.MonnifyContractCode, c.MonnifyBaseURL = "MK_PROD_"+strong, strong+"9", "1234567890", "https://api.monnify.com"
+	if err := c.validate(); err != nil {
+		t.Fatalf("all three providers configured: %v", err)
 	}
 }
 
