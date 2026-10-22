@@ -82,9 +82,11 @@ values ($1, $2, $3, $4, $5, $6, $7)
 returning *;
 
 -- name: SalesCreateLine :one
+-- Warranty terms are copied from the listing, so later listing edits don't change what was sold.
 insert into sales.order_lines (order_id, fulfilment_id, listing_id, seller_id, variant_id, product_name, variant_name, sku, condition, quantity,
-  unit_price_kobo, discount_kobo, line_total_kobo, vat_kobo, commission_bps)
-values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+  unit_price_kobo, discount_kobo, line_total_kobo, vat_kobo, commission_bps, warranty_provider, warranty_months)
+values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
+  (select l.warranty_provider from catalog.listings l where l.id = $3), (select l.warranty_months from catalog.listings l where l.id = $3))
 returning *;
 
 -- name: SalesInsertHistory :exec

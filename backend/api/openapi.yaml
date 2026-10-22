@@ -1325,6 +1325,210 @@ components:
           maxLength: 40
           type: string
       type: object
+    Claim:
+      additionalProperties: false
+      properties:
+        createdAt:
+          format: date-time
+          type: string
+        customer:
+          description: "Staff lists only: first name and last initial"
+          type: string
+        dropOff:
+          description: Where to bring the device while the claim is new
+          items:
+            $ref: "#/components/schemas/Store"
+          type:
+            - array
+            - "null"
+        fault:
+          type: string
+        history:
+          description: "Staff only: earlier claims on this device"
+          items:
+            $ref: "#/components/schemas/HistoryItem"
+          type:
+            - array
+            - "null"
+        imeiOrSerial:
+          type: string
+        number:
+          type: string
+        orderNumber:
+          type:
+            - string
+            - "null"
+        productName:
+          type:
+            - string
+            - "null"
+        provider:
+          type:
+            - string
+            - "null"
+        receivedAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        rejectionReason:
+          type:
+            - string
+            - "null"
+        repairs:
+          items:
+            $ref: "#/components/schemas/RepairJob"
+          type:
+            - array
+            - "null"
+        resolution:
+          enum:
+            - repaired
+            - replaced
+            - refunded
+            - not_covered
+          type:
+            - string
+            - "null"
+        resolutionNote:
+          type:
+            - string
+            - "null"
+        status:
+          enum:
+            - new
+            - received
+            - in_repair
+            - ready
+            - collected
+            - rejected
+            - closed
+          type: string
+        store:
+          type:
+            - string
+            - "null"
+        updatedAt:
+          format: date-time
+          type: string
+        variantName:
+          type:
+            - string
+            - "null"
+        warrantyEndsOn:
+          format: date-time
+          type:
+            - string
+            - "null"
+      required:
+        - provider
+        - warrantyEndsOn
+        - receivedAt
+        - rejectionReason
+        - resolutionNote
+        - repairs
+        - dropOff
+        - history
+        - number
+        - productName
+        - variantName
+        - orderNumber
+        - imeiOrSerial
+        - fault
+        - status
+        - resolution
+        - store
+        - customer
+        - createdAt
+        - updatedAt
+      type: object
+    ClaimInput:
+      additionalProperties: false
+      properties:
+        fault:
+          description: What's wrong, and when it started
+          maxLength: 1000
+          minLength: 5
+          type: string
+        imeiOrSerial:
+          description: The device's IMEI (dial *#06#) or the serial number on the box
+          maxLength: 40
+          minLength: 3
+          type: string
+        orderLineId:
+          type: string
+      required:
+        - orderLineId
+        - imeiOrSerial
+        - fault
+      type: object
+    ClaimRow:
+      additionalProperties: false
+      properties:
+        createdAt:
+          format: date-time
+          type: string
+        customer:
+          description: "Staff lists only: first name and last initial"
+          type: string
+        fault:
+          type: string
+        imeiOrSerial:
+          type: string
+        number:
+          type: string
+        orderNumber:
+          type:
+            - string
+            - "null"
+        productName:
+          type:
+            - string
+            - "null"
+        resolution:
+          enum:
+            - repaired
+            - replaced
+            - refunded
+            - not_covered
+          type:
+            - string
+            - "null"
+        status:
+          enum:
+            - new
+            - received
+            - in_repair
+            - ready
+            - collected
+            - rejected
+            - closed
+          type: string
+        store:
+          type:
+            - string
+            - "null"
+        updatedAt:
+          format: date-time
+          type: string
+        variantName:
+          type:
+            - string
+            - "null"
+      required:
+        - number
+        - productName
+        - variantName
+        - orderNumber
+        - imeiOrSerial
+        - fault
+        - status
+        - resolution
+        - store
+        - customer
+        - createdAt
+        - updatedAt
+      type: object
     CompleteSignupRequest:
       additionalProperties: false
       properties:
@@ -1710,6 +1914,58 @@ components:
         - slug
         - title
         - publishedAt
+      type: object
+    CoveredItem:
+      additionalProperties: false
+      properties:
+        deliveredAt:
+          format: date-time
+          type: string
+        endsOn:
+          format: date-time
+          type: string
+        months:
+          format: int32
+          type: integer
+        openClaim:
+          description: An open claim on this item, if any
+          type:
+            - string
+            - "null"
+        orderLineId:
+          type: string
+        orderNumber:
+          type: string
+        productName:
+          type: string
+        provider:
+          enum:
+            - manufacturer
+            - techshop
+            - seller
+          type: string
+        serialHint:
+          description: Last 4 characters of the IMEI or serial we sold
+          type:
+            - string
+            - "null"
+        serialised:
+          description: "A tracked device: the claim needs its IMEI or serial"
+          type: boolean
+        variantName:
+          type: string
+      required:
+        - orderLineId
+        - orderNumber
+        - productName
+        - variantName
+        - provider
+        - months
+        - deliveredAt
+        - endsOn
+        - serialised
+        - serialHint
+        - openClaim
       type: object
     CreateCouponRequest:
       additionalProperties: false
@@ -2991,6 +3247,29 @@ components:
         - fulfilledBy
         - deliveryFeeKobo
         - itemsKobo
+      type: object
+    HistoryItem:
+      additionalProperties: false
+      properties:
+        createdAt:
+          format: date-time
+          type: string
+        fault:
+          type: string
+        number:
+          type: string
+        resolution:
+          type:
+            - string
+            - "null"
+        status:
+          type: string
+      required:
+        - number
+        - status
+        - resolution
+        - fault
+        - createdAt
       type: object
     IMEIStatus:
       additionalProperties: false
@@ -7831,6 +8110,86 @@ components:
         - app
         - platform
       type: object
+    RepairInput:
+      additionalProperties: false
+      properties:
+        diagnosis:
+          maxLength: 1000
+          type: string
+        technicianId:
+          type: string
+      type: object
+    RepairJob:
+      additionalProperties: false
+      properties:
+        createdAt:
+          format: date-time
+          type: string
+        diagnosis:
+          type:
+            - string
+            - "null"
+        finishedAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        id:
+          type: string
+        notes:
+          type:
+            - string
+            - "null"
+        startedAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        status:
+          enum:
+            - queued
+            - diagnosing
+            - awaiting_parts
+            - repairing
+            - done
+            - unrepairable
+          type: string
+        technician:
+          type:
+            - string
+            - "null"
+      required:
+        - id
+        - status
+        - diagnosis
+        - notes
+        - technician
+        - startedAt
+        - finishedAt
+        - createdAt
+      type: object
+    RepairUpdate:
+      additionalProperties: false
+      properties:
+        diagnosis:
+          maxLength: 1000
+          type: string
+        notes:
+          maxLength: 1000
+          type: string
+        status:
+          enum:
+            - diagnosing
+            - awaiting_parts
+            - repairing
+            - done
+            - unrepairable
+          type: string
+        technicianId:
+          type: string
+      required:
+        - status
+      type: object
     ReplyBody:
       additionalProperties: false
       properties:
@@ -7883,6 +8242,27 @@ components:
       required:
         - challengeId
         - resendAfter
+      type: object
+    ResolveInput:
+      additionalProperties: false
+      properties:
+        note:
+          maxLength: 500
+          type: string
+        replacementSerial:
+          description: "Replaced, tracked devices: the IMEI or serial of the new unit"
+          maxLength: 40
+          type: string
+        resolution:
+          enum:
+            - replaced
+            - refunded
+          type: string
+        warehouseId:
+          description: "Replaced, untracked items: where the replacement comes from"
+          type: string
+      required:
+        - resolution
       type: object
     Result:
       additionalProperties: false
@@ -8725,6 +9105,15 @@ components:
         vatKobo:
           format: int64
           type: integer
+        warrantyMonths:
+          format: int32
+          type:
+            - integer
+            - "null"
+        warrantyProvider:
+          type:
+            - string
+            - "null"
       required:
         - id
         - orderId
@@ -8746,6 +9135,8 @@ components:
         - cancelledAt
         - createdAt
         - sellerEarningKobo
+        - warrantyProvider
+        - warrantyMonths
       type: object
     SalesOrderStatusHistory:
       additionalProperties: false
@@ -10064,6 +10455,19 @@ components:
         - health
         - fake
       type: object
+    StaffReceiveClaimRequest:
+      additionalProperties: false
+      properties:
+        scannedSerial:
+          maxLength: 40
+          minLength: 3
+          type: string
+        storeId:
+          type: string
+      required:
+        - storeId
+        - scannedSerial
+      type: object
     StaffReceiveUnitsRequest:
       additionalProperties: false
       properties:
@@ -10103,6 +10507,15 @@ components:
           type: integer
       required:
         - products
+      type: object
+    StaffRejectClaimRequest:
+      additionalProperties: false
+      properties:
+        reason:
+          maxLength: 500
+          type: string
+      required:
+        - reason
       type: object
     StaffRejectRefundRequest:
       additionalProperties: false
@@ -10566,6 +10979,26 @@ components:
           type: string
       required:
         - code
+      type: object
+    Store:
+      additionalProperties: false
+      properties:
+        address:
+          type: string
+        city:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        state:
+          type: string
+      required:
+        - id
+        - name
+        - address
+        - city
+        - state
       type: object
     SubmitCampaignRequest:
       additionalProperties: false
@@ -11340,6 +11773,58 @@ components:
         - mfaToken
         - code
         - audience
+      type: object
+    WalkInInput:
+      additionalProperties: false
+      properties:
+        fault:
+          maxLength: 1000
+          minLength: 5
+          type: string
+        imeiOrSerial:
+          maxLength: 40
+          minLength: 3
+          type: string
+        orderLineId:
+          description: Needed when the item has no tracked serial (accessories)
+          type: string
+        storeId:
+          description: Where the device was handed in
+          type: string
+      required:
+        - imeiOrSerial
+        - fault
+        - storeId
+      type: object
+    WarrantySummary:
+      additionalProperties: false
+      properties:
+        avgTurnaroundDays:
+          description: Received to ready, last 30 days
+          format: double
+          type: number
+        awaitingDropoff:
+          format: int32
+          type: integer
+        inRepair:
+          format: int32
+          type: integer
+        open:
+          format: int32
+          type: integer
+        ready:
+          format: int32
+          type: integer
+        replacedThisMonth:
+          format: int32
+          type: integer
+      required:
+        - open
+        - awaitingDropoff
+        - inRepair
+        - ready
+        - replacedThisMonth
+        - avgTurnaroundDays
       type: object
     WmsCreateManifestRequest:
       additionalProperties: false
@@ -14365,6 +14850,109 @@ paths:
       summary: Reply on your ticket (reopens a resolved one)
       tags:
         - Support
+  /api/v1/me/warranty-claims:
+    get:
+      operationId: myWarrantyClaims
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/ClaimRow"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Your warranty claims, newest first
+      tags:
+        - Warranty
+    post:
+      operationId: makeWarrantyClaim
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaimInput"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Claim under warranty, then bring the device to a store
+      tags:
+        - Warranty
+  /api/v1/me/warranty-claims/{number}:
+    get:
+      operationId: myWarrantyClaim
+      parameters:
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: One of your warranty claims
+      tags:
+        - Warranty
+  /api/v1/me/warranty/items:
+    get:
+      operationId: myWarrantyItems
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/CoveredItem"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Your delivered items still under warranty
+      tags:
+        - Warranty
   /api/v1/orders:
     post:
       operationId: placeOrder
@@ -20319,6 +20907,357 @@ paths:
       summary: A seller with KYC, bank accounts and duplicate signals
       tags:
         - Staff · Vendors
+  /api/v1/staff/warranty/claims:
+    get:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffWarrantyClaims
+      parameters:
+        - explode: false
+          in: query
+          name: status
+          schema:
+            enum:
+              - active
+              - new
+              - received
+              - in_repair
+              - ready
+              - collected
+              - rejected
+              - closed
+              - ""
+            type: string
+        - description: Claim or order number, or an exact IMEI or serial
+          explode: false
+          in: query
+          name: q
+          schema:
+            description: Claim or order number, or an exact IMEI or serial
+            maxLength: 40
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/ClaimRow"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: "Warranty claims: open ones first, oldest first"
+      tags:
+        - Staff · Warranty
+    post:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffWalkInClaim
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WalkInInput"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Take a claim at the counter (checked in at once)
+      tags:
+        - Staff · Warranty
+  /api/v1/staff/warranty/claims/{number}:
+    get:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffWarrantyClaim
+      parameters:
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: A claim with its repairs and the device's history
+      tags:
+        - Staff · Warranty
+  /api/v1/staff/warranty/claims/{number}/collect:
+    post:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffCollectClaim
+      parameters:
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: The customer collected the device
+      tags:
+        - Staff · Warranty
+  /api/v1/staff/warranty/claims/{number}/receive:
+    post:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffReceiveClaim
+      parameters:
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffReceiveClaimRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Check the device in (IMEI must match; stolen devices are refused)
+      tags:
+        - Staff · Warranty
+  /api/v1/staff/warranty/claims/{number}/reject:
+    post:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffRejectClaim
+      parameters:
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffRejectClaimRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Not covered (the customer sees the reason)
+      tags:
+        - Staff · Warranty
+  /api/v1/staff/warranty/claims/{number}/repairs:
+    post:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffStartRepair
+      parameters:
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RepairInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Send the device to the workshop
+      tags:
+        - Staff · Warranty
+  /api/v1/staff/warranty/claims/{number}/resolution:
+    post:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffResolveClaim
+      parameters:
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResolveInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Replace from stock, or refund one unit (finance approves)
+      tags:
+        - Staff · Warranty
+  /api/v1/staff/warranty/repairs/{id}:
+    post:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffUpdateRepair
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RepairUpdate"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Record workshop progress (done makes the claim ready)
+      tags:
+        - Staff · Warranty
+  /api/v1/staff/warranty/stores:
+    get:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffWarrantyStores
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/Store"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Stores and warehouses that take devices in
+      tags:
+        - Staff · Warranty
+  /api/v1/staff/warranty/summary:
+    get:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffWarrantySummary
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WarrantySummary"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Claim counts and turnaround
+      tags:
+        - Staff · Warranty
   /api/v1/staff/wms/carriers:
     get:
       description: Requires permission `fulfilment.pick`.

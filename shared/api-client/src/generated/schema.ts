@@ -1540,6 +1540,58 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/me/warranty-claims": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Your warranty claims, newest first */
+    get: operations["myWarrantyClaims"];
+    put?: never;
+    /** Claim under warranty, then bring the device to a store */
+    post: operations["makeWarrantyClaim"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/warranty-claims/{number}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** One of your warranty claims */
+    get: operations["myWarrantyClaim"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/warranty/items": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Your delivered items still under warranty */
+    get: operations["myWarrantyItems"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/orders": {
     parameters: {
       query?: never;
@@ -4829,6 +4881,210 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/staff/warranty/claims": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Warranty claims: open ones first, oldest first
+     * @description Requires permission `aftersales.manage`.
+     */
+    get: operations["staffWarrantyClaims"];
+    put?: never;
+    /**
+     * Take a claim at the counter (checked in at once)
+     * @description Requires permission `aftersales.manage`.
+     */
+    post: operations["staffWalkInClaim"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/warranty/claims/{number}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * A claim with its repairs and the device's history
+     * @description Requires permission `aftersales.manage`.
+     */
+    get: operations["staffWarrantyClaim"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/warranty/claims/{number}/collect": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * The customer collected the device
+     * @description Requires permission `aftersales.manage`.
+     */
+    post: operations["staffCollectClaim"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/warranty/claims/{number}/receive": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Check the device in (IMEI must match; stolen devices are refused)
+     * @description Requires permission `aftersales.manage`.
+     */
+    post: operations["staffReceiveClaim"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/warranty/claims/{number}/reject": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Not covered (the customer sees the reason)
+     * @description Requires permission `aftersales.manage`.
+     */
+    post: operations["staffRejectClaim"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/warranty/claims/{number}/repairs": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Send the device to the workshop
+     * @description Requires permission `aftersales.manage`.
+     */
+    post: operations["staffStartRepair"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/warranty/claims/{number}/resolution": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Replace from stock, or refund one unit (finance approves)
+     * @description Requires permission `aftersales.manage`.
+     */
+    post: operations["staffResolveClaim"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/warranty/repairs/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Record workshop progress (done makes the claim ready)
+     * @description Requires permission `aftersales.manage`.
+     */
+    post: operations["staffUpdateRepair"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/warranty/stores": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Stores and warehouses that take devices in
+     * @description Requires permission `aftersales.manage`.
+     */
+    get: operations["staffWarrantyStores"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/warranty/summary": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Claim counts and turnaround
+     * @description Requires permission `aftersales.manage`.
+     */
+    get: operations["staffWarrantySummary"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/staff/wms/carriers": {
     parameters: {
       query?: never;
@@ -5677,6 +5933,77 @@ export interface components {
       addressId?: string;
       couponCode?: string;
     };
+    Claim: {
+      /** Format: date-time */
+      createdAt: string;
+      /** @description Staff lists only: first name and last initial */
+      customer: string;
+      /** @description Where to bring the device while the claim is new */
+      dropOff: components["schemas"]["Store"][] | null;
+      fault: string;
+      /** @description Staff only: earlier claims on this device */
+      history: components["schemas"]["HistoryItem"][] | null;
+      imeiOrSerial: string;
+      number: string;
+      orderNumber: string | null;
+      productName: string | null;
+      provider: string | null;
+      /** Format: date-time */
+      receivedAt: string | null;
+      rejectionReason: string | null;
+      repairs: components["schemas"]["RepairJob"][] | null;
+      /** @enum {string|null} */
+      resolution: "repaired" | "replaced" | "refunded" | "not_covered" | null;
+      resolutionNote: string | null;
+      /** @enum {string} */
+      status:
+        | "new"
+        | "received"
+        | "in_repair"
+        | "ready"
+        | "collected"
+        | "rejected"
+        | "closed";
+      store: string | null;
+      /** Format: date-time */
+      updatedAt: string;
+      variantName: string | null;
+      /** Format: date-time */
+      warrantyEndsOn: string | null;
+    };
+    ClaimInput: {
+      /** @description What's wrong, and when it started */
+      fault: string;
+      /** @description The device's IMEI (dial *#06#) or the serial number on the box */
+      imeiOrSerial: string;
+      orderLineId: string;
+    };
+    ClaimRow: {
+      /** Format: date-time */
+      createdAt: string;
+      /** @description Staff lists only: first name and last initial */
+      customer: string;
+      fault: string;
+      imeiOrSerial: string;
+      number: string;
+      orderNumber: string | null;
+      productName: string | null;
+      /** @enum {string|null} */
+      resolution: "repaired" | "replaced" | "refunded" | "not_covered" | null;
+      /** @enum {string} */
+      status:
+        | "new"
+        | "received"
+        | "in_repair"
+        | "ready"
+        | "collected"
+        | "rejected"
+        | "closed";
+      store: string | null;
+      /** Format: date-time */
+      updatedAt: string;
+      variantName: string | null;
+    };
     CompleteSignupRequest: {
       appVersion?: string;
       /** @enum {string} */
@@ -5836,6 +6163,26 @@ export interface components {
       slug: string;
       title: string;
       topic: string;
+    };
+    CoveredItem: {
+      /** Format: date-time */
+      deliveredAt: string;
+      /** Format: date-time */
+      endsOn: string;
+      /** Format: int32 */
+      months: number;
+      /** @description An open claim on this item, if any */
+      openClaim: string | null;
+      orderLineId: string;
+      orderNumber: string;
+      productName: string;
+      /** @enum {string} */
+      provider: "manufacturer" | "techshop" | "seller";
+      /** @description Last 4 characters of the IMEI or serial we sold */
+      serialHint: string | null;
+      /** @description A tracked device: the claim needs its IMEI or serial */
+      serialised: boolean;
+      variantName: string;
     };
     CreateCouponRequest: {
       code?: string;
@@ -6336,6 +6683,14 @@ export interface components {
       itemsKobo: number;
       sellerId: string;
       sellerName: string;
+    };
+    HistoryItem: {
+      /** Format: date-time */
+      createdAt: string;
+      fault: string;
+      number: string;
+      resolution: string | null;
+      status: string;
     };
     IMEIStatus: {
       blocked: boolean;
@@ -8178,6 +8533,38 @@ export interface components {
       platform: "ios" | "android";
       token: string;
     };
+    RepairInput: {
+      diagnosis?: string;
+      technicianId?: string;
+    };
+    RepairJob: {
+      /** Format: date-time */
+      createdAt: string;
+      diagnosis: string | null;
+      /** Format: date-time */
+      finishedAt: string | null;
+      id: string;
+      notes: string | null;
+      /** Format: date-time */
+      startedAt: string | null;
+      /** @enum {string} */
+      status:
+        | "queued"
+        | "diagnosing"
+        | "awaiting_parts"
+        | "repairing"
+        | "done"
+        | "unrepairable";
+      technician: string | null;
+    };
+    RepairUpdate: {
+      diagnosis?: string;
+      notes?: string;
+      /** @enum {string} */
+      status:
+        "diagnosing" | "awaiting_parts" | "repairing" | "done" | "unrepairable";
+      technicianId?: string;
+    };
     ReplyBody: {
       message: string;
     };
@@ -8201,6 +8588,15 @@ export interface components {
        * @description Seconds before another code may be requested
        */
       resendAfter: number;
+    };
+    ResolveInput: {
+      note?: string;
+      /** @description Replaced, tracked devices: the IMEI or serial of the new unit */
+      replacementSerial?: string;
+      /** @enum {string} */
+      resolution: "replaced" | "refunded";
+      /** @description Replaced, untracked items: where the replacement comes from */
+      warehouseId?: string;
     };
     Result: {
       clientEventId: string;
@@ -8561,6 +8957,9 @@ export interface components {
       variantName: string;
       /** Format: int64 */
       vatKobo: number;
+      /** Format: int32 */
+      warrantyMonths: number | null;
+      warrantyProvider: string | null;
     };
     SalesOrderStatusHistory: {
       actorUserId: string;
@@ -9064,6 +9463,10 @@ export interface components {
       fake: boolean;
       health: components["schemas"]["PaymentsProviderHealth"][] | null;
     };
+    StaffReceiveClaimRequest: {
+      scannedSerial: string;
+      storeId: string;
+    };
     StaffReceiveUnitsRequest: {
       /** @enum {string} */
       condition: "new" | "uk_used" | "refurbished" | "open_box";
@@ -9076,6 +9479,9 @@ export interface components {
     StaffReindexResponse: {
       /** Format: int64 */
       products: number;
+    };
+    StaffRejectClaimRequest: {
+      reason: string;
     };
     StaffRejectRefundRequest: {
       note: string;
@@ -9235,6 +9641,13 @@ export interface components {
     };
     StepUpRequest: {
       code: string;
+    };
+    Store: {
+      address: string;
+      city: string;
+      id: string;
+      name: string;
+      state: string;
     };
     SubmitCampaignRequest: {
       /**
@@ -9564,6 +9977,31 @@ export interface components {
       mfaToken: string;
       /** @enum {string} */
       platform?: "web" | "ios" | "android";
+    };
+    WalkInInput: {
+      fault: string;
+      imeiOrSerial: string;
+      /** @description Needed when the item has no tracked serial (accessories) */
+      orderLineId?: string;
+      /** @description Where the device was handed in */
+      storeId: string;
+    };
+    WarrantySummary: {
+      /**
+       * Format: double
+       * @description Received to ready, last 30 days
+       */
+      avgTurnaroundDays: number;
+      /** Format: int32 */
+      awaitingDropoff: number;
+      /** Format: int32 */
+      inRepair: number;
+      /** Format: int32 */
+      open: number;
+      /** Format: int32 */
+      ready: number;
+      /** Format: int32 */
+      replacedThisMonth: number;
     };
     WmsCreateManifestRequest: {
       carrierId?: string;
@@ -12726,6 +13164,128 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Ticket"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  myWarrantyClaims: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ClaimRow"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  makeWarrantyClaim: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ClaimInput"];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Claim"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  myWarrantyClaim: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Claim"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  myWarrantyItems: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CoveredItem"][] | null;
         };
       };
       /** @description Error */
@@ -18867,6 +19427,376 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Vendor"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffWarrantyClaims: {
+    parameters: {
+      query?: {
+        status?:
+          | "active"
+          | "new"
+          | "received"
+          | "in_repair"
+          | "ready"
+          | "collected"
+          | "rejected"
+          | "closed"
+          | "";
+        /** @description Claim or order number, or an exact IMEI or serial */
+        q?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ClaimRow"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffWalkInClaim: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["WalkInInput"];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Claim"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffWarrantyClaim: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Claim"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffCollectClaim: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Claim"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffReceiveClaim: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StaffReceiveClaimRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Claim"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffRejectClaim: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StaffRejectClaimRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Claim"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffStartRepair: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RepairInput"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Claim"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffResolveClaim: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ResolveInput"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Claim"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffUpdateRepair: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RepairUpdate"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Claim"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffWarrantyStores: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Store"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffWarrantySummary: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WarrantySummary"];
         };
       };
       /** @description Error */

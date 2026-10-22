@@ -673,6 +673,7 @@ type Querier interface {
 	SalesCommissionForFulfilment(ctx context.Context, fulfilmentID uuid.UUID) (int64, error)
 	SalesCreateCart(ctx context.Context, arg SalesCreateCartParams) (SalesCart, error)
 	SalesCreateFulfilment(ctx context.Context, arg SalesCreateFulfilmentParams) (SalesFulfilment, error)
+	// Warranty terms are copied from the listing, so later listing edits don't change what was sold.
 	SalesCreateLine(ctx context.Context, arg SalesCreateLineParams) (SalesOrderLine, error)
 	SalesCreateOrder(ctx context.Context, arg SalesCreateOrderParams) (SalesOrder, error)
 	SalesCustomerOrderByNumber(ctx context.Context, arg SalesCustomerOrderByNumberParams) (SalesOrder, error)
@@ -824,6 +825,37 @@ type Querier interface {
 	SupportTicketsForCustomer(ctx context.Context, customerUserID *uuid.UUID) ([]SupportTicketsForCustomerRow, error)
 	SupportTicketsForSeller(ctx context.Context, sellerID *uuid.UUID) ([]SupportTicketsForSellerRow, error)
 	SupportUserContact(ctx context.Context, id uuid.UUID) (SupportUserContactRow, error)
+	WarrantyClaim(ctx context.Context, claimNumber string) (WarrantyClaimRow, error)
+	WarrantyClaimForUpdate(ctx context.Context, claimNumber string) (AftersalesWarrantyClaim, error)
+	WarrantyClaimsForUser(ctx context.Context, customerUserID uuid.UUID) ([]WarrantyClaimsForUserRow, error)
+	WarrantyClose(ctx context.Context, arg WarrantyCloseParams) (AftersalesWarrantyClaim, error)
+	WarrantyCollected(ctx context.Context, id uuid.UUID) (AftersalesWarrantyClaim, error)
+	// Warranty claims and repair jobs. Plan: orders-fulfilment.md §7, docs/plan.md 2026-10-23.
+	// The caller's delivered items still under warranty, with any open claim.
+	WarrantyCoveredLines(ctx context.Context, customerUserID *uuid.UUID) ([]WarrantyCoveredLinesRow, error)
+	WarrantyCreateClaim(ctx context.Context, arg WarrantyCreateClaimParams) (AftersalesWarrantyClaim, error)
+	WarrantyCreateRepair(ctx context.Context, arg WarrantyCreateRepairParams) (AftersalesRepairJob, error)
+	// Earlier claims on the same device (staff see a device's repair history).
+	WarrantyHistory(ctx context.Context, arg WarrantyHistoryParams) ([]WarrantyHistoryRow, error)
+	// One order line with what a claim needs.
+	WarrantyLine(ctx context.Context, id uuid.UUID) (WarrantyLineRow, error)
+	WarrantyOpenRepairs(ctx context.Context, warrantyClaimID *uuid.UUID) (int32, error)
+	WarrantyReady(ctx context.Context, arg WarrantyReadyParams) (AftersalesWarrantyClaim, error)
+	WarrantyReceive(ctx context.Context, arg WarrantyReceiveParams) (AftersalesWarrantyClaim, error)
+	WarrantyReject(ctx context.Context, arg WarrantyRejectParams) (AftersalesWarrantyClaim, error)
+	WarrantyRepairForUpdate(ctx context.Context, id uuid.UUID) (WarrantyRepairForUpdateRow, error)
+	WarrantyRepairs(ctx context.Context, warrantyClaimID *uuid.UUID) ([]WarrantyRepairsRow, error)
+	// An in-stock unit of the same variant to swap in, found by its IMEI or serial.
+	WarrantyReplacementUnit(ctx context.Context, arg WarrantyReplacementUnitParams) (InventoryDeviceUnit, error)
+	WarrantySetStatus(ctx context.Context, arg WarrantySetStatusParams) (AftersalesWarrantyClaim, error)
+	WarrantySetUnit(ctx context.Context, arg WarrantySetUnitParams) error
+	// The order line that sold a device, found by its IMEI or serial (walk-in claims).
+	WarrantySoldUnit(ctx context.Context, serial string) (uuid.UUID, error)
+	WarrantyStaffList(ctx context.Context, arg WarrantyStaffListParams) ([]WarrantyStaffListRow, error)
+	// Where customers can bring a device: TechShop stores and warehouses (not hubs).
+	WarrantyStores(ctx context.Context) ([]WarrantyStoresRow, error)
+	WarrantySummary(ctx context.Context) (WarrantySummaryRow, error)
+	WarrantyUpdateRepair(ctx context.Context, arg WarrantyUpdateRepairParams) (AftersalesRepairJob, error)
 }
 
 var _ Querier = (*Queries)(nil)
