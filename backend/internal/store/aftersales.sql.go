@@ -306,35 +306,6 @@ func (q *Queries) AftersalesItems(ctx context.Context, returnRequestID uuid.UUID
 	return items, nil
 }
 
-const aftersalesOpenRiskCase = `-- name: AftersalesOpenRiskCase :one
-insert into risk.risk_cases (kind, subject_type, subject_id, reason, score, money_at_risk_kobo)
-values ($1, $2, $3, $4, $5, $6)
-returning id
-`
-
-type AftersalesOpenRiskCaseParams struct {
-	Kind            string    `json:"kind"`
-	SubjectType     string    `json:"subjectType"`
-	SubjectID       uuid.UUID `json:"subjectId"`
-	Reason          string    `json:"reason"`
-	Score           *int16    `json:"score"`
-	MoneyAtRiskKobo *int64    `json:"moneyAtRiskKobo"`
-}
-
-func (q *Queries) AftersalesOpenRiskCase(ctx context.Context, arg AftersalesOpenRiskCaseParams) (uuid.UUID, error) {
-	row := q.db.QueryRow(ctx, aftersalesOpenRiskCase,
-		arg.Kind,
-		arg.SubjectType,
-		arg.SubjectID,
-		arg.Reason,
-		arg.Score,
-		arg.MoneyAtRiskKobo,
-	)
-	var id uuid.UUID
-	err := row.Scan(&id)
-	return id, err
-}
-
 const aftersalesReturnableLines = `-- name: AftersalesReturnableLines :many
 
 select ol.id, ol.order_id, ol.fulfilment_id, ol.listing_id, ol.variant_id, ol.product_name, ol.variant_name, ol.condition,

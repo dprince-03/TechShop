@@ -19,6 +19,7 @@ import (
 
 	"github.com/dprince-03/techshop/backend/internal/modules/inventory"
 	"github.com/dprince-03/techshop/backend/internal/modules/payments"
+	"github.com/dprince-03/techshop/backend/internal/modules/risk"
 	"github.com/dprince-03/techshop/backend/internal/platform/httpx"
 	"github.com/dprince-03/techshop/backend/internal/platform/jobs"
 	"github.com/dprince-03/techshop/backend/internal/platform/kit"
@@ -29,14 +30,15 @@ import (
 
 // Service is the after-sales module.
 type Service struct {
-	d   *kit.Deps
-	pay *payments.Service
-	inv *inventory.Service
+	d    *kit.Deps
+	pay  *payments.Service
+	inv  *inventory.Service
+	risk *risk.Service
 }
 
 // New creates the module.
-func New(d *kit.Deps, pay *payments.Service, inv *inventory.Service) *Service {
-	return &Service{d: d, pay: pay, inv: inv}
+func New(d *kit.Deps, pay *payments.Service, inv *inventory.Service, rk *risk.Service) *Service {
+	return &Service{d: d, pay: pay, inv: inv, risk: rk}
 }
 
 // Name implements kit.Module.
@@ -111,8 +113,14 @@ func (s *Service) RequestReturn(ctx context.Context, userID uuid.UUID, orderNumb
 		if err != nil {
 			return err
 		}
-		// Only our-fault returns are auto-approved (orders-fulfilment.md §7); change of mind waits for support.
-		auto := ourFault[in.Reason] && goodStanding(int(st.Returns90d), int(st.Orders90d), int(st.OpenCases))
+		// The "return" checkpoint decides good standing; anything but allow waits for support.
+		// Only our-fault returns are auto-approved (orders-fulfilment.md §7); change of mind always waits.
+		dec, err := s.risk.Evaluate(ctx, tx, risk.Check{Checkpoint: "return", SubjectType: "user", SubjectID: userID, UserID: &userID, NoCase: true,
+			Features: risk.Features{"return_rate_90d": returnRate(int(st.Returns90d), int(st.Orders90d)), "open_cases": float64(st.OpenCases)}})
+		if err != nil {
+			return err
+		}
+		auto := ourFault[in.Reason] && dec.Outcome == "allow"
 		status := "requested"
 		if auto {
 			status = "approved"
@@ -299,10 +307,9 @@ func (s *Service) swapFraud(ctx context.Context, tx *uow.Tx, r store.AftersalesR
 	if _, err := tx.Q.AftersalesDecide(ctx, store.AftersalesDecideParams{ID: r.ID, Status: "rejected", DecidedBy: &httpx.MustPrincipal(ctx).UserID, RejectionReason: &reason}); err != nil {
 		return err
 	}
-	score := int16(80)
-	money := lineRefund(item.LineTotalKobo, item.LineQuantity, item.Quantity)
-	if _, err := tx.Q.AftersalesOpenRiskCase(ctx, store.AftersalesOpenRiskCaseParams{Kind: "return", SubjectType: "user", SubjectID: r.RequestedBy,
-		Reason: fmt.Sprintf("Return %s: scanned %q doesn't match the unit sold (possible swap)", r.RmaNumber, scanned), Score: &score, MoneyAtRiskKobo: &money}); err != nil {
+	if _, err := s.risk.OpenCase(ctx, tx, risk.NewCase{Kind: "return", SubjectType: "user", SubjectID: r.RequestedBy, Score: 80, Block: true,
+		Reason:    fmt.Sprintf("Return %s: scanned %q doesn't match the unit sold (possible swap)", r.RmaNumber, scanned),
+		MoneyKobo: lineRefund(item.LineTotalKobo, item.LineQuantity, item.Quantity)}); err != nil {
 		return err
 	}
 	return tx.Audit("return.serial_mismatch", "return", r.ID.String(), map[string]string{"scanned": scanned})

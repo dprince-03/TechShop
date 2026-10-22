@@ -105,6 +105,39 @@ func TestReturnSerialMismatchOpensRiskCase(t *testing.T) {
 	if back.str("status") != "rejected" || !strings.Contains(back.str("rejectionReason"), "doesn’t match") {
 		t.Fatalf("customer should see the rejection: %s", back.Raw)
 	}
+
+	// The case is in the risk queue; while it's open, the customer's next return waits for support.
+	ref := riskCaseAbout(t, rma)
+	number2, _, line2 := deliveredByCarrier(t, cust, seed.Extra["listing_p21"], nil)
+	next := post(t, "/api/v1/me/orders/"+number2+"/returns", cust, map[string]any{"items": []any{map[string]any{"orderLineId": line2, "quantity": 1}}, "reason": "faulty", "method": "store_dropoff"})
+	expect(t, next, 201, "return with an open case")
+	if next.str("status") != "requested" || next.get("autoApproved") != false {
+		t.Fatalf("an open risk case should stop auto-approval: %s", next.Raw)
+	}
+	ra := staffLogin(t, "risk_analyst")
+	expect(t, post(t, "/api/v1/staff/risk/cases/"+ref+"/claim", ra, nil), 200, "claim")
+	expectCode(t, post(t, "/api/v1/staff/risk/cases/"+ref+"/resolution", ra, map[string]any{"decision": "block", "note": " "}), 422, "note_required", "block without a note")
+	done := post(t, "/api/v1/staff/risk/cases/"+ref+"/resolution", ra, map[string]any{"decision": "block", "note": "Different phone sent back; customer banned from returns"})
+	expect(t, done, 200, "block")
+	if done.str("status") != "blocked" || done.str("label") != "fraud" || len(done.get("events").([]any)) < 3 {
+		t.Fatalf("blocked case with its timeline: %s", done.Raw)
+	}
+	expectCode(t, post(t, "/api/v1/staff/risk/cases/"+ref+"/claim", ra, nil), 409, "bad_transition", "claim a closed case")
+}
+
+// riskCaseAbout finds the active case whose reason mentions a reference.
+func riskCaseAbout(t *testing.T, mention string) string {
+	t.Helper()
+	l := get(t, "/api/v1/staff/risk/cases?status=active", staffLogin(t, "risk_analyst"))
+	expect(t, l, 200, "case queue")
+	for _, c := range l.List {
+		m := c.(map[string]any)
+		if strings.Contains(m["reason"].(string), mention) {
+			return m["reference"].(string)
+		}
+	}
+	t.Fatalf("no active case mentions %s: %s", mention, truncate(string(l.Raw)))
+	return ""
 }
 
 // Change of mind: sealed items only, brought to a store, always checked by support; an item that

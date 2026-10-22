@@ -4140,6 +4140,210 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/staff/risk/cases": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The case queue: open work first, by score × money at risk
+     * @description Requires permission `risk.view`.
+     */
+    get: operations["staffRiskCases"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/risk/cases/{ref}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * A case with its decision trace and timeline
+     * @description Requires permission `risk.view`.
+     */
+    get: operations["staffRiskCase"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/risk/cases/{ref}/claim": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Take a case for review
+     * @description Requires permission `risk.resolve`.
+     */
+    post: operations["staffClaimRiskCase"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/risk/cases/{ref}/escalate": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Send a case to a manager
+     * @description Requires permission `risk.resolve`.
+     */
+    post: operations["staffEscalateRiskCase"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/risk/cases/{ref}/notes": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Add a note to a case
+     * @description Requires permission `risk.resolve`.
+     */
+    post: operations["staffNoteRiskCase"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/risk/cases/{ref}/resolution": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Clear (legitimate: holds are released) or block (fraud: what was held is stopped)
+     * @description Requires permission `risk.resolve`.
+     */
+    post: operations["staffResolveRiskCase"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/risk/devices": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The stolen-device blocklist, newest first
+     * @description Requires permission `risk.view`.
+     */
+    get: operations["staffBlockedDevices"];
+    put?: never;
+    /**
+     * Add an IMEI to the blocklist
+     * @description Requires permission `devices.block`.
+     */
+    post: operations["staffBlockDevice"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/risk/devices/check": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Check an IMEI: check digit and blocklist
+     * @description Requires permission `risk.view`.
+     */
+    get: operations["staffCheckIMEI"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/risk/devices/{imei}/unblock": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Remove an IMEI from the blocklist
+     * @description Requires permission `devices.block`.
+     */
+    post: operations["staffUnblockDevice"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/risk/summary": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Case and blocklist counts
+     * @description Requires permission `risk.view`.
+     */
+    get: operations["staffRiskSummary"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/staff/search/gaps/{query}": {
     parameters: {
       query?: never;
@@ -4828,6 +5032,25 @@ export interface components {
       shop: string;
       /** @enum {string} */
       status: "scheduled" | "processing" | "paid" | "failed" | "on_hold";
+    };
+    BlockDeviceInput: {
+      imei: string;
+      /** @enum {string} */
+      reason: "reported_stolen" | "fraud" | "counterfeit";
+      /** @description Police extract number, case or ticket */
+      reference?: string;
+      /** @description Who reported it, e.g. customer report, police extract, case RK-301 */
+      source: string;
+    };
+    BlockedDevice: {
+      addedBy: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      imei: string;
+      /** @enum {string} */
+      reason: "reported_stolen" | "fraud" | "counterfeit";
+      reference: string | null;
+      source: string;
     };
     BoardJob: {
       /** Format: date-time */
@@ -5612,6 +5835,13 @@ export interface components {
       /** Format: int64 */
       totalKobo: number;
     };
+    FiredRule: {
+      action: string;
+      key: string;
+      label: string;
+      /** Format: int64 */
+      weight: number;
+    };
     FulfilmentCarrier: {
       code: string;
       /** Format: date-time */
@@ -5796,6 +6026,14 @@ export interface components {
       itemsKobo: number;
       sellerId: string;
       sellerName: string;
+    };
+    IMEIStatus: {
+      blocked: boolean;
+      imei: string;
+      /** @description The check digit is right (a typo or a fake IMEI fails) */
+      luhnOk: boolean;
+      /** @description Why it's blocked: reported_stolen, fraud or counterfeit */
+      reason: string | null;
     };
     IdentityAddress: {
       businessId: string;
@@ -6924,6 +7162,9 @@ export interface components {
       inviteUrl?: string;
       userId: string;
     };
+    NoteBody: {
+      note: string;
+    };
     NotificationDTO: {
       body?: string;
       category: string;
@@ -7787,6 +8028,119 @@ export interface components {
     RiderSyncEventsResponse: {
       results: components["schemas"]["Result"][] | null;
     };
+    RiskCase: {
+      assignee: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      events: components["schemas"]["RiskCaseEvent"][] | null;
+      /** @enum {string} */
+      kind:
+        | "order"
+        | "payment"
+        | "device"
+        | "seller"
+        | "account"
+        | "trade_in"
+        | "return"
+        | "review";
+      label: string | null;
+      /**
+       * Format: int64
+       * @description Kobo
+       */
+      moneyAtRisk: number | null;
+      overdue: boolean;
+      reason: string;
+      reference: string;
+      resolutionNote: string | null;
+      /** Format: date-time */
+      resolvedAt: string | null;
+      /** Format: int32 */
+      score: number | null;
+      /** Format: date-time */
+      slaDueAt: string | null;
+      /** @enum {string} */
+      status: "open" | "in_review" | "cleared" | "blocked" | "escalated";
+      /** @description Order or return number, trade-in reference, shop, or a masked name */
+      subject: string;
+      subjectId: string;
+      subjectType: string;
+      trace: components["schemas"]["RiskTrace"];
+    };
+    RiskCaseEvent: {
+      /** @enum {string} */
+      action:
+        "opened" | "claimed" | "note" | "escalated" | "cleared" | "blocked";
+      actor: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      note: string | null;
+    };
+    RiskCaseRow: {
+      assignee: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** @enum {string} */
+      kind:
+        | "order"
+        | "payment"
+        | "device"
+        | "seller"
+        | "account"
+        | "trade_in"
+        | "return"
+        | "review";
+      label: string | null;
+      /**
+       * Format: int64
+       * @description Kobo
+       */
+      moneyAtRisk: number | null;
+      overdue: boolean;
+      reason: string;
+      reference: string;
+      /** Format: int32 */
+      score: number | null;
+      /** Format: date-time */
+      slaDueAt: string | null;
+      /** @enum {string} */
+      status: "open" | "in_review" | "cleared" | "blocked" | "escalated";
+    };
+    RiskSummary: {
+      /**
+       * Format: int32
+       * @description Open, in review or escalated
+       */
+      active: number;
+      /** Format: int32 */
+      blockedDevices: number;
+      /**
+       * Format: int32
+       * @description Active cases about orders
+       */
+      orders: number;
+      /**
+       * Format: int32
+       * @description Active cases past their review target
+       */
+      overdue: number;
+      /** Format: int32 */
+      resolved7d: number;
+    };
+    RiskTrace: {
+      checkpoint: string;
+      /** Format: date-time */
+      createdAt: string;
+      features: {
+        [key: string]: number;
+      };
+      fired: components["schemas"]["FiredRule"][] | null;
+      outcome: string;
+      /** Format: int32 */
+      ruleSetVersion: number | null;
+      /** Format: int32 */
+      score: number;
+    };
     Rules: {
       /** @description Bought anything in this category or below */
       boughtCategoryId?: string;
@@ -8405,6 +8759,16 @@ export interface components {
       resolution: string;
       /** @enum {string} */
       status: "resolved" | "escalated";
+    };
+    StaffResolveRiskCaseRequest: {
+      /** @enum {string} */
+      decision: "clear" | "block";
+      /**
+       * @description For a clear: legit (default) or unclear
+       * @enum {string}
+       */
+      label?: "legit" | "unclear" | "";
+      note: string;
     };
     StaffRevealKycIdRequest: {
       reason: string;
@@ -16727,6 +17091,378 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["StaffDecideReviewResponse"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffRiskCases: {
+    parameters: {
+      query?: {
+        status?:
+          | "active"
+          | "open"
+          | "in_review"
+          | "escalated"
+          | "cleared"
+          | "blocked"
+          | "";
+        kind?:
+          | "order"
+          | "payment"
+          | "device"
+          | "seller"
+          | "account"
+          | "trade_in"
+          | "return"
+          | "review"
+          | "";
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RiskCaseRow"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffRiskCase: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ref: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RiskCase"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffClaimRiskCase: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ref: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RiskCase"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffEscalateRiskCase: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ref: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NoteBody"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RiskCase"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffNoteRiskCase: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ref: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NoteBody"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RiskCase"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffResolveRiskCase: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ref: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StaffResolveRiskCaseRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RiskCase"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffBlockedDevices: {
+    parameters: {
+      query?: {
+        imei?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BlockedDevice"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffBlockDevice: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["BlockDeviceInput"];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BlockedDevice"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffCheckIMEI: {
+    parameters: {
+      query: {
+        imei: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IMEIStatus"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffUnblockDevice: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        imei: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NoteBody"];
+      };
+    };
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffRiskSummary: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RiskSummary"];
         };
       };
       /** @description Error */
