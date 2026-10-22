@@ -156,26 +156,3 @@ func Score(rules []Rule, t Thresholds, f Features) Result {
 func (t Thresholds) Valid() bool {
 	return t.Step >= 1 && t.Step < t.Hold && t.Hold < t.Block && t.Block <= 100
 }
-
-// LuhnOK checks a 15-digit IMEI's check digit (the Luhn algorithm, as GSMA defines for IMEIs).
-func LuhnOK(imei string) bool {
-	if len(imei) != 15 {
-		return false
-	}
-	sum := 0
-	for i := range 15 {
-		c := imei[14-i]
-		if c < '0' || c > '9' {
-			return false
-		}
-		d := int(c - '0')
-		if i%2 == 1 {
-			d *= 2
-			if d > 9 {
-				d -= 9
-			}
-		}
-		sum += d
-	}
-	return sum%10 == 0
-}

@@ -2729,6 +2729,14 @@ type SupportSupportTicket struct {
 	ResolvedAt      *time.Time `json:"resolvedAt"`
 	CreatedAt       time.Time  `json:"createdAt"`
 	UpdatedAt       time.Time  `json:"updatedAt"`
+	Subject         *string    `json:"subject"`
+	// When the first staff reply is due (24 h normal, 4 h high or urgent).
+	SlaDueAt *time.Time `json:"slaDueAt"`
+	// When the ticket started waiting on the customer (auto-resolved after 7 days).
+	PendingSince   *time.Time `json:"pendingSince"`
+	ClosedAt       *time.Time `json:"closedAt"`
+	LastMessageAt  time.Time  `json:"lastMessageAt"`
+	CustomerUnread bool       `json:"customerUnread"`
 }
 
 // [support] Messages in a ticket; internal notes are never returned to customers.

@@ -76,16 +76,3 @@ func TestThresholdsValid(t *testing.T) {
 		}
 	}
 }
-
-func TestLuhnOK(t *testing.T) {
-	for _, ok := range []string{"490154203237518", "356938035643809"} {
-		if !LuhnOK(ok) {
-			t.Errorf("%s should pass", ok)
-		}
-	}
-	for _, bad := range []string{"490154203237519", "35693803564380", "49015420323751a", ""} {
-		if LuhnOK(bad) {
-			t.Errorf("%q should fail", bad)
-		}
-	}
-}
