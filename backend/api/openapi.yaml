@@ -306,6 +306,64 @@ components:
         - paidAt
         - failureReason
       type: object
+    BlockDeviceInput:
+      additionalProperties: false
+      properties:
+        imei:
+          pattern: ^[0-9]{15}$
+          type: string
+        reason:
+          enum:
+            - reported_stolen
+            - fraud
+            - counterfeit
+          type: string
+        reference:
+          description: Police extract number, case or ticket
+          maxLength: 80
+          type: string
+        source:
+          description: Who reported it, e.g. customer report, police extract, case RK-301
+          maxLength: 80
+          minLength: 2
+          type: string
+      required:
+        - imei
+        - reason
+        - source
+      type: object
+    BlockedDevice:
+      additionalProperties: false
+      properties:
+        addedBy:
+          type:
+            - string
+            - "null"
+        createdAt:
+          format: date-time
+          type: string
+        imei:
+          type: string
+        reason:
+          enum:
+            - reported_stolen
+            - fraud
+            - counterfeit
+          type: string
+        reference:
+          type:
+            - string
+            - "null"
+        source:
+          type: string
+      required:
+        - imei
+        - reason
+        - source
+        - reference
+        - addedBy
+        - createdAt
+      type: object
     BoardJob:
       additionalProperties: false
       properties:
@@ -2339,6 +2397,24 @@ components:
         - entries
         - accounts
       type: object
+    FiredRule:
+      additionalProperties: false
+      properties:
+        action:
+          type: string
+        key:
+          type: string
+        label:
+          type: string
+        weight:
+          format: int64
+          type: integer
+      required:
+        - key
+        - label
+        - weight
+        - action
+      type: object
     FulfilmentCarrier:
       additionalProperties: false
       properties:
@@ -2850,6 +2926,27 @@ components:
         - fulfilledBy
         - deliveryFeeKobo
         - itemsKobo
+      type: object
+    IMEIStatus:
+      additionalProperties: false
+      properties:
+        blocked:
+          type: boolean
+        imei:
+          type: string
+        luhnOk:
+          description: The check digit is right (a typo or a fake IMEI fails)
+          type: boolean
+        reason:
+          description: "Why it's blocked: reported_stolen, fraud or counterfeit"
+          type:
+            - string
+            - "null"
+      required:
+        - imei
+        - luhnOk
+        - blocked
+        - reason
       type: object
     IdentityAddress:
       additionalProperties: false
@@ -5883,6 +5980,15 @@ components:
       required:
         - userId
       type: object
+    NoteBody:
+      additionalProperties: false
+      properties:
+        note:
+          maxLength: 1000
+          type: string
+      required:
+        - note
+      type: object
     NotificationDTO:
       additionalProperties: false
       properties:
@@ -8051,6 +8157,268 @@ components:
       required:
         - results
       type: object
+    RiskCase:
+      additionalProperties: false
+      properties:
+        assignee:
+          type:
+            - string
+            - "null"
+        createdAt:
+          format: date-time
+          type: string
+        events:
+          items:
+            $ref: "#/components/schemas/RiskCaseEvent"
+          type:
+            - array
+            - "null"
+        kind:
+          enum:
+            - order
+            - payment
+            - device
+            - seller
+            - account
+            - trade_in
+            - return
+            - review
+          type: string
+        label:
+          type:
+            - string
+            - "null"
+        moneyAtRisk:
+          description: Kobo
+          format: int64
+          type:
+            - integer
+            - "null"
+        overdue:
+          type: boolean
+        reason:
+          type: string
+        reference:
+          type: string
+        resolutionNote:
+          type:
+            - string
+            - "null"
+        resolvedAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        score:
+          format: int32
+          type:
+            - integer
+            - "null"
+        slaDueAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        status:
+          enum:
+            - open
+            - in_review
+            - cleared
+            - blocked
+            - escalated
+          type: string
+        subject:
+          description: Order or return number, trade-in reference, shop, or a masked name
+          type: string
+        subjectId:
+          type: string
+        subjectType:
+          type: string
+        trace:
+          $ref: "#/components/schemas/RiskTrace"
+      required:
+        - subjectType
+        - subjectId
+        - subject
+        - resolutionNote
+        - resolvedAt
+        - trace
+        - events
+        - reference
+        - kind
+        - reason
+        - score
+        - moneyAtRisk
+        - status
+        - label
+        - slaDueAt
+        - overdue
+        - assignee
+        - createdAt
+      type: object
+    RiskCaseEvent:
+      additionalProperties: false
+      properties:
+        action:
+          enum:
+            - opened
+            - claimed
+            - note
+            - escalated
+            - cleared
+            - blocked
+          type: string
+        actor:
+          type:
+            - string
+            - "null"
+        createdAt:
+          format: date-time
+          type: string
+        note:
+          type:
+            - string
+            - "null"
+      required:
+        - action
+        - actor
+        - note
+        - createdAt
+      type: object
+    RiskCaseRow:
+      additionalProperties: false
+      properties:
+        assignee:
+          type:
+            - string
+            - "null"
+        createdAt:
+          format: date-time
+          type: string
+        kind:
+          enum:
+            - order
+            - payment
+            - device
+            - seller
+            - account
+            - trade_in
+            - return
+            - review
+          type: string
+        label:
+          type:
+            - string
+            - "null"
+        moneyAtRisk:
+          description: Kobo
+          format: int64
+          type:
+            - integer
+            - "null"
+        overdue:
+          type: boolean
+        reason:
+          type: string
+        reference:
+          type: string
+        score:
+          format: int32
+          type:
+            - integer
+            - "null"
+        slaDueAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        status:
+          enum:
+            - open
+            - in_review
+            - cleared
+            - blocked
+            - escalated
+          type: string
+      required:
+        - reference
+        - kind
+        - reason
+        - score
+        - moneyAtRisk
+        - status
+        - label
+        - slaDueAt
+        - overdue
+        - assignee
+        - createdAt
+      type: object
+    RiskSummary:
+      additionalProperties: false
+      properties:
+        active:
+          description: Open, in review or escalated
+          format: int32
+          type: integer
+        blockedDevices:
+          format: int32
+          type: integer
+        orders:
+          description: Active cases about orders
+          format: int32
+          type: integer
+        overdue:
+          description: Active cases past their review target
+          format: int32
+          type: integer
+        resolved7d:
+          format: int32
+          type: integer
+      required:
+        - active
+        - orders
+        - overdue
+        - resolved7d
+        - blockedDevices
+      type: object
+    RiskTrace:
+      additionalProperties: false
+      properties:
+        checkpoint:
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        features:
+          additionalProperties:
+            format: double
+            type: number
+          type: object
+        fired:
+          items:
+            $ref: "#/components/schemas/FiredRule"
+          type:
+            - array
+            - "null"
+        outcome:
+          type: string
+        ruleSetVersion:
+          format: int32
+          type:
+            - integer
+            - "null"
+        score:
+          format: int32
+          type: integer
+      required:
+        - checkpoint
+        - score
+        - outcome
+        - ruleSetVersion
+        - fired
+        - features
+        - createdAt
+      type: object
     Rules:
       additionalProperties: false
       properties:
@@ -9669,6 +10037,28 @@ components:
       required:
         - status
         - resolution
+      type: object
+    StaffResolveRiskCaseRequest:
+      additionalProperties: false
+      properties:
+        decision:
+          enum:
+            - clear
+            - block
+          type: string
+        label:
+          description: "For a clear: legit (default) or unclear"
+          enum:
+            - legit
+            - unclear
+            - ""
+          type: string
+        note:
+          maxLength: 1000
+          type: string
+      required:
+        - decision
+        - note
       type: object
     StaffRevealKycIdRequest:
       additionalProperties: false
@@ -18179,6 +18569,360 @@ paths:
       summary: Publish, hide or reject a review (settles its reports)
       tags:
         - Staff · Reviews
+  /api/v1/staff/risk/cases:
+    get:
+      description: Requires permission `risk.view`.
+      operationId: staffRiskCases
+      parameters:
+        - explode: false
+          in: query
+          name: status
+          schema:
+            enum:
+              - active
+              - open
+              - in_review
+              - escalated
+              - cleared
+              - blocked
+              - ""
+            type: string
+        - explode: false
+          in: query
+          name: kind
+          schema:
+            enum:
+              - order
+              - payment
+              - device
+              - seller
+              - account
+              - trade_in
+              - return
+              - review
+              - ""
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/RiskCaseRow"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: "The case queue: open work first, by score × money at risk"
+      tags:
+        - Staff · Risk
+  /api/v1/staff/risk/cases/{ref}:
+    get:
+      description: Requires permission `risk.view`.
+      operationId: staffRiskCase
+      parameters:
+        - in: path
+          name: ref
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RiskCase"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: A case with its decision trace and timeline
+      tags:
+        - Staff · Risk
+  /api/v1/staff/risk/cases/{ref}/claim:
+    post:
+      description: Requires permission `risk.resolve`.
+      operationId: staffClaimRiskCase
+      parameters:
+        - in: path
+          name: ref
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RiskCase"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Take a case for review
+      tags:
+        - Staff · Risk
+  /api/v1/staff/risk/cases/{ref}/escalate:
+    post:
+      description: Requires permission `risk.resolve`.
+      operationId: staffEscalateRiskCase
+      parameters:
+        - in: path
+          name: ref
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NoteBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RiskCase"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Send a case to a manager
+      tags:
+        - Staff · Risk
+  /api/v1/staff/risk/cases/{ref}/notes:
+    post:
+      description: Requires permission `risk.resolve`.
+      operationId: staffNoteRiskCase
+      parameters:
+        - in: path
+          name: ref
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NoteBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RiskCase"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Add a note to a case
+      tags:
+        - Staff · Risk
+  /api/v1/staff/risk/cases/{ref}/resolution:
+    post:
+      description: Requires permission `risk.resolve`.
+      operationId: staffResolveRiskCase
+      parameters:
+        - in: path
+          name: ref
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffResolveRiskCaseRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RiskCase"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: "Clear (legitimate: holds are released) or block (fraud: what was held is stopped)"
+      tags:
+        - Staff · Risk
+  /api/v1/staff/risk/devices:
+    get:
+      description: Requires permission `risk.view`.
+      operationId: staffBlockedDevices
+      parameters:
+        - explode: false
+          in: query
+          name: imei
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/BlockedDevice"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: The stolen-device blocklist, newest first
+      tags:
+        - Staff · Risk
+    post:
+      description: Requires permission `devices.block`.
+      operationId: staffBlockDevice
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BlockDeviceInput"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BlockedDevice"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Add an IMEI to the blocklist
+      tags:
+        - Staff · Risk
+  /api/v1/staff/risk/devices/check:
+    get:
+      description: Requires permission `risk.view`.
+      operationId: staffCheckIMEI
+      parameters:
+        - explode: false
+          in: query
+          name: imei
+          required: true
+          schema:
+            maxLength: 20
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IMEIStatus"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: "Check an IMEI: check digit and blocklist"
+      tags:
+        - Staff · Risk
+  /api/v1/staff/risk/devices/{imei}/unblock:
+    post:
+      description: Requires permission `devices.block`.
+      operationId: staffUnblockDevice
+      parameters:
+        - in: path
+          name: imei
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NoteBody"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Remove an IMEI from the blocklist
+      tags:
+        - Staff · Risk
+  /api/v1/staff/risk/summary:
+    get:
+      description: Requires permission `risk.view`.
+      operationId: staffRiskSummary
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RiskSummary"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Case and blocklist counts
+      tags:
+        - Staff · Risk
   /api/v1/staff/search/gaps/{query}:
     put:
       description: Requires permission `search.manage`.

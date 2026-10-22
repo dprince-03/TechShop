@@ -2181,6 +2181,16 @@ type PurchasingSupplier struct {
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
+// [risk] Timeline of a risk case: who claimed, noted, escalated, cleared or blocked it.
+type RiskCaseEvent struct {
+	ID        uuid.UUID  `json:"id"`
+	CaseID    uuid.UUID  `json:"caseId"`
+	ActorID   *uuid.UUID `json:"actorId"`
+	Action    string     `json:"action"`
+	Note      *string    `json:"note"`
+	CreatedAt time.Time  `json:"createdAt"`
+}
+
 // [risk] IMEIs that may not be sold, traded in, returned or repaired (stolen, fraud, counterfeit).
 type RiskDeviceBlocklist struct {
 	ID        uuid.UUID  `json:"id"`
@@ -2263,6 +2273,8 @@ type RiskRiskCase struct {
 	ResolvedAt      *time.Time `json:"resolvedAt"`
 	CreatedAt       time.Time  `json:"createdAt"`
 	UpdatedAt       time.Time  `json:"updatedAt"`
+	Reference       string     `json:"reference"`
+	ResolutionNote  *string    `json:"resolutionNote"`
 }
 
 // [risk] Every risk decision with score, reasons and rule-set version. Partitioned monthly; 24-month retention.
@@ -2343,8 +2355,9 @@ type RiskRiskRuleSet struct {
 	Thresholds  json.RawMessage `json:"thresholds"`
 	PublishedBy *uuid.UUID      `json:"publishedBy"`
 	PublishedAt *time.Time      `json:"publishedAt"`
-	CreatedBy   uuid.UUID       `json:"createdBy"`
+	CreatedBy   *uuid.UUID      `json:"createdBy"`
 	CreatedAt   time.Time       `json:"createdAt"`
+	Notes       *string         `json:"notes"`
 }
 
 // [risk] Per-seller daily counts used for the rolling 60-day performance rates.

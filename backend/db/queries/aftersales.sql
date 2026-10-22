@@ -73,10 +73,5 @@ select
   (select count(*) from sales.orders where customer_user_id = @user_id and status = 'delivered' and placed_at > now() - interval '90 days')::int as orders_90d,
   (select count(*) from risk.risk_cases where subject_type = 'user' and subject_id = @user_id and status in ('open', 'in_review', 'escalated'))::int as open_cases;
 
--- name: AftersalesOpenRiskCase :one
-insert into risk.risk_cases (kind, subject_type, subject_id, reason, score, money_at_risk_kobo)
-values ($1, $2, $3, $4, $5, $6)
-returning id;
-
 -- name: AftersalesSetUnitCondition :exec
 update inventory.device_units set condition = $2, status = $3, warehouse_id = $4 where id = $1;

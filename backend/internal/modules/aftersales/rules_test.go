@@ -13,21 +13,21 @@ func TestWithinWindow(t *testing.T) {
 	}
 }
 
-func TestGoodStanding(t *testing.T) {
+func TestReturnRate(t *testing.T) {
+	// The return checkpoint flags a rate above 30 % (see migration 00032).
 	cases := []struct {
-		returns, orders, cases int
-		want                   bool
+		returns, orders int
+		flagged         bool
 	}{
-		{0, 0, 0, true},   // first order, first return
-		{0, 5, 0, true},   // no returns yet
-		{1, 10, 0, true},  // 2 of 10 = 20 %
-		{3, 10, 0, false}, // 4 of 10 = 40 %
-		{0, 3, 1, false},  // open risk case
-		{2, 0, 0, false},  // returns but no delivered orders in 90 days
+		{0, 0, false},  // first order, first return
+		{0, 5, false},  // no returns yet
+		{1, 10, false}, // 2 of 10 = 20 %
+		{3, 10, true},  // 4 of 10 = 40 %
+		{2, 0, true},   // returns but no delivered orders in 90 days
 	}
 	for _, c := range cases {
-		if got := goodStanding(c.returns, c.orders, c.cases); got != c.want {
-			t.Errorf("goodStanding(%d, %d, %d) = %v, want %v", c.returns, c.orders, c.cases, got, c.want)
+		if got := returnRate(c.returns, c.orders) > 0.30; got != c.flagged {
+			t.Errorf("returnRate(%d, %d) flagged = %v, want %v", c.returns, c.orders, got, c.flagged)
 		}
 	}
 }

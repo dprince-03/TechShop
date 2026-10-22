@@ -33,25 +33,21 @@ func deliveryRefund(reason string, fee int64, returnedUnits, parcelUnits int32) 
 	return fee
 }
 
-// highReturnRate is the share of delivered orders returned in 90 days above which a customer
-// isn't auto-approved (trust-safety.md §3: "returns > 30 % of orders in 90 days").
-const highReturnRate = 0.30
-
 // withinWindow reports whether a delivery is still inside the return window.
 func withinWindow(deliveredAt *time.Time, now time.Time) bool {
 	return deliveredAt != nil && now.Sub(*deliveredAt) <= returnWindow
 }
 
-// goodStanding: no open risk case, and returns at most 30 % of delivered orders in 90 days
-// (counting this request).
-func goodStanding(returns90d, orders90d, openCases int) bool {
-	if openCases > 0 {
-		return false
+// returnRate is the share of delivered orders in 90 days that were returned, counting this
+// request: the "return" checkpoint's high_return_rate rule compares it with 30 %.
+func returnRate(returns90d, orders90d int) float64 {
+	if returns90d == 0 {
+		return 0 // a first return is always in good standing
 	}
 	if orders90d == 0 {
-		return returns90d == 0
+		return 1
 	}
-	return float64(returns90d+1)/float64(orders90d) <= highReturnRate || returns90d == 0
+	return float64(returns90d+1) / float64(orders90d)
 }
 
 // lineRefund is the money back for qty of a line: its price share (line total already net of

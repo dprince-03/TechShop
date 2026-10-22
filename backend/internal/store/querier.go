@@ -20,7 +20,6 @@ type Querier interface {
 	AftersalesGetReturnForUpdate(ctx context.Context, rmaNumber string) (AftersalesReturnRequest, error)
 	AftersalesInsertInspection(ctx context.Context, arg AftersalesInsertInspectionParams) (AftersalesReturnInspection, error)
 	AftersalesItems(ctx context.Context, returnRequestID uuid.UUID) ([]AftersalesItemsRow, error)
-	AftersalesOpenRiskCase(ctx context.Context, arg AftersalesOpenRiskCaseParams) (uuid.UUID, error)
 	// After-sales: returns (RMA). Plan: orders-fulfilment.md §7.
 	// The order's lines with what a return needs: delivery state, who shipped it, the unit sold and
 	// how many are already in an open (not rejected) return.
@@ -622,6 +621,46 @@ type Querier interface {
 	ReviewsSetStatus(ctx context.Context, arg ReviewsSetStatusParams) (CatalogProductReview, error)
 	// Star counts and the weighted average (verified reviews count 1, unverified 0.5).
 	ReviewsSummary(ctx context.Context, productID uuid.UUID) (ReviewsSummaryRow, error)
+	// Risk engine, cases and the device blocklist. Plan: trust-safety.md §3–5.
+	RiskActiveRuleSet(ctx context.Context, checkpoint string) (RiskRiskRuleSet, error)
+	RiskBlockDevice(ctx context.Context, arg RiskBlockDeviceParams) (RiskDeviceBlocklist, error)
+	RiskBlocklist(ctx context.Context, imei *string) ([]RiskBlocklistRow, error)
+	RiskBlocklistCount(ctx context.Context) (int32, error)
+	RiskCaseByRef(ctx context.Context, reference string) (RiskCaseByRefRow, error)
+	RiskCaseCounts(ctx context.Context) (RiskCaseCountsRow, error)
+	RiskCaseEvent(ctx context.Context, arg RiskCaseEventParams) error
+	RiskCaseEvents(ctx context.Context, caseID uuid.UUID) ([]RiskCaseEventsRow, error)
+	RiskCaseForUpdate(ctx context.Context, reference string) (RiskRiskCase, error)
+	// The queue: open work first by score × money at risk, then everything else newest first.
+	RiskCases(ctx context.Context, arg RiskCasesParams) ([]RiskCasesRow, error)
+	RiskClaimCase(ctx context.Context, arg RiskClaimCaseParams) (RiskRiskCase, error)
+	RiskCopyRules(ctx context.Context, arg RiskCopyRulesParams) error
+	RiskCreateRuleSet(ctx context.Context, arg RiskCreateRuleSetParams) (RiskRiskRuleSet, error)
+	RiskDecision(ctx context.Context, id int64) (RiskRiskDecision, error)
+	RiskDeleteDraft(ctx context.Context, id uuid.UUID) error
+	RiskDeviceBlocked(ctx context.Context, imei string) (string, error)
+	RiskDraftFor(ctx context.Context, checkpoint string) (int32, error)
+	RiskEscalateCase(ctx context.Context, id uuid.UUID) (RiskRiskCase, error)
+	RiskInsertDecision(ctx context.Context, arg RiskInsertDecisionParams) (int64, error)
+	RiskNextVersion(ctx context.Context, checkpoint string) (int32, error)
+	RiskOpenCase(ctx context.Context, arg RiskOpenCaseParams) (RiskRiskCase, error)
+	RiskOpenCasesForSubject(ctx context.Context, arg RiskOpenCasesForSubjectParams) (int32, error)
+	RiskPublish(ctx context.Context, arg RiskPublishParams) error
+	// Decisions of one checkpoint in the window, with the label of any case they opened (test bench).
+	RiskRecentDecisions(ctx context.Context, arg RiskRecentDecisionsParams) ([]RiskRecentDecisionsRow, error)
+	RiskResolveCase(ctx context.Context, arg RiskResolveCaseParams) (RiskRiskCase, error)
+	RiskRetireActive(ctx context.Context, checkpoint string) error
+	RiskRuleSet(ctx context.Context, id uuid.UUID) (RiskRiskRuleSet, error)
+	RiskRuleSetForUpdate(ctx context.Context, id uuid.UUID) (RiskRiskRuleSet, error)
+	// The active rule set and any drafts per checkpoint, plus the last few retired ones.
+	RiskRuleSets(ctx context.Context) ([]RiskRiskRuleSet, error)
+	RiskRules(ctx context.Context, ruleSetID uuid.UUID) ([]RiskRiskRule, error)
+	RiskSetThresholds(ctx context.Context, arg RiskSetThresholdsParams) error
+	// A readable name for a case's subject: order or return number, trade-in reference, shop, or a
+	// masked person (first name and last initial).
+	RiskSubjectLabel(ctx context.Context, id uuid.UUID) (string, error)
+	RiskUnblockDevice(ctx context.Context, imei string) (RiskDeviceBlocklist, error)
+	RiskUpdateRule(ctx context.Context, arg RiskUpdateRuleParams) (RiskRiskRule, error)
 	// The exact device sold (IMEI/serial), bound when the unit is picked.
 	SalesBindDeviceUnit(ctx context.Context, arg SalesBindDeviceUnitParams) (SalesOrderLine, error)
 	SalesCancelLine(ctx context.Context, arg SalesCancelLineParams) (SalesOrderLine, error)
