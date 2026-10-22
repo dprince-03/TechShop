@@ -1,6 +1,7 @@
 package aftersales
 
 import (
+	"slices"
 	"strings"
 	"time"
 )
@@ -80,3 +81,28 @@ func stockCondition(disposition string) (string, bool) {
 		return "", false
 	}
 }
+
+// Warranty rules (docs/plan.md 2026-10-23).
+
+// warrantyEnds is the last day of cover: the listing's months from delivery.
+func warrantyEnds(deliveredAt time.Time, months int16) time.Time {
+	return deliveredAt.AddDate(0, int(months), 0)
+}
+
+// underWarranty reports whether a delivered item is still covered.
+func underWarranty(deliveredAt *time.Time, months *int16, provider *string, now time.Time) bool {
+	if deliveredAt == nil || months == nil || *months <= 0 || provider == nil || *provider == "none" {
+		return false
+	}
+	return !now.After(warrantyEnds(*deliveredAt, *months))
+}
+
+// repairNext lists where a repair job can go from each status.
+var repairNext = map[string][]string{
+	"queued":         {"diagnosing", "awaiting_parts", "repairing", "done", "unrepairable"},
+	"diagnosing":     {"awaiting_parts", "repairing", "done", "unrepairable"},
+	"awaiting_parts": {"repairing", "unrepairable"},
+	"repairing":      {"awaiting_parts", "done", "unrepairable"},
+}
+
+func repairCanMove(from, to string) bool { return slices.Contains(repairNext[from], to) }

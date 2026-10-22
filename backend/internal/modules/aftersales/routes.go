@@ -17,6 +17,7 @@ var shoppers = []string{auth.AudMarket, auth.AudCustomerApp}
 
 // Routes implements kit.Module.
 func (s *Service) Routes(r *kit.Routes) {
+	s.warrantyRoutes(r)
 	g := r.Public
 	me := func(o httpx.Op) httpx.Op { o.Tag = "Returns"; o.Auth = shoppers; return o }
 

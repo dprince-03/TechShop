@@ -57,3 +57,27 @@ func TestChangeOfMindAndDeliveryRefund(t *testing.T) {
 		t.Fatal("deliveryRefund")
 	}
 }
+
+func TestUnderWarranty(t *testing.T) {
+	d := time.Date(2026, 1, 31, 10, 0, 0, 0, time.UTC)
+	m12, m0 := int16(12), int16(0)
+	tech, none := "techshop", "none"
+	if !underWarranty(&d, &m12, &tech, d.AddDate(0, 11, 0)) {
+		t.Fatal("11 months into a 12-month warranty is covered")
+	}
+	if underWarranty(&d, &m12, &tech, d.AddDate(1, 0, 1)) {
+		t.Fatal("past the end isn't covered")
+	}
+	if underWarranty(&d, &m0, &tech, d) || underWarranty(&d, &m12, &none, d) || underWarranty(nil, &m12, &tech, d) || underWarranty(&d, nil, &tech, d) {
+		t.Fatal("no months, no provider or not delivered isn't covered")
+	}
+}
+
+func TestRepairTransitions(t *testing.T) {
+	if !repairCanMove("queued", "diagnosing") || !repairCanMove("awaiting_parts", "repairing") || !repairCanMove("repairing", "done") {
+		t.Fatal("normal path")
+	}
+	if repairCanMove("done", "repairing") || repairCanMove("awaiting_parts", "done") || repairCanMove("unrepairable", "queued") {
+		t.Fatal("finished jobs don't move; parts must arrive before done")
+	}
+}

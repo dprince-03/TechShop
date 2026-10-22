@@ -1,5 +1,5 @@
 // Package aftersales runs returns (RMA) — request, approval, receiving, inspection with the
-// serial check, restocking and the refund — and, later, warranty, repairs and trade-ins.
+// serial check, restocking and the refund — warranty claims with workshop repairs, and trade-ins.
 // Plan: orders-fulfilment.md §7; refunds go through payments' dual control (payments-finance.md §7).
 //
 // Scope now: items TechShop shipped. Seller-shipped items need the seller hand-over decision
@@ -18,6 +18,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/dprince-03/techshop/backend/internal/modules/inventory"
+	"github.com/dprince-03/techshop/backend/internal/modules/notify"
 	"github.com/dprince-03/techshop/backend/internal/modules/payments"
 	"github.com/dprince-03/techshop/backend/internal/modules/risk"
 	"github.com/dprince-03/techshop/backend/internal/platform/httpx"
@@ -30,15 +31,16 @@ import (
 
 // Service is the after-sales module.
 type Service struct {
-	d    *kit.Deps
-	pay  *payments.Service
-	inv  *inventory.Service
-	risk *risk.Service
+	d      *kit.Deps
+	pay    *payments.Service
+	inv    *inventory.Service
+	risk   *risk.Service
+	notify *notify.Service
 }
 
 // New creates the module.
-func New(d *kit.Deps, pay *payments.Service, inv *inventory.Service, rk *risk.Service) *Service {
-	return &Service{d: d, pay: pay, inv: inv, risk: rk}
+func New(d *kit.Deps, pay *payments.Service, inv *inventory.Service, rk *risk.Service, n *notify.Service) *Service {
+	return &Service{d: d, pay: pay, inv: inv, risk: rk, notify: n}
 }
 
 // Name implements kit.Module.

@@ -77,6 +77,7 @@ type AftersalesRepairJob struct {
 	FinishedAt      *time.Time `json:"finishedAt"`
 	CreatedAt       time.Time  `json:"createdAt"`
 	UpdatedAt       time.Time  `json:"updatedAt"`
+	Notes           *string    `json:"notes"`
 }
 
 // [aftersales] Inspection of returned items: serial must match the unit sold (swap fraud), grade and disposition.
@@ -155,10 +156,21 @@ type AftersalesWarrantyClaim struct {
 	DeviceUnitID     *uuid.UUID `json:"deviceUnitId"`
 	ImeiOrSerial     string     `json:"imeiOrSerial"`
 	FaultDescription string     `json:"faultDescription"`
-	Status           string     `json:"status"`
-	Resolution       *string    `json:"resolution"`
-	CreatedAt        time.Time  `json:"createdAt"`
-	UpdatedAt        time.Time  `json:"updatedAt"`
+	// new (waiting for drop-off) → received → in_repair → ready (for collection) → collected; or rejected; closed = refunded, device kept.
+	Status            string     `json:"status"`
+	Resolution        *string    `json:"resolution"`
+	CreatedAt         time.Time  `json:"createdAt"`
+	UpdatedAt         time.Time  `json:"updatedAt"`
+	WarrantyProvider  *string    `json:"warrantyProvider"`
+	WarrantyEndsOn    *time.Time `json:"warrantyEndsOn"`
+	StoreID           *uuid.UUID `json:"storeId"`
+	ReceivedAt        *time.Time `json:"receivedAt"`
+	ReceivedBy        *uuid.UUID `json:"receivedBy"`
+	RejectionReason   *string    `json:"rejectionReason"`
+	ResolutionNote    *string    `json:"resolutionNote"`
+	ReplacementUnitID *uuid.UUID `json:"replacementUnitId"`
+	RefundID          *uuid.UUID `json:"refundId"`
+	ClosedAt          *time.Time `json:"closedAt"`
 }
 
 // [b2b] Business buyers (wholesale site): trade pricing, VAT invoices, credit.
@@ -2518,7 +2530,9 @@ type SalesOrderLine struct {
 	CancelledAt   *time.Time `json:"cancelledAt"`
 	CreatedAt     time.Time  `json:"createdAt"`
 	// Marketplace lines: what the seller is owed before commission (net price plus any TechShop-funded discount), set at payment capture.
-	SellerEarningKobo *int64 `json:"sellerEarningKobo"`
+	SellerEarningKobo *int64  `json:"sellerEarningKobo"`
+	WarrantyProvider  *string `json:"warrantyProvider"`
+	WarrantyMonths    *int16  `json:"warrantyMonths"`
 }
 
 // [sales] Every order and fulfilment status change and who made it (shown on tracking).

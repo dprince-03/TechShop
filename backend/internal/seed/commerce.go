@@ -115,9 +115,11 @@ func seedCommerce(ctx context.Context, d *kit.Deps, out *Output,
 	if _, err := q.InventoryCreateWarehouse(ctx, store.InventoryCreateWarehouseParams{Code: "WUSE", Name: "Wuse hub", Kind: "hub", Address: "3 Adetokunbo Ademola Cres", City: "Abuja", StateCode: "FC"}); err != nil {
 		return err
 	}
-	if _, err := q.InventoryCreateWarehouse(ctx, store.InventoryCreateWarehouseParams{Code: "VI-STORE", Name: "Victoria Island store", Kind: "store", Address: "1 Adeola Odeku St", City: "Victoria Island", StateCode: "LA"}); err != nil {
+	vi, err := q.InventoryCreateWarehouse(ctx, store.InventoryCreateWarehouseParams{Code: "VI-STORE", Name: "Victoria Island store", Kind: "store", Address: "1 Adeola Odeku St", City: "Victoria Island", StateCode: "LA"})
+	if err != nil {
 		return err
 	}
+	out.Extra["storeVIId"] = vi.ID.String()
 	ids["wh-ikj"] = ikj.ID
 	out.Extra["warehouseIkejaId"] = ikj.ID.String()
 
