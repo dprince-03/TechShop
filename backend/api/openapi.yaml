@@ -1489,6 +1489,71 @@ components:
         - policyVersion
         - source
       type: object
+    ContactInput:
+      additionalProperties: false
+      properties:
+        email:
+          maxLength: 254
+          type: string
+        message:
+          maxLength: 5000
+          minLength: 1
+          type: string
+        name:
+          maxLength: 80
+          minLength: 2
+          type: string
+        orderNumber:
+          maxLength: 20
+          type: string
+        phone:
+          maxLength: 20
+          type: string
+        site:
+          enum:
+            - corporate
+            - market
+            - wholesale
+          type: string
+        subject:
+          maxLength: 140
+          minLength: 3
+          type: string
+        topic:
+          enum:
+            - order
+            - delivery
+            - payment
+            - refund
+            - return
+            - warranty
+            - trade_in
+            - account
+            - selling
+            - business
+            - other
+          type: string
+        website:
+          description: "Leave empty: a hidden field that only bots fill in"
+          maxLength: 200
+          type: string
+      required:
+        - site
+        - name
+        - topic
+        - subject
+        - message
+      type: object
+    ContactReceipt:
+      additionalProperties: false
+      properties:
+        received:
+          type: boolean
+        ticketNumber:
+          type: string
+      required:
+        - received
+      type: object
     ContentBanner:
       additionalProperties: false
       properties:
@@ -5980,6 +6045,40 @@ components:
       required:
         - userId
       type: object
+    NewTicket:
+      additionalProperties: false
+      properties:
+        message:
+          maxLength: 5000
+          minLength: 1
+          type: string
+        orderNumber:
+          description: One of your orders, if it's about one
+          maxLength: 20
+          type: string
+        subject:
+          maxLength: 140
+          minLength: 3
+          type: string
+        topic:
+          enum:
+            - order
+            - delivery
+            - payment
+            - refund
+            - return
+            - warranty
+            - trade_in
+            - account
+            - selling
+            - business
+            - other
+          type: string
+      required:
+        - topic
+        - subject
+        - message
+      type: object
     NoteBody:
       additionalProperties: false
       properties:
@@ -7731,6 +7830,16 @@ components:
         - token
         - app
         - platform
+      type: object
+    ReplyBody:
+      additionalProperties: false
+      properties:
+        message:
+          maxLength: 5000
+          minLength: 1
+          type: string
+      required:
+        - message
       type: object
     ReportReviewRequest:
       additionalProperties: false
@@ -9485,6 +9594,15 @@ components:
         - batch
         - released
       type: object
+    StaffAssignTicketRequest:
+      additionalProperties: false
+      properties:
+        agentId:
+          description: null unassigns
+          type: string
+      required:
+        - agentId
+      type: object
     StaffBankAccount:
       additionalProperties: false
       properties:
@@ -9996,6 +10114,27 @@ components:
       required:
         - note
       type: object
+    StaffReply:
+      additionalProperties: false
+      properties:
+        body:
+          maxLength: 5000
+          minLength: 1
+          type: string
+        internal:
+          description: "An internal note: never shown to the customer or seller"
+          type: boolean
+        status:
+          description: "Ticket status after a public reply (default: waiting on the customer)"
+          enum:
+            - open
+            - pending_customer
+            - resolved
+            - ""
+          type: string
+      required:
+        - body
+      type: object
     StaffRequestRefundRequest:
       additionalProperties: false
       properties:
@@ -10181,6 +10320,210 @@ components:
         - name
         - permissions
       type: object
+    StaffTicket:
+      additionalProperties: false
+      properties:
+        assignee:
+          type:
+            - string
+            - "null"
+        assigneeId:
+          type: string
+        channel:
+          type: string
+        contact:
+          description: Masked phone or email, for contact-form tickets
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        firstReplyAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        lastMessageAt:
+          format: date-time
+          type: string
+        messages:
+          items:
+            $ref: "#/components/schemas/TicketMessage"
+          type:
+            - array
+            - "null"
+        number:
+          type: string
+        orderNumber:
+          type:
+            - string
+            - "null"
+        overdue:
+          description: No first reply yet and past the reply target
+          type: boolean
+        priority:
+          enum:
+            - low
+            - normal
+            - high
+            - urgent
+          type: string
+        requester:
+          description: Masked name, shop name, or the contact form's name
+          type: string
+        requesterKind:
+          enum:
+            - customer
+            - seller
+            - visitor
+          type: string
+        site:
+          type:
+            - string
+            - "null"
+        slaDueAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        status:
+          enum:
+            - open
+            - pending_customer
+            - resolved
+            - closed
+          type: string
+        subject:
+          type: string
+        topic:
+          type: string
+      required:
+        - contact
+        - messages
+        - number
+        - topic
+        - subject
+        - status
+        - priority
+        - channel
+        - site
+        - requester
+        - requesterKind
+        - orderNumber
+        - assignee
+        - assigneeId
+        - slaDueAt
+        - overdue
+        - firstReplyAt
+        - createdAt
+        - lastMessageAt
+      type: object
+    StaffTicketRow:
+      additionalProperties: false
+      properties:
+        assignee:
+          type:
+            - string
+            - "null"
+        assigneeId:
+          type: string
+        channel:
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        firstReplyAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        lastMessageAt:
+          format: date-time
+          type: string
+        number:
+          type: string
+        orderNumber:
+          type:
+            - string
+            - "null"
+        overdue:
+          description: No first reply yet and past the reply target
+          type: boolean
+        priority:
+          enum:
+            - low
+            - normal
+            - high
+            - urgent
+          type: string
+        requester:
+          description: Masked name, shop name, or the contact form's name
+          type: string
+        requesterKind:
+          enum:
+            - customer
+            - seller
+            - visitor
+          type: string
+        site:
+          type:
+            - string
+            - "null"
+        slaDueAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        status:
+          enum:
+            - open
+            - pending_customer
+            - resolved
+            - closed
+          type: string
+        subject:
+          type: string
+        topic:
+          type: string
+      required:
+        - number
+        - topic
+        - subject
+        - status
+        - priority
+        - channel
+        - site
+        - requester
+        - requesterKind
+        - orderNumber
+        - assignee
+        - assigneeId
+        - slaDueAt
+        - overdue
+        - firstReplyAt
+        - createdAt
+        - lastMessageAt
+      type: object
+    StaffTicketStatusRequest:
+      additionalProperties: false
+      properties:
+        priority:
+          enum:
+            - low
+            - normal
+            - high
+            - urgent
+            - ""
+          type: string
+        status:
+          enum:
+            - open
+            - pending_customer
+            - resolved
+            - closed
+          type: string
+      required:
+        - status
+      type: object
     StaffUpdateProductRequest:
       additionalProperties: false
       properties:
@@ -10256,6 +10599,50 @@ components:
         - total
         - verified
         - stars
+      type: object
+    SupportAgent:
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      required:
+        - id
+        - name
+      type: object
+    SupportSummary:
+      additionalProperties: false
+      properties:
+        avgFirstReplyMinutes:
+          description: Last 7 days
+          format: int32
+          type: integer
+        open:
+          format: int32
+          type: integer
+        overdue:
+          description: Open, no first reply, past target
+          format: int32
+          type: integer
+        resolvedToday:
+          format: int32
+          type: integer
+        urgent:
+          description: Open and high or urgent
+          format: int32
+          type: integer
+        waiting:
+          description: Waiting on the customer
+          format: int32
+          type: integer
+      required:
+        - open
+        - urgent
+        - overdue
+        - waiting
+        - resolvedToday
+        - avgFirstReplyMinutes
       type: object
     TOTPSetup:
       additionalProperties: false
@@ -10337,6 +10724,122 @@ components:
         - contact
         - hasAuthenticator
         - joinedAt
+      type: object
+    Ticket:
+      additionalProperties: false
+      properties:
+        createdAt:
+          format: date-time
+          type: string
+        lastMessageAt:
+          format: date-time
+          type: string
+        messages:
+          items:
+            $ref: "#/components/schemas/TicketMessage"
+          type:
+            - array
+            - "null"
+        number:
+          type: string
+        orderNumber:
+          type:
+            - string
+            - "null"
+        status:
+          enum:
+            - open
+            - pending_customer
+            - resolved
+            - closed
+          type: string
+        subject:
+          type: string
+        topic:
+          type: string
+        unread:
+          description: A reply you haven't opened yet
+          type: boolean
+      required:
+        - messages
+        - number
+        - topic
+        - subject
+        - status
+        - orderNumber
+        - unread
+        - createdAt
+        - lastMessageAt
+      type: object
+    TicketMessage:
+      additionalProperties: false
+      properties:
+        author:
+          description: Staff show as 'TechShop support · first name'
+          type: string
+        authorKind:
+          enum:
+            - customer
+            - seller
+            - staff
+            - system
+          type: string
+        body:
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        id:
+          type: string
+        internal:
+          description: "Staff only: internal notes never reach customers"
+          type: boolean
+      required:
+        - id
+        - authorKind
+        - author
+        - body
+        - internal
+        - createdAt
+      type: object
+    TicketRow:
+      additionalProperties: false
+      properties:
+        createdAt:
+          format: date-time
+          type: string
+        lastMessageAt:
+          format: date-time
+          type: string
+        number:
+          type: string
+        orderNumber:
+          type:
+            - string
+            - "null"
+        status:
+          enum:
+            - open
+            - pending_customer
+            - resolved
+            - closed
+          type: string
+        subject:
+          type: string
+        topic:
+          type: string
+        unread:
+          description: A reply you haven't opened yet
+          type: boolean
+      required:
+        - number
+        - topic
+        - subject
+        - status
+        - orderNumber
+        - unread
+        - createdAt
+        - lastMessageAt
       type: object
     ToggleSavedResponse:
       additionalProperties: false
@@ -11738,6 +12241,31 @@ paths:
       summary: Give or withdraw consent (signed in or anonymous)
       tags:
         - Privacy
+  /api/v1/contact:
+    post:
+      operationId: contactUs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContactInput"
+        required: true
+      responses:
+        "202":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactReceipt"
+          description: Accepted
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      summary: "Public contact form (corporate, market, wholesale): becomes a support ticket"
+      tags:
+        - Support
   /api/v1/content/banners:
     get:
       operationId: listBanners
@@ -13726,6 +14254,117 @@ paths:
       summary: Store credit balance
       tags:
         - Payments
+  /api/v1/me/tickets:
+    get:
+      operationId: myTickets
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/TicketRow"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Your support tickets, latest activity first
+      tags:
+        - Support
+    post:
+      operationId: openTicket
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewTicket"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ticket"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Ask support a question
+      tags:
+        - Support
+  /api/v1/me/tickets/{number}:
+    get:
+      operationId: myTicket
+      parameters:
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ticket"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: One of your tickets with its messages
+      tags:
+        - Support
+  /api/v1/me/tickets/{number}/messages:
+    post:
+      operationId: replyToMyTicket
+      parameters:
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReplyBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ticket"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Reply on your ticket (reopens a resolved one)
+      tags:
+        - Support
   /api/v1/orders:
     post:
       operationId: placeOrder
@@ -15361,6 +16000,139 @@ paths:
       summary: Change a member's role
       tags:
         - Seller Centre · Team
+  /api/v1/seller/shops/{shopId}/tickets:
+    get:
+      operationId: sellerTickets
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/TicketRow"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: The shop's support tickets
+      tags:
+        - Seller Centre
+    post:
+      operationId: sellerOpenTicket
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewTicket"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ticket"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Ask TechShop seller support
+      tags:
+        - Seller Centre
+  /api/v1/seller/shops/{shopId}/tickets/{number}:
+    get:
+      operationId: sellerTicket
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ticket"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: One of the shop's tickets
+      tags:
+        - Seller Centre
+  /api/v1/seller/shops/{shopId}/tickets/{number}/messages:
+    post:
+      operationId: sellerReplyTicket
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReplyBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ticket"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Reply on a shop ticket
+      tags:
+        - Seller Centre
   /api/v1/staff/admin/audit-log:
     get:
       description: Requires permission `admin.audit_view`.
@@ -19118,6 +19890,276 @@ paths:
       summary: Deactivate a synonym
       tags:
         - Staff · Search
+  /api/v1/staff/support/agents:
+    get:
+      description: Requires permission `support.assign`.
+      operationId: staffSupportAgents
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/SupportAgent"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: People who can answer tickets
+      tags:
+        - Staff · Support
+  /api/v1/staff/support/summary:
+    get:
+      description: Requires permission `support.view`.
+      operationId: staffSupportSummary
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupportSummary"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Queue counts and the average first reply
+      tags:
+        - Staff · Support
+  /api/v1/staff/support/tickets:
+    get:
+      description: Requires permission `support.view`.
+      operationId: staffSupportTickets
+      parameters:
+        - explode: false
+          in: query
+          name: status
+          schema:
+            enum:
+              - active
+              - open
+              - pending_customer
+              - resolved
+              - closed
+              - ""
+            type: string
+        - explode: false
+          in: query
+          name: priority
+          schema:
+            enum:
+              - urgent_high
+              - urgent
+              - high
+              - normal
+              - low
+              - ""
+            type: string
+        - explode: false
+          in: query
+          name: mine
+          schema:
+            type: boolean
+        - description: Ticket or order number, contact email, or words in the subject
+          explode: false
+          in: query
+          name: q
+          schema:
+            description: Ticket or order number, contact email, or words in the subject
+            maxLength: 80
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/StaffTicketRow"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: The ticket queue
+      tags:
+        - Staff · Support
+  /api/v1/staff/support/tickets/{number}:
+    get:
+      description: Requires permission `support.view`.
+      operationId: staffSupportTicket
+      parameters:
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffTicket"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: A ticket with every message, internal notes included
+      tags:
+        - Staff · Support
+  /api/v1/staff/support/tickets/{number}/assign:
+    post:
+      description: Requires permission `support.assign`.
+      operationId: staffAssignTicket
+      parameters:
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffAssignTicketRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffTicket"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Assign a ticket to an agent (or nobody)
+      tags:
+        - Staff · Support
+  /api/v1/staff/support/tickets/{number}/claim:
+    post:
+      description: Requires permission `support.reply`.
+      operationId: staffClaimTicket
+      parameters:
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffTicket"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Assign a ticket to yourself
+      tags:
+        - Staff · Support
+  /api/v1/staff/support/tickets/{number}/messages:
+    post:
+      description: Requires permission `support.reply`.
+      operationId: staffReplyTicket
+      parameters:
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffReply"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffTicket"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Reply to the requester, or add an internal note
+      tags:
+        - Staff · Support
+  /api/v1/staff/support/tickets/{number}/status:
+    post:
+      description: Requires permission `support.reply`.
+      operationId: staffTicketStatus
+      parameters:
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffTicketStatusRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffTicket"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Change a ticket's status or priority
+      tags:
+        - Staff · Support
   /api/v1/staff/vendors:
     get:
       description: Requires permission `vendors.view`.

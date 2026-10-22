@@ -218,6 +218,12 @@ func (s *Service) inShop(ctx context.Context, shopID uuid.UUID, roles []string, 
 	})
 }
 
+// InShop runs fn for any member of the shop, with the shop's row-level security set. Other
+// modules (support, after-sales) use it so shop access is checked in one place.
+func (s *Service) InShop(ctx context.Context, shopID uuid.UUID, fn func(tx *uow.Tx, shop store.SellersSeller, role string) error) error {
+	return s.inShop(ctx, shopID, anyRole, fn)
+}
+
 // legalHolder is the name payout accounts must belong to: the registered business name, or
 // the owner's own name for individuals.
 func legalHolder(ctx context.Context, q *store.Queries, shop store.SellersSeller) (string, error) {

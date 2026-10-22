@@ -396,6 +396,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/contact": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Public contact form (corporate, market, wholesale): becomes a support ticket */
+    post: operations["contactUs"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/content/banners": {
     parameters: {
       query?: never;
@@ -1471,6 +1488,58 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/me/tickets": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Your support tickets, latest activity first */
+    get: operations["myTickets"];
+    put?: never;
+    /** Ask support a question */
+    post: operations["openTicket"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/tickets/{number}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** One of your tickets with its messages */
+    get: operations["myTicket"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/tickets/{number}/messages": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Reply on your ticket (reopens a resolved one) */
+    post: operations["replyToMyTicket"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/orders": {
     parameters: {
       query?: never;
@@ -2234,6 +2303,58 @@ export interface paths {
     /** Change a member's role */
     put: operations["sellerSetMemberRole"];
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/tickets": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The shop's support tickets */
+    get: operations["sellerTickets"];
+    put?: never;
+    /** Ask TechShop seller support */
+    post: operations["sellerOpenTicket"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/tickets/{number}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** One of the shop's tickets */
+    get: operations["sellerTicket"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/tickets/{number}/messages": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Reply on a shop ticket */
+    post: operations["sellerReplyTicket"];
     delete?: never;
     options?: never;
     head?: never;
@@ -4468,6 +4589,166 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/staff/support/agents": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * People who can answer tickets
+     * @description Requires permission `support.assign`.
+     */
+    get: operations["staffSupportAgents"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/support/summary": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Queue counts and the average first reply
+     * @description Requires permission `support.view`.
+     */
+    get: operations["staffSupportSummary"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/support/tickets": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The ticket queue
+     * @description Requires permission `support.view`.
+     */
+    get: operations["staffSupportTickets"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/support/tickets/{number}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * A ticket with every message, internal notes included
+     * @description Requires permission `support.view`.
+     */
+    get: operations["staffSupportTicket"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/support/tickets/{number}/assign": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Assign a ticket to an agent (or nobody)
+     * @description Requires permission `support.assign`.
+     */
+    post: operations["staffAssignTicket"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/support/tickets/{number}/claim": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Assign a ticket to yourself
+     * @description Requires permission `support.reply`.
+     */
+    post: operations["staffClaimTicket"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/support/tickets/{number}/messages": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Reply to the requester, or add an internal note
+     * @description Requires permission `support.reply`.
+     */
+    post: operations["staffReplyTicket"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/support/tickets/{number}/status": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Change a ticket's status or priority
+     * @description Requires permission `support.reply`.
+     */
+    post: operations["staffTicketStatus"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/staff/vendors": {
     parameters: {
       query?: never;
@@ -5467,6 +5748,35 @@ export interface components {
         | "privacy";
       /** @enum {string} */
       source: "web" | "app";
+    };
+    ContactInput: {
+      email?: string;
+      message: string;
+      name: string;
+      orderNumber?: string;
+      phone?: string;
+      /** @enum {string} */
+      site: "corporate" | "market" | "wholesale";
+      subject: string;
+      /** @enum {string} */
+      topic:
+        | "order"
+        | "delivery"
+        | "payment"
+        | "refund"
+        | "return"
+        | "warranty"
+        | "trade_in"
+        | "account"
+        | "selling"
+        | "business"
+        | "other";
+      /** @description Leave empty: a hidden field that only bots fill in */
+      website?: string;
+    };
+    ContactReceipt: {
+      received: boolean;
+      ticketNumber?: string;
     };
     ContentBanner: {
       /** Format: date-time */
@@ -7162,6 +7472,25 @@ export interface components {
       inviteUrl?: string;
       userId: string;
     };
+    NewTicket: {
+      message: string;
+      /** @description One of your orders, if it's about one */
+      orderNumber?: string;
+      subject: string;
+      /** @enum {string} */
+      topic:
+        | "order"
+        | "delivery"
+        | "payment"
+        | "refund"
+        | "return"
+        | "warranty"
+        | "trade_in"
+        | "account"
+        | "selling"
+        | "business"
+        | "other";
+    };
     NoteBody: {
       note: string;
     };
@@ -7848,6 +8177,9 @@ export interface components {
       /** @enum {string} */
       platform: "ios" | "android";
       token: string;
+    };
+    ReplyBody: {
+      message: string;
     };
     ReportReviewRequest: {
       /** @enum {string} */
@@ -8559,6 +8891,10 @@ export interface components {
       /** @description True when the transfers have started; false when a second approver is still needed */
       released: boolean;
     };
+    StaffAssignTicketRequest: {
+      /** @description null unassigns */
+      agentId: string;
+    };
     StaffBankAccount: {
       /** @description The name the seller typed */
       accountName: string;
@@ -8744,6 +9080,16 @@ export interface components {
     StaffRejectRefundRequest: {
       note: string;
     };
+    StaffReply: {
+      body: string;
+      /** @description An internal note: never shown to the customer or seller */
+      internal?: boolean;
+      /**
+       * @description Ticket status after a public reply (default: waiting on the customer)
+       * @enum {string}
+       */
+      status?: "open" | "pending_customer" | "resolved" | "";
+    };
     StaffRequestRefundRequest: {
       /** Format: int64 */
       amountKobo: number;
@@ -8809,6 +9155,71 @@ export interface components {
       name: string;
       permissions: string[] | null;
     };
+    StaffTicket: {
+      assignee: string | null;
+      assigneeId: string;
+      channel: string;
+      /** @description Masked phone or email, for contact-form tickets */
+      contact: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      firstReplyAt: string | null;
+      /** Format: date-time */
+      lastMessageAt: string;
+      messages: components["schemas"]["TicketMessage"][] | null;
+      number: string;
+      orderNumber: string | null;
+      /** @description No first reply yet and past the reply target */
+      overdue: boolean;
+      /** @enum {string} */
+      priority: "low" | "normal" | "high" | "urgent";
+      /** @description Masked name, shop name, or the contact form's name */
+      requester: string;
+      /** @enum {string} */
+      requesterKind: "customer" | "seller" | "visitor";
+      site: string | null;
+      /** Format: date-time */
+      slaDueAt: string | null;
+      /** @enum {string} */
+      status: "open" | "pending_customer" | "resolved" | "closed";
+      subject: string;
+      topic: string;
+    };
+    StaffTicketRow: {
+      assignee: string | null;
+      assigneeId: string;
+      channel: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      firstReplyAt: string | null;
+      /** Format: date-time */
+      lastMessageAt: string;
+      number: string;
+      orderNumber: string | null;
+      /** @description No first reply yet and past the reply target */
+      overdue: boolean;
+      /** @enum {string} */
+      priority: "low" | "normal" | "high" | "urgent";
+      /** @description Masked name, shop name, or the contact form's name */
+      requester: string;
+      /** @enum {string} */
+      requesterKind: "customer" | "seller" | "visitor";
+      site: string | null;
+      /** Format: date-time */
+      slaDueAt: string | null;
+      /** @enum {string} */
+      status: "open" | "pending_customer" | "resolved" | "closed";
+      subject: string;
+      topic: string;
+    };
+    StaffTicketStatusRequest: {
+      /** @enum {string} */
+      priority?: "low" | "normal" | "high" | "urgent" | "";
+      /** @enum {string} */
+      status: "open" | "pending_customer" | "resolved" | "closed";
+    };
     StaffUpdateProductRequest: {
       description?: string;
       name?: string;
@@ -8847,6 +9258,36 @@ export interface components {
       /** Format: int32 */
       verified: number;
     };
+    SupportAgent: {
+      id: string;
+      name: string;
+    };
+    SupportSummary: {
+      /**
+       * Format: int32
+       * @description Last 7 days
+       */
+      avgFirstReplyMinutes: number;
+      /** Format: int32 */
+      open: number;
+      /**
+       * Format: int32
+       * @description Open, no first reply, past target
+       */
+      overdue: number;
+      /** Format: int32 */
+      resolvedToday: number;
+      /**
+       * Format: int32
+       * @description Open and high or urgent
+       */
+      urgent: number;
+      /**
+       * Format: int32
+       * @description Waiting on the customer
+       */
+      waiting: number;
+    };
     TOTPSetup: {
       otpauthUrl: string;
       secret: string;
@@ -8877,6 +9318,47 @@ export interface components {
       /** @enum {string} */
       role: "owner" | "manager" | "staff" | "finance";
       userId: string;
+    };
+    Ticket: {
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      lastMessageAt: string;
+      messages: components["schemas"]["TicketMessage"][] | null;
+      number: string;
+      orderNumber: string | null;
+      /** @enum {string} */
+      status: "open" | "pending_customer" | "resolved" | "closed";
+      subject: string;
+      topic: string;
+      /** @description A reply you haven't opened yet */
+      unread: boolean;
+    };
+    TicketMessage: {
+      /** @description Staff show as 'TechShop support · first name' */
+      author: string;
+      /** @enum {string} */
+      authorKind: "customer" | "seller" | "staff" | "system";
+      body: string;
+      /** Format: date-time */
+      createdAt: string;
+      id: string;
+      /** @description Staff only: internal notes never reach customers */
+      internal: boolean;
+    };
+    TicketRow: {
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      lastMessageAt: string;
+      number: string;
+      orderNumber: string | null;
+      /** @enum {string} */
+      status: "open" | "pending_customer" | "resolved" | "closed";
+      subject: string;
+      topic: string;
+      /** @description A reply you haven't opened yet */
+      unread: boolean;
     };
     ToggleSavedResponse: {
       saved: boolean;
@@ -9938,6 +10420,39 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  contactUs: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ContactInput"];
+      };
+    };
+    responses: {
+      /** @description Accepted */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ContactReceipt"];
+        };
       };
       /** @description Error */
       default: {
@@ -12096,6 +12611,134 @@ export interface operations {
       };
     };
   };
+  myTickets: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TicketRow"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  openTicket: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewTicket"];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Ticket"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  myTicket: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Ticket"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  replyToMyTicket: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReplyBody"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Ticket"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   placeOrder: {
     parameters: {
       query?: never;
@@ -13730,6 +14373,140 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ShopTeam"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerTickets: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TicketRow"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerOpenTicket: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewTicket"];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Ticket"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerTicket: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Ticket"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerReplyTicket: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReplyBody"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Ticket"];
         };
       };
       /** @description Error */
@@ -17688,6 +18465,267 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffSupportAgents: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SupportAgent"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffSupportSummary: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SupportSummary"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffSupportTickets: {
+    parameters: {
+      query?: {
+        status?:
+          "active" | "open" | "pending_customer" | "resolved" | "closed" | "";
+        priority?: "urgent_high" | "urgent" | "high" | "normal" | "low" | "";
+        mine?: boolean;
+        /** @description Ticket or order number, contact email, or words in the subject */
+        q?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StaffTicketRow"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffSupportTicket: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StaffTicket"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffAssignTicket: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StaffAssignTicketRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StaffTicket"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffClaimTicket: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StaffTicket"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffReplyTicket: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StaffReply"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StaffTicket"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffTicketStatus: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StaffTicketStatusRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StaffTicket"];
+        };
       };
       /** @description Error */
       default: {

@@ -790,6 +790,40 @@ type Querier interface {
 	SellersStaffList(ctx context.Context, arg SellersStaffListParams) ([]SellersStaffListRow, error)
 	// ---- Team: members and invites (identity-access.md §7.3)
 	SellersTeam(ctx context.Context, sellerID uuid.UUID) ([]SellersTeamRow, error)
+	SupportAddMessage(ctx context.Context, arg SupportAddMessageParams) (SupportTicketMessage, error)
+	// Active staff who can reply to tickets (for assignment).
+	SupportAgents(ctx context.Context) ([]SupportAgentsRow, error)
+	SupportAssign(ctx context.Context, arg SupportAssignParams) (SupportSupportTicket, error)
+	// Resolved for 4 days: closed (a new message then starts a new ticket).
+	SupportAutoClose(ctx context.Context) error
+	// Waiting on the customer for 7 days with no reply: resolved.
+	SupportAutoResolve(ctx context.Context) ([]SupportAutoResolveRow, error)
+	// Support tickets: customers, sellers and public contact forms; staff queue. Internal notes are
+	// never returned to customers or sellers.
+	SupportCreateTicket(ctx context.Context, arg SupportCreateTicketParams) (SupportSupportTicket, error)
+	SupportCustomerOrder(ctx context.Context, arg SupportCustomerOrderParams) (uuid.UUID, error)
+	// The customer (or seller) wrote: reopen if resolved, stop waiting, flag for staff.
+	SupportCustomerReplied(ctx context.Context, id uuid.UUID) (SupportSupportTicket, error)
+	SupportIsAgent(ctx context.Context, userID uuid.UUID) (bool, error)
+	SupportMarkRead(ctx context.Context, id uuid.UUID) error
+	// Every message, internal notes included (staff only), oldest first.
+	SupportMessages(ctx context.Context, ticketID uuid.UUID) ([]SupportMessagesRow, error)
+	// What the customer or seller may see: no internal notes.
+	SupportPublicMessages(ctx context.Context, ticketID uuid.UUID) ([]SupportPublicMessagesRow, error)
+	// Staff queue. "active" = open or waiting on the customer; urgent and high first, then oldest
+	// reply due; everything else newest first.
+	SupportQueue(ctx context.Context, arg SupportQueueParams) ([]SupportQueueRow, error)
+	SupportSellerOrder(ctx context.Context, arg SupportSellerOrderParams) (uuid.UUID, error)
+	SupportSetStatus(ctx context.Context, arg SupportSetStatusParams) (SupportSupportTicket, error)
+	// A public staff reply: the first one stops the SLA clock; the ticket waits on the customer
+	// unless staff resolve it or keep it open.
+	SupportStaffReplied(ctx context.Context, arg SupportStaffRepliedParams) (SupportSupportTicket, error)
+	SupportSummary(ctx context.Context) (SupportSummaryRow, error)
+	SupportTicket(ctx context.Context, ticketNumber string) (SupportTicketRow, error)
+	SupportTicketForUpdate(ctx context.Context, ticketNumber string) (SupportSupportTicket, error)
+	SupportTicketsForCustomer(ctx context.Context, customerUserID *uuid.UUID) ([]SupportTicketsForCustomerRow, error)
+	SupportTicketsForSeller(ctx context.Context, sellerID *uuid.UUID) ([]SupportTicketsForSellerRow, error)
+	SupportUserContact(ctx context.Context, id uuid.UUID) (SupportUserContactRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

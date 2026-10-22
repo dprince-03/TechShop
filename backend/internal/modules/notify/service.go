@@ -215,6 +215,10 @@ func subjectFor(template string) string {
 		return "Your TechShop order is confirmed"
 	case "staff_invite":
 		return "Your TechShop Staff portal invite"
+	case "ticket_reply", "ticket_reply_contact":
+		return "New reply from TechShop support"
+	case "ticket_received":
+		return "We've got your message"
 	}
 	return "TechShop"
 }

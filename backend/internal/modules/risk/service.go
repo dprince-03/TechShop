@@ -24,6 +24,7 @@ import (
 	"github.com/dprince-03/techshop/backend/internal/platform/outbox"
 	"github.com/dprince-03/techshop/backend/internal/platform/uow"
 	"github.com/dprince-03/techshop/backend/internal/store"
+	"github.com/dprince-03/techshop/backend/pkg/validate"
 )
 
 // Service is the risk module.
@@ -318,7 +319,7 @@ type IMEIStatus struct {
 // CheckIMEI checks a device against the Luhn rule and the blocklist.
 func CheckIMEI(ctx context.Context, q *store.Queries, imei string) (IMEIStatus, error) {
 	imei = strings.ReplaceAll(strings.TrimSpace(imei), " ", "")
-	st := IMEIStatus{IMEI: imei, LuhnOK: LuhnOK(imei)}
+	st := IMEIStatus{IMEI: imei, LuhnOK: validate.IMEI(imei)}
 	reason, err := q.RiskDeviceBlocked(ctx, imei)
 	switch {
 	case errors.Is(err, pgx.ErrNoRows):
@@ -342,7 +343,7 @@ type BlockDeviceInput struct {
 // block somebody else's phone.
 func (s *Service) Block(ctx context.Context, in BlockDeviceInput) (BlockedDevice, error) {
 	actor := httpx.MustPrincipal(ctx).UserID
-	if !LuhnOK(in.IMEI) {
+	if !validate.IMEI(in.IMEI) {
 		return BlockedDevice{}, httpx.Invalid("imei_invalid", "That IMEI fails the check digit. Check it against *#06# or the box.")
 	}
 	var out BlockedDevice
