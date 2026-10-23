@@ -676,3 +676,39 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
   - Staff web 17/17.
   - Contract 46/46, market 16/16 and seller 2/2 after one rerun. Their first run, straight after the backend suite, hit rate limits (API log: nine 429s on `/auth/otp/request`, two on `/orders`, no 5xx).
   - All web apps and mobile typecheck and lint clean.
+
+## 2026-10-23 — M5 backend complete (branch feat/m5-after-sales)
+
+- **Risk** (`internal/modules/risk`, migrations 00032, 00037):
+  - Pure rule engine with versioned rule sets: launch rules for checkout, payout, trade-in and return, from trust-safety.md §3.
+  - Every decision is logged with the features it saw. Engine failures fall back by amount.
+  - Case queue: claim, note, escalate, clear or block, with a timeline. Resolving a case emits `risk.case_resolved`.
+  - Stolen-device blocklist with IMEI check-digit validation.
+  - Rules editor: draft, weights, thresholds, test bench over the last 30 days, publish with fresh MFA.
+  - **Checkout:** a held order stays paid but hidden from the warehouse and sellers until cleared. A block cancels and refunds it. Step-up counts as a hold for now.
+  - **Payout:** a held seller is skipped and gets a case.
+  - **Returns:** good standing now comes from the engine.
+- **Support** (`internal/modules/support`, 00033):
+  - Customer, seller and public contact-form tickets. The contact form has a honeypot and per-IP and per-address limits.
+  - Staff queue with assign, claim, reply, internal notes and status changes.
+  - SLA targets 24 h, or 4 h for payment and refund topics. An hourly job auto-resolves (7 days) and auto-closes (4 days).
+- **Warranty and repairs** (00034):
+  - Claims from customers or at the counter, checked against the IMEI sold and the blocklist.
+  - Workshop jobs with transitions; then repaired, replaced from stock (new stock reason `warranty_replacement`), refunded or not covered.
+  - Warranty terms are now copied onto order lines at checkout.
+- **Trade-ins** (00035):
+  - Catalogue estimates (55/45/35/10 % of today's new price, rounded down to ₦500) or a manual estimate.
+  - Store appraisal through the risk checkpoint, then an offer valid 7 days (an hourly job lapses old ones).
+  - Payout as store credit, or by bank transfer (name enquiry, sealed number, finance records it, separation of duties).
+  - The device is refurbished and only then enters stock. New journal kind `trade_in`.
+  - Store credit can pay a whole order at checkout. Refunds of such orders go back to credit.
+- **Returns** (00036):
+  - Seller-shipped items can be returned; they can only go back to the seller.
+  - Sellers see their returns and charge, and can dispute an inspection within 3 days. A support lead decides; upheld means the seller is credited and the cost is written off.
+  - Rider return pickups: photo when collected and when handed in; handing in marks the return received.
+  - **Money fix:** return and warranty refunds now carry an exact per-item ledger breakdown. Before, approval reversed the sale pro rata, which could charge the wrong seller. Refund approval also failed for store-credit orders; fixed.
+- **Verification:**
+  - Unit tests: engine scoring and thresholds, ticket rules and email check, warranty cover and repair transitions, trade-in pricing, refund breakdown.
+  - New e2e tests: `TestDeviceBlocklist`, `TestSupportCustomerTicket`, `TestSupportContactForm`, `TestSupportSellerTicket`, `TestWarrantyClaimRepairCollect`, `TestWarrantyWalkInStolenAndRefund`, `TestWarrantyReplacement`, `TestTradeInStoreCreditRefurbishAndSpend`, `TestTradeInBankPayoutStolenAndManual`, `TestSellerReturnAndDispute`, `TestReturnRiderPickup`, `TestCheckoutRiskHoldClearAndBlock`, `TestRiskRulesEditor`. The swap-fraud test now also covers the case queue.
+  - Full backend e2e on a fresh stack: all pass (195 s). Lint 0 issues; unit tests pass. API 312 paths; TypeScript types regenerated.
+  - Test fixes for parallel runs: one shared rider sign-in (phone codes are rate limited per number), and no stock-count assertions on shared variants.
