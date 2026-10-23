@@ -582,16 +582,40 @@ func (s *Service) Sweep(ctx context.Context) error {
 
 // RequestRefund opens a refund for an order. requestedBy nil = an automatic (system) request.
 func (s *Service) RequestRefund(ctx context.Context, tx *uow.Tx, orderID uuid.UUID, amount int64, reason, method string, requestedBy *uuid.UUID) (store.PaymentsRefund, error) {
-	return s.requestRefund(ctx, tx, orderID, nil, amount, reason, method, requestedBy)
+	return s.requestRefund(ctx, tx, orderID, nil, amount, reason, method, requestedBy, nil)
 }
 
 // RequestReturnRefund raises the refund for an inspected return (linked to it, so finance sees
-// why). It goes through the same approval as every other refund.
-func (s *Service) RequestReturnRefund(ctx context.Context, tx *uow.Tx, orderID, returnID uuid.UUID, amount int64, reason string, requestedBy *uuid.UUID) (store.PaymentsRefund, error) {
-	return s.requestRefund(ctx, tx, orderID, &returnID, amount, reason, "original", requestedBy)
+// why), charged item by item (alloc). It goes through the same approval as every other refund.
+func (s *Service) RequestReturnRefund(ctx context.Context, tx *uow.Tx, orderID, returnID uuid.UUID, amount int64, reason string, alloc []ledger.Line, requestedBy *uuid.UUID) (store.PaymentsRefund, error) {
+	return s.requestRefund(ctx, tx, orderID, &returnID, amount, reason, "original", requestedBy, alloc)
 }
 
-func (s *Service) requestRefund(ctx context.Context, tx *uow.Tx, orderID uuid.UUID, returnID *uuid.UUID, amount int64, reason, method string, requestedBy *uuid.UUID) (store.PaymentsRefund, error) {
+// RequestItemRefund raises a refund whose cost is known item by item (a warranty refund).
+func (s *Service) RequestItemRefund(ctx context.Context, tx *uow.Tx, orderID uuid.UUID, amount int64, reason string, alloc []ledger.Line, requestedBy *uuid.UUID) (store.PaymentsRefund, error) {
+	return s.requestRefund(ctx, tx, orderID, nil, amount, reason, "original", requestedBy, alloc)
+}
+
+// allocLine is a stored refund allocation entry.
+type allocLine struct {
+	Code   string `json:"code"`
+	Amount int64  `json:"amount"`
+}
+
+func (s *Service) requestRefund(ctx context.Context, tx *uow.Tx, orderID uuid.UUID, returnID *uuid.UUID, amount int64, reason, method string, requestedBy *uuid.UUID, alloc []ledger.Line) (store.PaymentsRefund, error) {
+	var allocJSON []byte
+	if len(alloc) > 0 {
+		var sum int64
+		stored := make([]allocLine, len(alloc))
+		for i, l := range alloc {
+			sum += l.Amount
+			stored[i] = allocLine{Code: l.Code, Amount: l.Amount}
+		}
+		if sum != amount {
+			return store.PaymentsRefund{}, fmt.Errorf("refund allocation sums to %d, not %d", sum, amount)
+		}
+		allocJSON, _ = json.Marshal(stored)
+	}
 	pay, err := tx.Q.PaymentsSucceededForOrder(ctx, &orderID)
 	if err != nil {
 		return store.PaymentsRefund{}, httpx.Conflict("not_paid", "This order has no captured payment to refund.")
@@ -603,7 +627,7 @@ func (s *Service) requestRefund(ctx context.Context, tx *uow.Tx, orderID uuid.UU
 	if amount <= 0 || amount > pay.AmountKobo-already {
 		return store.PaymentsRefund{}, httpx.Invalid("refund_too_large", "The refund can be at most "+money.Format(pay.AmountKobo-already)+" (captured minus already refunded).")
 	}
-	r, err := tx.Q.PaymentsCreateRefund(ctx, store.PaymentsCreateRefundParams{PaymentID: pay.ID, OrderID: orderID, ReturnRequestID: returnID, AmountKobo: amount, Method: method, Reason: reason, RequestedBy: requestedBy})
+	r, err := tx.Q.PaymentsCreateRefund(ctx, store.PaymentsCreateRefundParams{PaymentID: pay.ID, OrderID: orderID, ReturnRequestID: returnID, AmountKobo: amount, Method: method, Reason: reason, RequestedBy: requestedBy, Allocation: allocJSON})
 	if err != nil {
 		return r, httpx.DB(err, "refund")
 	}
@@ -638,7 +662,21 @@ func (s *Service) Approve(ctx context.Context, refundID, approver uuid.UUID) (st
 		if err != nil {
 			return httpx.DB(err, "refund")
 		}
-		if !strings.HasPrefix(r.Reason, ExcessPrefix) {
+		switch {
+		case strings.HasPrefix(r.Reason, ExcessPrefix):
+		case len(r.Allocation) > 0:
+			var stored []allocLine
+			if err := json.Unmarshal(r.Allocation, &stored); err != nil {
+				return err
+			}
+			debits := make([]ledger.Line, len(stored))
+			for i, l := range stored {
+				debits[i] = ledger.Line{Code: l.Code, Amount: l.Amount}
+			}
+			if err := s.ledger.RefundApproveLines(ctx, tx, r.ID, r.OrderID, r.AmountKobo, debits, &approver); err != nil {
+				return err
+			}
+		default:
 			if err := s.ledger.RefundApprove(ctx, tx, r.ID, r.OrderID, r.PaymentID, r.AmountKobo, &approver); err != nil {
 				return err
 			}

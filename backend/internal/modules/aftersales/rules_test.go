@@ -3,6 +3,10 @@ package aftersales
 import (
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
+
+	"github.com/dprince-03/techshop/backend/internal/modules/ledger"
 )
 
 func TestWithinWindow(t *testing.T) {
@@ -100,5 +104,35 @@ func TestTradeInEstimate(t *testing.T) {
 		if got := tradeInEstimate(c.price, c.cond); got != c.want {
 			t.Errorf("tradeInEstimate(%d, %s) = %d, want %d", c.price, c.cond, got, c.want)
 		}
+	}
+}
+
+func sum(ls []ledger.Line) (total int64, by map[string]int64) {
+	by = map[string]int64{}
+	for _, l := range ls {
+		total += l.Amount
+		by[l.Code] += l.Amount
+	}
+	return total, by
+}
+
+func TestRefundAllocation(t *testing.T) {
+	seller := uuid.New()
+	earning := int64(220_000) // the 2-unit line: ₦2,000 net + ₦200 TechShop-funded discount
+	items := []refundShare{
+		{FirstParty: true, LineTotal: 215_000, VAT: 15_000, LineQty: 1, Qty: 1},
+		{SellerID: seller, LineTotal: 200_000, SellerEarning: &earning, CommissionBps: 1000, LineQty: 2, Qty: 1, CommissionPosted: true},
+	}
+	total, by := sum(refundAllocation(items, 50_000))
+	if total != 215_000+100_000+50_000 {
+		t.Fatalf("allocation must sum to the refund: %d", total)
+	}
+	if by[ledger.RevenueFirstParty] != 200_000 || by[ledger.LiabilityVAT] != 15_000 || by[ledger.RevenueDelivery] != 50_000 {
+		t.Fatalf("TechShop's share: %v", by)
+	}
+	// One of two units: the seller gives back 110,000 earned less the 10,000 commission they paid;
+	// TechShop's 10,000 discount on that unit comes off the promotion expense.
+	if by[ledger.SellerPayable(seller)] != 100_000 || by[ledger.ExpensePromotions] != -10_000 || by[ledger.RevenueCommission] != 10_000 {
+		t.Fatalf("seller's share: %v", by)
 	}
 }

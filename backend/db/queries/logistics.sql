@@ -130,28 +130,33 @@ update logistics.delivery_jobs set otp_verified_at = now() where id = $1;
 
 -- name: LogisticsRiderJobs :many
 -- A rider's work: active jobs plus today's finished ones, with what the job screen needs.
-select j.*, f.order_id, o.order_number, o.ship_to, o.contact_phone, w.name as pickup_warehouse_name, w.address as pickup_warehouse_address
+select j.*, coalesce(f.order_id, rr.order_id) as order_id, o.order_number, o.ship_to, o.contact_phone, w.name as pickup_warehouse_name, w.address as pickup_warehouse_address,
+       rr.rma_number
 from logistics.delivery_jobs j
 left join sales.fulfilments f on f.id = j.fulfilment_id
-left join sales.orders o on o.id = f.order_id
+left join aftersales.return_requests rr on rr.id = j.return_request_id
+left join sales.orders o on o.id = coalesce(f.order_id, rr.order_id)
 left join inventory.warehouses w on w.id = j.pickup_warehouse_id
 where j.rider_id = $1 and (j.status in ('assigned', 'picked_up', 'en_route', 'failed') or j.updated_at > now() - interval '24 hours')
 order by j.route_sequence nulls last, j.window_start nulls last, j.created_at;
 
 -- name: LogisticsJobView :one
-select j.*, f.order_id, o.order_number, o.ship_to, o.contact_phone, o.customer_user_id, w.name as pickup_warehouse_name, w.address as pickup_warehouse_address
+select j.*, coalesce(f.order_id, rr.order_id) as order_id, o.order_number, o.ship_to, o.contact_phone, o.customer_user_id,
+       w.name as pickup_warehouse_name, w.address as pickup_warehouse_address, rr.rma_number
 from logistics.delivery_jobs j
 left join sales.fulfilments f on f.id = j.fulfilment_id
-left join sales.orders o on o.id = f.order_id
+left join aftersales.return_requests rr on rr.id = j.return_request_id
+left join sales.orders o on o.id = coalesce(f.order_id, rr.order_id)
 left join inventory.warehouses w on w.id = j.pickup_warehouse_id
 where j.id = $1;
 
 -- name: LogisticsBoard :many
-select j.*, z.name as zone_name, o.order_number, u.first_name as rider_first_name
+select j.*, z.name as zone_name, o.order_number, u.first_name as rider_first_name, rr.rma_number
 from logistics.delivery_jobs j
 join logistics.delivery_zones z on z.id = j.zone_id
 left join sales.fulfilments f on f.id = j.fulfilment_id
-left join sales.orders o on o.id = f.order_id
+left join aftersales.return_requests rr on rr.id = j.return_request_id
+left join sales.orders o on o.id = coalesce(f.order_id, rr.order_id)
 left join identity.users u on u.id = j.rider_id
 where (sqlc.narg('status')::text is null or j.status = sqlc.narg('status'))
   and (sqlc.narg('zone_id')::uuid is null or j.zone_id = sqlc.narg('zone_id'))
@@ -200,3 +205,18 @@ from sales.fulfilments f join sales.orders o on o.id = f.order_id where f.id = $
 -- name: LogisticsPurgePings :execrows
 -- Raw location points are kept about 90 days (docs/mobile.md §4.4).
 delete from logistics.rider_location_pings where recorded_at < now() - interval '90 days';
+
+-- name: LogisticsReturnPickupInfo :one
+-- Where a return pickup starts (the order's delivery address) and where it ends: the warehouse
+-- that shipped it, else a hub or warehouse in the customer's state, else any warehouse.
+select o.ship_to, coalesce(
+  (select f.warehouse_id from aftersales.return_items ri join sales.order_lines ol on ol.id = ri.order_line_id
+     join sales.fulfilments f on f.id = ol.fulfilment_id where ri.return_request_id = rr.id and f.warehouse_id is not null limit 1),
+  (select w.id from inventory.warehouses w where w.kind in ('hub', 'warehouse') and w.is_active and w.state_code = o.ship_to->>'stateCode'
+     order by w.kind = 'warehouse' desc limit 1),
+  (select w.id from inventory.warehouses w where w.kind = 'warehouse' and w.is_active order by w.created_at limit 1))::uuid as warehouse_id
+from aftersales.return_requests rr join sales.orders o on o.id = rr.order_id
+where rr.id = $1;
+
+-- name: LogisticsJobForReturn :one
+select * from logistics.delivery_jobs where return_request_id = $1 and status <> 'cancelled' order by created_at desc limit 1;

@@ -16,15 +16,22 @@ type Querier interface {
 	AftersalesAddItem(ctx context.Context, arg AftersalesAddItemParams) error
 	AftersalesCreateReturn(ctx context.Context, arg AftersalesCreateReturnParams) (AftersalesReturnRequest, error)
 	AftersalesDecide(ctx context.Context, arg AftersalesDecideParams) (AftersalesReturnRequest, error)
+	AftersalesDecideDispute(ctx context.Context, arg AftersalesDecideDisputeParams) (AftersalesReturnRequest, error)
 	AftersalesGetReturn(ctx context.Context, rmaNumber string) (AftersalesGetReturnRow, error)
 	AftersalesGetReturnForUpdate(ctx context.Context, rmaNumber string) (AftersalesReturnRequest, error)
 	AftersalesInsertInspection(ctx context.Context, arg AftersalesInsertInspectionParams) (AftersalesReturnInspection, error)
 	AftersalesItems(ctx context.Context, returnRequestID uuid.UUID) ([]AftersalesItemsRow, error)
+	AftersalesPickupJob(ctx context.Context, returnRequestID *uuid.UUID) (AftersalesPickupJobRow, error)
+	AftersalesReturnByID(ctx context.Context, id uuid.UUID) (AftersalesReturnRequest, error)
+	AftersalesReturnRefundRow(ctx context.Context, returnRequestID *uuid.UUID) (AftersalesReturnRefundRowRow, error)
 	// After-sales: returns (RMA). Plan: orders-fulfilment.md §7.
 	// The order's lines with what a return needs: delivery state, who shipped it, the unit sold and
 	// how many are already in an open (not rejected) return.
 	AftersalesReturnableLines(ctx context.Context, orderID uuid.UUID) ([]AftersalesReturnableLinesRow, error)
 	AftersalesReturnsForUser(ctx context.Context, requestedBy uuid.UUID) ([]AftersalesReturnsForUserRow, error)
+	// Returns that include items a shop shipped or owns, newest first.
+	AftersalesSellerReturns(ctx context.Context, sellerID uuid.UUID) ([]AftersalesSellerReturnsRow, error)
+	AftersalesSetDispute(ctx context.Context, arg AftersalesSetDisputeParams) (AftersalesReturnRequest, error)
 	AftersalesSetStatus(ctx context.Context, arg AftersalesSetStatusParams) (AftersalesReturnRequest, error)
 	AftersalesSetUnitCondition(ctx context.Context, arg AftersalesSetUnitConditionParams) error
 	AftersalesStaffList(ctx context.Context, arg AftersalesStaffListParams) ([]AftersalesStaffListRow, error)
@@ -328,6 +335,7 @@ type Querier interface {
 	LogisticsInsertPing(ctx context.Context, arg LogisticsInsertPingParams) error
 	LogisticsJobEvents(ctx context.Context, deliveryJobID uuid.UUID) ([]LogisticsDeliveryEvent, error)
 	LogisticsJobForFulfilment(ctx context.Context, fulfilmentID *uuid.UUID) (LogisticsDeliveryJob, error)
+	LogisticsJobForReturn(ctx context.Context, returnRequestID *uuid.UUID) (LogisticsDeliveryJob, error)
 	LogisticsJobView(ctx context.Context, id uuid.UUID) (LogisticsJobViewRow, error)
 	LogisticsListDevices(ctx context.Context, pending *bool) ([]LogisticsListDevicesRow, error)
 	// Riders with their latest position, open shift and active job count (for the assign sheet and map).
@@ -344,6 +352,9 @@ type Querier interface {
 	LogisticsRegisterDevice(ctx context.Context, arg LogisticsRegisterDeviceParams) (LogisticsRiderDevice, error)
 	// The zone for a state and LGA: an LGA-specific zone first, then the state-wide zone (no LGAs listed).
 	LogisticsResolveZone(ctx context.Context, arg LogisticsResolveZoneParams) (LogisticsDeliveryZone, error)
+	// Where a return pickup starts (the order's delivery address) and where it ends: the warehouse
+	// that shipped it, else a hub or warehouse in the customer's state, else any warehouse.
+	LogisticsReturnPickupInfo(ctx context.Context, id uuid.UUID) (LogisticsReturnPickupInfoRow, error)
 	LogisticsRevokeDevice(ctx context.Context, id uuid.UUID) (LogisticsRiderDevice, error)
 	// A rider's work: active jobs plus today's finished ones, with what the job screen needs.
 	LogisticsRiderJobs(ctx context.Context, riderID *uuid.UUID) ([]LogisticsRiderJobsRow, error)

@@ -50,9 +50,11 @@ order by wc.created_at desc limit 100;
 
 -- name: WarrantyClaim :one
 select wc.*, ol.product_name, ol.variant_name, ol.variant_id, ol.line_total_kobo, ol.quantity as line_quantity, ol.order_id, o.order_number,
+       ol.seller_id, ol.vat_kobo, ol.seller_earning_kobo, ol.commission_bps, sl.type as seller_type,
        st.name as store_name, u.first_name as customer_first_name, u.last_name as customer_last_name
 from aftersales.warranty_claims wc
 left join sales.order_lines ol on ol.id = wc.order_line_id
+left join sellers.sellers sl on sl.id = ol.seller_id
 left join sales.orders o on o.id = ol.order_id
 left join inventory.warehouses st on st.id = wc.store_id
 join identity.users u on u.id = wc.customer_user_id

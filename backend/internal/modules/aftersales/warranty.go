@@ -316,7 +316,9 @@ func (s *Service) ResolveClaim(ctx context.Context, number string, in ResolveInp
 		}
 		if in.Resolution == "refunded" {
 			amount := lineRefund(*v.LineTotalKobo, *v.LineQuantity, 1)
-			r, err := s.pay.RequestRefund(ctx, tx, *v.OrderID, amount, "Warranty "+number, "original", &actor)
+			alloc := refundAllocation([]refundShare{{FirstParty: v.SellerType != nil && *v.SellerType == "first_party", SellerID: derefID(v.SellerID), LineTotal: *v.LineTotalKobo,
+				VAT: derefInt(v.VatKobo), SellerEarning: v.SellerEarningKobo, CommissionBps: derefInt32(v.CommissionBps), LineQty: *v.LineQuantity, Qty: 1, CommissionPosted: true}}, 0)
+			r, err := s.pay.RequestItemRefund(ctx, tx, *v.OrderID, amount, "Warranty "+number, alloc, &actor)
 			if err != nil {
 				return err
 			}
@@ -428,3 +430,24 @@ func (s *Service) tellClaim(ctx context.Context, tx *uow.Tx, c store.AftersalesW
 }
 
 func ptr(s string) *string { return &s }
+
+func derefID(p *uuid.UUID) uuid.UUID {
+	if p == nil {
+		return uuid.Nil
+	}
+	return *p
+}
+
+func derefInt(p *int64) int64 {
+	if p == nil {
+		return 0
+	}
+	return *p
+}
+
+func derefInt32(p *int32) int32 {
+	if p == nil {
+		return 0
+	}
+	return *p
+}

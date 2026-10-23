@@ -41,10 +41,12 @@ select * from aftersales.return_requests where rma_number = $1 for update;
 select ri.id, ri.order_line_id, ri.quantity, ol.fulfilment_id, f.delivery_fee_kobo,
        (select coalesce(sum(quantity), 0) from sales.order_lines x where x.fulfilment_id = ol.fulfilment_id and x.cancelled_at is null)::int as fulfilment_units, ol.product_name, ol.variant_name, ol.condition, ol.variant_id, ol.listing_id,
        ol.unit_price_kobo, ol.line_total_kobo, ol.quantity as line_quantity, ol.device_unit_id, f.seller_id,
+       f.fulfilled_by, f.delivered_at, s.type as seller_type, ol.vat_kobo, ol.seller_earning_kobo, ol.commission_bps,
        ins.grade, ins.disposition, ins.imei_match, ins.inspected_at
 from aftersales.return_items ri
 join sales.order_lines ol on ol.id = ri.order_line_id
 join sales.fulfilments f on f.id = ol.fulfilment_id
+join sellers.sellers s on s.id = f.seller_id
 left join aftersales.return_inspections ins on ins.return_item_id = ri.id
 where ri.return_request_id = $1
 order by ol.created_at;
@@ -52,6 +54,7 @@ order by ol.created_at;
 -- name: AftersalesStaffList :many
 select r.*, o.order_number from aftersales.return_requests r join sales.orders o on o.id = r.order_id
 where (sqlc.narg('status')::text is null or r.status = sqlc.narg('status'))
+  and (not sqlc.arg('disputed')::bool or (r.seller_disputed_at is not null and r.dispute_decision is null))
   and (sqlc.narg('before')::timestamptz is null or r.created_at < sqlc.narg('before'))
 order by r.created_at desc limit @lim;
 
@@ -75,3 +78,27 @@ select
 
 -- name: AftersalesSetUnitCondition :exec
 update inventory.device_units set condition = $2, status = $3, warehouse_id = $4 where id = $1;
+
+-- name: AftersalesReturnByID :one
+select * from aftersales.return_requests where id = $1 for update;
+
+-- name: AftersalesSellerReturns :many
+-- Returns that include items a shop shipped or owns, newest first.
+select r.*, o.order_number from aftersales.return_requests r join sales.orders o on o.id = r.order_id
+where exists (select 1 from aftersales.return_items ri join sales.order_lines ol on ol.id = ri.order_line_id
+              where ri.return_request_id = r.id and ol.seller_id = $1)
+order by r.created_at desc limit 100;
+
+-- name: AftersalesSetDispute :one
+update aftersales.return_requests set seller_dispute_reason = $2, seller_disputed_at = now(), seller_disputed_by = $3
+where id = $1 and seller_disputed_at is null returning *;
+
+-- name: AftersalesDecideDispute :one
+update aftersales.return_requests set dispute_decision = $2, dispute_note = $3, dispute_decided_by = $4, dispute_decided_at = now()
+where id = $1 and seller_disputed_at is not null and dispute_decision is null returning *;
+
+-- name: AftersalesReturnRefundRow :one
+select id, status, amount_kobo, allocation from payments.refunds where return_request_id = $1 order by created_at desc limit 1;
+
+-- name: AftersalesPickupJob :one
+select status, rider_id, delivered_at from logistics.delivery_jobs where return_request_id = $1 and status <> 'cancelled' order by created_at desc limit 1;
