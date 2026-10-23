@@ -2530,6 +2530,9 @@ type SalesOrder struct {
 	CancelledAt              *time.Time      `json:"cancelledAt"`
 	CreatedAt                time.Time       `json:"createdAt"`
 	UpdatedAt                time.Time       `json:"updatedAt"`
+	// Set while the order waits for a risk review; cleared when the case is cleared.
+	ReviewHoldAt *time.Time `json:"reviewHoldAt"`
+	ReviewCaseID *uuid.UUID `json:"reviewCaseId"`
 }
 
 // [sales] Snapshot of what was bought (name, price, VAT, condition, commission), optionally the exact device unit.

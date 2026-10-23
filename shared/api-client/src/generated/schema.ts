@@ -4654,6 +4654,146 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/staff/risk/rule-sets": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Active rule sets and drafts per checkpoint
+     * @description Requires permission `risk.view`.
+     */
+    get: operations["staffRiskRuleSets"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/risk/rule-sets/drafts": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Start a draft from a checkpoint's active rules
+     * @description Requires permission `risk.rules`.
+     */
+    post: operations["staffRiskDraft"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/risk/rule-sets/{id}/discard": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Delete a draft
+     * @description Requires permission `risk.rules`.
+     */
+    post: operations["staffRiskDiscard"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/risk/rule-sets/{id}/publish": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Make a draft live (fresh MFA)
+     * @description Requires permission `risk.rules`.
+     */
+    post: operations["staffRiskPublish"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/risk/rule-sets/{id}/rules/{ruleId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Change a draft rule's weight or switch it
+     * @description Requires permission `risk.rules`.
+     */
+    post: operations["staffRiskUpdateRule"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/risk/rule-sets/{id}/test": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Replay the last 30 days of decisions against this rule set
+     * @description Requires permission `risk.rules`.
+     */
+    post: operations["staffRiskBench"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/risk/rule-sets/{id}/thresholds": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Change a draft's score bands
+     * @description Requires permission `risk.rules`.
+     */
+    post: operations["staffRiskThresholds"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/staff/risk/summary": {
     parameters: {
       query?: never;
@@ -5912,6 +6052,41 @@ export interface components {
       /** @enum {string} */
       status: "scheduled" | "processing" | "paid" | "failed" | "on_hold";
     };
+    BenchResult: {
+      /** @description Outcomes under the draft */
+      after: {
+        [key: string]: number;
+      };
+      /** @description Outcomes as decided */
+      before: {
+        [key: string]: number;
+      };
+      /**
+       * Format: int64
+       * @description Decisions whose outcome would differ
+       */
+      changed: number;
+      /**
+       * Format: int64
+       * @description Decisions replayed (last 30 days, up to 5,000)
+       */
+      decisions: number;
+      /**
+       * Format: int64
+       * @description Confirmed fraud the draft would hold or block
+       */
+      fraudCaught: number;
+      /**
+       * Format: int64
+       * @description Confirmed fraud the draft would let through
+       */
+      fraudMissed: number;
+      /**
+       * Format: int64
+       * @description Cleared (legitimate) cases the draft would still hold or block
+       */
+      legitStopped: number;
+    };
     BlockDeviceInput: {
       imei: string;
       /** @enum {string} */
@@ -6371,6 +6546,15 @@ export interface components {
       height?: number;
       /** Format: int32 */
       width?: number;
+    };
+    Cond: {
+      f: string;
+      op: string;
+      /** Format: double */
+      v: number;
+    };
+    Condition: {
+      all: components["schemas"]["Cond"][] | null;
     };
     ConfirmInviteRequest: {
       appVersion?: string;
@@ -8304,6 +8488,9 @@ export interface components {
       priceHash: string | null;
       quoteId: string;
       refunds?: components["schemas"]["PaymentsRefund"][] | null;
+      reviewCaseId: string;
+      /** Format: date-time */
+      reviewHoldAt: string | null;
       shipTo: unknown;
       status: string;
       /** Format: int64 */
@@ -9301,6 +9488,32 @@ export interface components {
       /** Format: int32 */
       score: number;
     };
+    RuleSetView: {
+      checkpoint: string;
+      /** Format: date-time */
+      createdAt: string;
+      id: string;
+      notes: string | null;
+      /** Format: date-time */
+      publishedAt: string | null;
+      rules: components["schemas"]["RuleView"][] | null;
+      /** @enum {string} */
+      status: "draft" | "active" | "retired";
+      thresholds: components["schemas"]["Thresholds"];
+      /** Format: int32 */
+      version: number;
+    };
+    RuleView: {
+      /** @enum {string} */
+      action: "score" | "hold" | "block";
+      condition: components["schemas"]["Condition"];
+      enabled: boolean;
+      id: string;
+      key: string;
+      label: string;
+      /** Format: int32 */
+      weight: number;
+    };
     Rules: {
       /** @description Bought anything in this category or below */
       boughtCategoryId?: string;
@@ -9348,6 +9561,9 @@ export interface components {
       posShiftId: string;
       priceHash: string | null;
       quoteId: string;
+      reviewCaseId: string;
+      /** Format: date-time */
+      reviewHoldAt: string | null;
       shipTo: unknown;
       status: string;
       /** Format: int64 */
@@ -9430,6 +9646,9 @@ export interface components {
       posShiftId: string;
       priceHash: string | null;
       quoteId: string;
+      reviewCaseId: string;
+      /** Format: date-time */
+      reviewHoldAt: string | null;
       shipTo: unknown;
       status: string;
       /** Format: int64 */
@@ -10023,6 +10242,17 @@ export interface components {
     StaffRevealKycIdResponse: {
       idNumber: string;
     };
+    StaffRiskDraftRequest: {
+      /** @enum {string} */
+      checkpoint: "checkout" | "payout" | "trade_in" | "return";
+      /** @description Why the change */
+      notes?: string;
+    };
+    StaffRiskUpdateRuleRequest: {
+      enabled: boolean;
+      /** Format: int32 */
+      weight: number;
+    };
     StaffSaveHelpRequest: {
       blocks: unknown;
       /** @enum {string} */
@@ -10226,6 +10456,14 @@ export interface components {
       /** @enum {string} */
       role: "owner" | "manager" | "staff" | "finance";
       userId: string;
+    };
+    Thresholds: {
+      /** Format: int64 */
+      block: number;
+      /** Format: int64 */
+      hold: number;
+      /** Format: int64 */
+      step: number;
     };
     Ticket: {
       /** Format: date-time */
@@ -19725,6 +19963,230 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffRiskRuleSets: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RuleSetView"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffRiskDraft: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StaffRiskDraftRequest"];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RuleSetView"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffRiskDiscard: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffRiskPublish: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RuleSetView"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffRiskUpdateRule: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+        ruleId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StaffRiskUpdateRuleRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RuleSetView"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffRiskBench: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BenchResult"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffRiskThresholds: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Thresholds"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RuleSetView"];
+        };
       };
       /** @description Error */
       default: {

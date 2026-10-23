@@ -28,6 +28,10 @@ var codeTemplates = map[string]map[string]string{
 		"sms":   "TechShop: order {{.order}} is confirmed. Total {{.total}}.",
 		"email": "Thanks {{.firstName}}! Order {{.order}} is confirmed. Total {{.total}}.",
 	},
+	"order_review": {
+		"push":   "We're confirming order {{.order}}. This usually takes under 2 hours; we'll tell you when it's on its way.",
+		"in_app": "We're confirming order {{.order}}. This usually takes under 2 hours; we'll tell you when it's on its way.",
+	},
 	"order_shipped": {
 		"push": "{{.order}} is on its way.",
 		"sms":  "TechShop: {{.order}} is on its way. Track it in the app.",

@@ -570,6 +570,9 @@ type Querier interface {
 	PayoutsReleaseHold(ctx context.Context, id uuid.UUID) (FinancePayoutHold, error)
 	// A failed payout gives its fulfilments back, so the next batch can pay them.
 	PayoutsReleaseItems(ctx context.Context, payoutID uuid.UUID) error
+	// What the payout risk rules look at: the 30-day average paid out, and the share of the shop's
+	// paid orders in 90 days that drew a chargeback.
+	PayoutsRiskFeatures(ctx context.Context, sellerID uuid.UUID) (PayoutsRiskFeaturesRow, error)
 	PayoutsSecondApprove(ctx context.Context, arg PayoutsSecondApproveParams) (FinancePayoutBatch, error)
 	PayoutsSetBatchStatus(ctx context.Context, arg PayoutsSetBatchStatusParams) (FinancePayoutBatch, error)
 	PayoutsSetProcessing(ctx context.Context, arg PayoutsSetProcessingParams) (FinancePayout, error)
@@ -679,6 +682,8 @@ type Querier interface {
 	SalesCancelLine(ctx context.Context, arg SalesCancelLineParams) (SalesOrderLine, error)
 	// Cart lines with live prices and everything pricing and checkout need.
 	SalesCartLines(ctx context.Context, cartID uuid.UUID) ([]SalesCartLinesRow, error)
+	// What the checkout risk rules look at for a paid order (trust-safety.md §3).
+	SalesCheckoutRiskFeatures(ctx context.Context, arg SalesCheckoutRiskFeaturesParams) (SalesCheckoutRiskFeaturesRow, error)
 	SalesClearCart(ctx context.Context, cartID uuid.UUID) error
 	// Seller-specific rule, then category rule, then the seller override, then the configured default.
 	SalesCommissionBps(ctx context.Context, arg SalesCommissionBpsParams) (int32, error)
@@ -714,6 +719,7 @@ type Querier interface {
 	SalesListingAvailable(ctx context.Context, id uuid.UUID) (int32, error)
 	SalesLiveFlashPrice(ctx context.Context, listingID uuid.UUID) (SalesLiveFlashPriceRow, error)
 	SalesMergeCartItems(ctx context.Context, arg SalesMergeCartItemsParams) error
+	SalesOrderByReviewCase(ctx context.Context, reviewCaseID *uuid.UUID) (SalesOrder, error)
 	SalesOrderFulfilments(ctx context.Context, orderID uuid.UUID) ([]SalesOrderFulfilmentsRow, error)
 	SalesOrderHistory(ctx context.Context, orderID uuid.UUID) ([]SalesOrderStatusHistory, error)
 	SalesOrderLines(ctx context.Context, orderID uuid.UUID) ([]SalesOrderLine, error)
@@ -736,6 +742,7 @@ type Querier interface {
 	SalesSetHandoverBy(ctx context.Context, arg SalesSetHandoverByParams) error
 	SalesSetOrderStatus(ctx context.Context, arg SalesSetOrderStatusParams) (SalesOrder, error)
 	SalesSetPackBy(ctx context.Context, arg SalesSetPackByParams) error
+	SalesSetReviewHold(ctx context.Context, arg SalesSetReviewHoldParams) error
 	SalesSetSellerEarning(ctx context.Context, arg SalesSetSellerEarningParams) error
 	SalesStaffListOrders(ctx context.Context, arg SalesStaffListOrdersParams) ([]SalesStaffListOrdersRow, error)
 	// Best wholesale tier unit price for a quantity (null when no tier applies).
