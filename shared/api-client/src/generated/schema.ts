@@ -405,7 +405,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Public contact form (corporate, market, wholesale): becomes a support ticket */
+    /** Public contact form (corporate, market, wholesale, Seller Centre): becomes a support ticket */
     post: operations["contactUs"];
     delete?: never;
     options?: never;
@@ -6627,7 +6627,7 @@ export interface components {
       orderNumber?: string;
       phone?: string;
       /** @enum {string} */
-      site: "corporate" | "market" | "wholesale";
+      site: "corporate" | "market" | "wholesale" | "seller";
       subject: string;
       /** @enum {string} */
       topic:

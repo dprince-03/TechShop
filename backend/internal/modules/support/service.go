@@ -60,7 +60,7 @@ type NewTicket struct {
 
 // ContactInput is the public contact form.
 type ContactInput struct {
-	Site        string `json:"site" enum:"corporate,market,wholesale"`
+	Site        string `json:"site" enum:"corporate,market,wholesale,seller"`
 	Name        string `json:"name" minLength:"2" maxLength:"80"`
 	Email       string `json:"email,omitempty" maxLength:"254"`
 	Phone       string `json:"phone,omitempty" maxLength:"20"`

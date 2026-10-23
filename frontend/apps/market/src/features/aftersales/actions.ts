@@ -3,7 +3,7 @@
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { failure, type ActionState } from "@techshop/bff";
+import { failure, submitContact, type ActionState } from "@techshop/bff";
 
 import { bff } from "@/lib/bff";
 
@@ -314,43 +314,5 @@ export async function contactUs(
   _prev: ActionState,
   form: FormData,
 ): Promise<ActionState> {
-  const name = text(form, "name", 80);
-  const email = text(form, "email", 254);
-  const phone = text(form, "phone", 20);
-  const topic = text(form, "topic") as Topic;
-  const subject = text(form, "subject", 140);
-  const message = text(form, "message", 5000);
-  const errors: Record<string, string> = {};
-  if (name.length < 2) errors.name = "Tell us your name.";
-  if (!email && !phone)
-    errors.email = "Give us an email address or phone number so we can reply.";
-  if (!TOPICS.includes(topic)) errors.topic = "Choose what it's about.";
-  if (subject.length < 3) errors.subject = "Give it a short subject.";
-  if (!message) errors.message = "Tell us what's happening.";
-  if (Object.keys(errors).length) return invalid(errors);
-  try {
-    const r = await (
-      await bff.clientApi()
-    ).post("/api/v1/contact", {
-      body: {
-        site: "market",
-        name,
-        email: email || undefined,
-        phone: phone || undefined,
-        topic,
-        subject,
-        message,
-        orderNumber: text(form, "orderNumber", 20) || undefined,
-        website: text(form, "website", 200) || undefined,
-      },
-    });
-    return {
-      ok: true,
-      message: r.ticketNumber
-        ? `Thanks, we've got it (ticket ${r.ticketNumber}). We reply within 24 hours.`
-        : "Thanks, we've got it.",
-    };
-  } catch (e) {
-    return failure(e);
-  }
+  return submitContact("market", form);
 }
