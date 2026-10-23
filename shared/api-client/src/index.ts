@@ -20,6 +20,18 @@ export {
   naira,
 } from "./format/money";
 export { normaliseNigerianPhone } from "./format/phone";
+export {
+  claimResolution,
+  claimStatus,
+  deviceCondition,
+  deviceType,
+  returnReason,
+  returnStatus,
+  ticketStatus,
+  ticketTopic,
+  tradeInStatus,
+  type StatusTone,
+} from "./format/aftersales";
 
 // UI view models
 export type * from "./domain/types";

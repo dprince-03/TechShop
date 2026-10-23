@@ -179,7 +179,7 @@ func (s *Service) Routes(r *kit.Routes) {
 		func(ctx context.Context, in *struct {
 			Number string `path:"number"`
 			Body   struct {
-				AgentID *uuid.UUID `json:"agentId" doc:"null unassigns"`
+				AgentID *uuid.UUID `json:"agentId,omitempty" doc:"Leave out to unassign"`
 			}
 		}) (*staffOut, error) {
 			out, err := s.Assign(ctx, in.Number, in.Body.AgentID)

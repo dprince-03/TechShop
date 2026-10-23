@@ -4,7 +4,11 @@ import { connection } from "next/server";
 
 import { PageHeader } from "@techshop/ui/components";
 
+import { formatKobo } from "@techshop/api-client";
+
 import { AddressBook } from "@/features/account/components/AddressBook";
+import { AccountNav } from "@/features/aftersales/components/Records";
+import { storeCredit } from "@/features/aftersales/server";
 import { ProfileForm } from "@/features/account/components/ProfileForm";
 import { Sessions } from "@/features/account/components/Sessions";
 import { loadAccount } from "@/features/account/server";
@@ -22,9 +26,10 @@ export const metadata: Metadata = {
 export default async function AccountPage() {
   await connection();
   await bff.requireSession("/account");
-  const [{ me, addresses, sessions }, states] = await Promise.all([
+  const [{ me, addresses, sessions }, states, credit] = await Promise.all([
     loadAccount(),
     getStates(),
+    storeCredit().catch(() => null),
   ]);
   return (
     <main id="main" className="section section--page">
@@ -47,6 +52,16 @@ export default async function AccountPage() {
             </div>
           }
         />
+        <AccountNav current="/account" />
+        {credit && credit.balanceKobo > 0 ? (
+          <p className="alert alert--success" role="status">
+            You have{" "}
+            <strong className="tabular-nums">
+              {formatKobo(credit.balanceKobo)}
+            </strong>{" "}
+            store credit. Use it at checkout when it covers the whole order.
+          </p>
+        ) : null}
         <div className={styles.columns}>
           <section aria-labelledby="profile-title" className="card card--roomy">
             <h2 id="profile-title" className={styles.title}>

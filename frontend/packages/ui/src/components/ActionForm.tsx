@@ -82,7 +82,15 @@ type FieldProps = {
   hint?: string;
   /** Marked "(optional)"; fields are required by default. */
   optional?: boolean;
-  type?: "text" | "number" | "tel" | "textarea" | "select" | "file";
+  type?:
+    | "text"
+    | "number"
+    | "tel"
+    | "email"
+    | "textarea"
+    | "select"
+    | "file"
+    | "checkbox";
   options?: { value: string; label: string }[];
   defaultValue?: string | number;
   inputMode?: "numeric" | "decimal" | "tel" | "text";
@@ -118,6 +126,34 @@ export function Field({
     "aria-invalid": error ? true : undefined,
     "aria-describedby": describedBy,
   };
+  if (type === "checkbox") {
+    // A single confirmation box: the label sits beside it, the value posted is "on".
+    return (
+      <div className="field">
+        <label htmlFor={id} className="check">
+          <input
+            type="checkbox"
+            {...common}
+            defaultChecked={rest.defaultValue === "on"}
+          />
+          <span>
+            {label}
+            {optional ? <span className="text-muted"> (optional)</span> : null}
+          </span>
+        </label>
+        {hint ? (
+          <span id={`${id}-hint`} className="field__hint">
+            {hint}
+          </span>
+        ) : null}
+        {error ? (
+          <span id={`${id}-error`} className="field__error">
+            {error}
+          </span>
+        ) : null}
+      </div>
+    );
+  }
   let control: ReactNode;
   if (type === "select") {
     control = (

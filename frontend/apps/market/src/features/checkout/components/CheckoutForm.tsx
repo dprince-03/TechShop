@@ -33,11 +33,14 @@ export function CheckoutForm({
   states,
   methods,
   initial,
+  storeCredit = 0,
 }: {
   addresses: Address[];
   states: Schema<"IdentityNigerianState">[];
   methods: string[];
   initial: Quote | null;
+  /** Kobo available; it can pay an order only in full. */
+  storeCredit?: number;
 }) {
   const defaultAddress = addresses.find((a) => a.isDefault) ?? addresses[0];
   const [addressId, setAddressId] = useState(defaultAddress?.id ?? "");
@@ -155,6 +158,7 @@ export function CheckoutForm({
     );
   }
 
+  const creditCovers = Boolean(quote && storeCredit >= quote.totalKobo);
   const canPay = Boolean(
     quote?.purchasable && addressId && provider && !adding,
   );
@@ -246,9 +250,23 @@ export function CheckoutForm({
           <h2 id="payment-title" className={styles.h2}>
             2. Payment method
           </h2>
-          {methods.length ? (
+          {methods.length || creditCovers ? (
             <fieldset className={styles.choices}>
               <legend className="visually-hidden">Choose how to pay</legend>
+              {creditCovers ? (
+                <label className={styles.choice}>
+                  <input
+                    type="radio"
+                    name="provider"
+                    value="store_credit"
+                    checked={provider === "store_credit"}
+                    onChange={() => setProvider("store_credit")}
+                  />
+                  <span>
+                    Store credit ({formatKobo(storeCredit)} available)
+                  </span>
+                </label>
+              ) : null}
               {methods.map((m) => (
                 <label key={m} className={styles.choice}>
                   <input
@@ -267,6 +285,12 @@ export function CheckoutForm({
               Payments are unavailable right now. Please try again shortly.
             </p>
           )}
+          {storeCredit > 0 && !creditCovers ? (
+            <p className="text-xs text-muted">
+              You have {formatKobo(storeCredit)} store credit. It can pay an
+              order only when it covers the whole total.
+            </p>
+          ) : null}
           <p className="text-xs text-muted">
             <Icon name="lock" size={14} /> You’ll pay on the provider’s secure
             page. TechShop never sees your card details.

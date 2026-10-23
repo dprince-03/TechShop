@@ -11,10 +11,6 @@ import { moduleGroups } from "@/features/shell/modules";
 /** Which backend milestone brings each preview module its API (docs/backend.md §8). */
 const MILESTONE: Record<string, string> = {
   vendors: "M4 (marketplace)",
-  support: "M5 (after-sales and support)",
-  risk: "M5 (after-sales and support)",
-  warranty: "M5 (after-sales and support)",
-  "trade-ins": "M5 (after-sales and support)",
   b2b: "M6 (B2B)",
   purchasing: "M6 (B2B)",
   analytics: "M7",

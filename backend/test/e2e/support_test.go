@@ -104,7 +104,7 @@ func TestSupportContactForm(t *testing.T) {
 	as := post(t, "/api/v1/staff/support/tickets/"+number+"/assign", agent, map[string]any{"agentId": agents.List[0].(map[string]any)["id"]})
 	expect(t, as, 200, "assign")
 	expectCode(t, post(t, "/api/v1/staff/support/tickets/"+number+"/assign", agent, map[string]any{"agentId": newUUID()}), 422, "not_an_agent", "assign to a stranger")
-	expect(t, post(t, "/api/v1/staff/support/tickets/"+number+"/assign", staffLogin(t, "support_agent"), map[string]any{"agentId": nil}), 403, "agents can't reassign")
+	expect(t, post(t, "/api/v1/staff/support/tickets/"+number+"/assign", staffLogin(t, "support_agent"), map[string]any{}), 403, "agents can't reassign")
 	expect(t, post(t, "/api/v1/staff/support/tickets/"+number+"/messages", agent, map[string]any{"body": "Thanks Tunde, our B2B team will call you today.", "status": "resolved"}), 200, "reply to visitor")
 
 	for i := 0; i < 4; i++ { // 5 a day per address, the first one above included
