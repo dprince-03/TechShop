@@ -407,7 +407,7 @@ func (q *Queries) WarrantyCreateClaim(ctx context.Context, arg WarrantyCreateCla
 const warrantyCreateRepair = `-- name: WarrantyCreateRepair :one
 insert into aftersales.repair_jobs (warranty_claim_id, device_unit_id, technician_id, diagnosis)
 values ($1, $2, $3, $4)
-returning id, warranty_claim_id, device_unit_id, technician_id, status, diagnosis, chargeable, cost_kobo, started_at, finished_at, created_at, updated_at, notes
+returning id, warranty_claim_id, device_unit_id, technician_id, status, diagnosis, chargeable, cost_kobo, started_at, finished_at, created_at, updated_at, notes, purpose
 `
 
 type WarrantyCreateRepairParams struct {
@@ -439,6 +439,7 @@ func (q *Queries) WarrantyCreateRepair(ctx context.Context, arg WarrantyCreateRe
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Notes,
+		&i.Purpose,
 	)
 	return i, err
 }
@@ -686,7 +687,9 @@ func (q *Queries) WarrantyReject(ctx context.Context, arg WarrantyRejectParams) 
 }
 
 const warrantyRepairForUpdate = `-- name: WarrantyRepairForUpdate :one
-select r.id, r.warranty_claim_id, r.device_unit_id, r.technician_id, r.status, r.diagnosis, r.chargeable, r.cost_kobo, r.started_at, r.finished_at, r.created_at, r.updated_at, r.notes, wc.claim_number from aftersales.repair_jobs r join aftersales.warranty_claims wc on wc.id = r.warranty_claim_id
+select r.id, r.warranty_claim_id, r.device_unit_id, r.technician_id, r.status, r.diagnosis, r.chargeable, r.cost_kobo, r.started_at, r.finished_at, r.created_at, r.updated_at, r.notes, r.purpose, wc.claim_number, t.reference as trade_in_ref from aftersales.repair_jobs r
+left join aftersales.warranty_claims wc on wc.id = r.warranty_claim_id
+left join aftersales.trade_ins t on t.repair_job_id = r.id
 where r.id = $1 for update of r
 `
 
@@ -704,7 +707,9 @@ type WarrantyRepairForUpdateRow struct {
 	CreatedAt       time.Time  `json:"createdAt"`
 	UpdatedAt       time.Time  `json:"updatedAt"`
 	Notes           *string    `json:"notes"`
-	ClaimNumber     string     `json:"claimNumber"`
+	Purpose         string     `json:"purpose"`
+	ClaimNumber     *string    `json:"claimNumber"`
+	TradeInRef      *string    `json:"tradeInRef"`
 }
 
 func (q *Queries) WarrantyRepairForUpdate(ctx context.Context, id uuid.UUID) (WarrantyRepairForUpdateRow, error) {
@@ -724,13 +729,107 @@ func (q *Queries) WarrantyRepairForUpdate(ctx context.Context, id uuid.UUID) (Wa
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Notes,
+		&i.Purpose,
 		&i.ClaimNumber,
+		&i.TradeInRef,
 	)
 	return i, err
 }
 
+const warrantyRepairQueue = `-- name: WarrantyRepairQueue :many
+select r.id, r.warranty_claim_id, r.device_unit_id, r.technician_id, r.status, r.diagnosis, r.chargeable, r.cost_kobo, r.started_at, r.finished_at, r.created_at, r.updated_at, r.notes, r.purpose, wc.claim_number, t.reference as trade_in_ref, p.name as product_name, v.name as variant_name, du.imei, du.serial_number,
+       u.first_name as technician_first_name
+from aftersales.repair_jobs r
+left join aftersales.warranty_claims wc on wc.id = r.warranty_claim_id
+left join aftersales.trade_ins t on t.repair_job_id = r.id
+left join inventory.device_units du on du.id = r.device_unit_id
+left join sales.order_lines ol on ol.id = wc.order_line_id
+left join catalog.product_variants v on v.id = coalesce(du.variant_id, ol.variant_id)
+left join catalog.products p on p.id = v.product_id
+left join identity.users u on u.id = r.technician_id
+where ($1::text is null or r.status = $1
+       or ($1 = 'active' and r.status not in ('done', 'unrepairable')))
+  and ($2::text is null or r.purpose = $2)
+  and ($3::uuid is null or r.id = $3)
+order by (r.status not in ('done', 'unrepairable')) desc, r.created_at
+limit 200
+`
+
+type WarrantyRepairQueueParams struct {
+	Status  *string    `json:"status"`
+	Purpose *string    `json:"purpose"`
+	ID      *uuid.UUID `json:"id"`
+}
+
+type WarrantyRepairQueueRow struct {
+	ID                  uuid.UUID  `json:"id"`
+	WarrantyClaimID     *uuid.UUID `json:"warrantyClaimId"`
+	DeviceUnitID        *uuid.UUID `json:"deviceUnitId"`
+	TechnicianID        *uuid.UUID `json:"technicianId"`
+	Status              string     `json:"status"`
+	Diagnosis           *string    `json:"diagnosis"`
+	Chargeable          bool       `json:"chargeable"`
+	CostKobo            *int64     `json:"costKobo"`
+	StartedAt           *time.Time `json:"startedAt"`
+	FinishedAt          *time.Time `json:"finishedAt"`
+	CreatedAt           time.Time  `json:"createdAt"`
+	UpdatedAt           time.Time  `json:"updatedAt"`
+	Notes               *string    `json:"notes"`
+	Purpose             string     `json:"purpose"`
+	ClaimNumber         *string    `json:"claimNumber"`
+	TradeInRef          *string    `json:"tradeInRef"`
+	ProductName         *string    `json:"productName"`
+	VariantName         *string    `json:"variantName"`
+	Imei                *string    `json:"imei"`
+	SerialNumber        *string    `json:"serialNumber"`
+	TechnicianFirstName *string    `json:"technicianFirstName"`
+}
+
+// The workshop: warranty repairs and refurbishments, unfinished first.
+func (q *Queries) WarrantyRepairQueue(ctx context.Context, arg WarrantyRepairQueueParams) ([]WarrantyRepairQueueRow, error) {
+	rows, err := q.db.Query(ctx, warrantyRepairQueue, arg.Status, arg.Purpose, arg.ID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []WarrantyRepairQueueRow{}
+	for rows.Next() {
+		var i WarrantyRepairQueueRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.WarrantyClaimID,
+			&i.DeviceUnitID,
+			&i.TechnicianID,
+			&i.Status,
+			&i.Diagnosis,
+			&i.Chargeable,
+			&i.CostKobo,
+			&i.StartedAt,
+			&i.FinishedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Notes,
+			&i.Purpose,
+			&i.ClaimNumber,
+			&i.TradeInRef,
+			&i.ProductName,
+			&i.VariantName,
+			&i.Imei,
+			&i.SerialNumber,
+			&i.TechnicianFirstName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const warrantyRepairs = `-- name: WarrantyRepairs :many
-select r.id, r.warranty_claim_id, r.device_unit_id, r.technician_id, r.status, r.diagnosis, r.chargeable, r.cost_kobo, r.started_at, r.finished_at, r.created_at, r.updated_at, r.notes, u.first_name as technician_first_name, u.last_name as technician_last_name
+select r.id, r.warranty_claim_id, r.device_unit_id, r.technician_id, r.status, r.diagnosis, r.chargeable, r.cost_kobo, r.started_at, r.finished_at, r.created_at, r.updated_at, r.notes, r.purpose, u.first_name as technician_first_name, u.last_name as technician_last_name
 from aftersales.repair_jobs r left join identity.users u on u.id = r.technician_id
 where r.warranty_claim_id = $1 order by r.created_at
 `
@@ -749,6 +848,7 @@ type WarrantyRepairsRow struct {
 	CreatedAt           time.Time  `json:"createdAt"`
 	UpdatedAt           time.Time  `json:"updatedAt"`
 	Notes               *string    `json:"notes"`
+	Purpose             string     `json:"purpose"`
 	TechnicianFirstName *string    `json:"technicianFirstName"`
 	TechnicianLastName  *string    `json:"technicianLastName"`
 }
@@ -776,6 +876,7 @@ func (q *Queries) WarrantyRepairs(ctx context.Context, warrantyClaimID *uuid.UUI
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.Notes,
+			&i.Purpose,
 			&i.TechnicianFirstName,
 			&i.TechnicianLastName,
 		); err != nil {
@@ -1062,6 +1163,31 @@ func (q *Queries) WarrantySummary(ctx context.Context) (WarrantySummaryRow, erro
 	return i, err
 }
 
+const warrantyUnit = `-- name: WarrantyUnit :one
+select id, variant_id, condition, grade, imei, serial_number, warehouse_id, owner_seller_id, cost_kobo, status, acquired_via, created_at, updated_at from inventory.device_units where id = $1 for update
+`
+
+func (q *Queries) WarrantyUnit(ctx context.Context, id uuid.UUID) (InventoryDeviceUnit, error) {
+	row := q.db.QueryRow(ctx, warrantyUnit, id)
+	var i InventoryDeviceUnit
+	err := row.Scan(
+		&i.ID,
+		&i.VariantID,
+		&i.Condition,
+		&i.Grade,
+		&i.Imei,
+		&i.SerialNumber,
+		&i.WarehouseID,
+		&i.OwnerSellerID,
+		&i.CostKobo,
+		&i.Status,
+		&i.AcquiredVia,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const warrantyUpdateRepair = `-- name: WarrantyUpdateRepair :one
 update aftersales.repair_jobs
 set status = $1::text,
@@ -1071,7 +1197,7 @@ set status = $1::text,
     started_at = case when $1::text in ('diagnosing', 'awaiting_parts', 'repairing') then coalesce(started_at, now()) else started_at end,
     finished_at = case when $1::text in ('done', 'unrepairable') then now() else null end
 where id = $5
-returning id, warranty_claim_id, device_unit_id, technician_id, status, diagnosis, chargeable, cost_kobo, started_at, finished_at, created_at, updated_at, notes
+returning id, warranty_claim_id, device_unit_id, technician_id, status, diagnosis, chargeable, cost_kobo, started_at, finished_at, created_at, updated_at, notes, purpose
 `
 
 type WarrantyUpdateRepairParams struct {
@@ -1105,6 +1231,7 @@ func (q *Queries) WarrantyUpdateRepair(ctx context.Context, arg WarrantyUpdateRe
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Notes,
+		&i.Purpose,
 	)
 	return i, err
 }

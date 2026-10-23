@@ -183,7 +183,7 @@ func (s *Service) Routes(r *kit.Routes) {
 				AddressID  uuid.UUID `json:"addressId"`
 				CouponCode string    `json:"couponCode,omitempty" maxLength:"40"`
 				PriceHash  string    `json:"priceHash" minLength:"8" maxLength:"64"`
-				Provider   string    `json:"provider" enum:"paystack,opay,moniepoint"`
+				Provider   string    `json:"provider" enum:"paystack,opay,moniepoint,store_credit" doc:"store_credit pays the whole order from your store credit"`
 			}
 		}) (*struct {
 			Replayed bool `header:"Idempotent-Replayed"`

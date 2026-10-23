@@ -225,16 +225,16 @@ type RepairUpdate struct {
 	TechnicianID *uuid.UUID `json:"technicianId,omitempty"`
 }
 
-// UpdateRepair records workshop progress. A finished repair makes the claim ready for
-// collection; an unrepairable one waits for a replacement or refund.
-func (s *Service) UpdateRepair(ctx context.Context, jobID uuid.UUID, in RepairUpdate) (Claim, error) {
-	var number string
+// UpdateRepair records workshop progress. A finished warranty repair makes the claim ready for
+// collection (an unrepairable one waits for a replacement or refund). A finished refurbishment
+// puts the device into sellable stock as refurbished; an unrepairable one is written off.
+func (s *Service) UpdateRepair(ctx context.Context, jobID uuid.UUID, in RepairUpdate) (RepairView, error) {
+	actor := httpx.MustPrincipal(ctx).UserID
 	err := s.d.Runner.Run(ctx, func(tx *uow.Tx) error {
 		j, err := tx.Q.WarrantyRepairForUpdate(ctx, jobID)
 		if err != nil {
 			return httpx.NotFound("Repair job")
 		}
-		number = j.ClaimNumber
 		if !repairCanMove(j.Status, in.Status) {
 			return httpx.Conflict("bad_transition", "A repair can't go from "+humanise(j.Status)+" to "+humanise(in.Status)+".")
 		}
@@ -245,10 +245,13 @@ func (s *Service) UpdateRepair(ctx context.Context, jobID uuid.UUID, in RepairUp
 			Notes: optional(in.Notes), TechnicianID: in.TechnicianID}); err != nil {
 			return httpx.DB(err, "technician")
 		}
-		if in.Status != "done" {
+		if j.Purpose == "refurbish" {
+			return s.finishRefurb(ctx, tx, j.ID, j.DeviceUnitID, in.Status, actor)
+		}
+		if in.Status != "done" || j.ClaimNumber == nil {
 			return nil
 		}
-		c, err := tx.Q.WarrantyClaimForUpdate(ctx, j.ClaimNumber)
+		c, err := tx.Q.WarrantyClaimForUpdate(ctx, *j.ClaimNumber)
 		if err != nil {
 			return err
 		}
@@ -259,9 +262,31 @@ func (s *Service) UpdateRepair(ctx context.Context, jobID uuid.UUID, in RepairUp
 		return s.tellClaim(ctx, tx, c, "repaired and ready to collect")
 	})
 	if err != nil {
-		return Claim{}, err
+		return RepairView{}, err
 	}
-	return s.claimView(ctx, number)
+	return s.repairView(ctx, jobID)
+}
+
+// finishRefurb stocks a refurbished device, or writes off one that can't be fixed.
+func (s *Service) finishRefurb(ctx context.Context, tx *uow.Tx, jobID uuid.UUID, unitID *uuid.UUID, status string, actor uuid.UUID) error {
+	if unitID == nil || (status != "done" && status != "unrepairable") {
+		return nil
+	}
+	u, err := tx.Q.WarrantyUnit(ctx, *unitID)
+	if err != nil {
+		return err
+	}
+	if status == "unrepairable" {
+		return tx.Q.WarrantySetUnit(ctx, store.WarrantySetUnitParams{ID: u.ID, Status: "written_off", WarehouseID: u.WarehouseID})
+	}
+	if u.WarehouseID == nil {
+		return httpx.Conflict("no_warehouse", "The device has no location; move it to a warehouse first.")
+	}
+	if _, err := s.inv.Apply(ctx, tx, inventory.Move{WarehouseID: *u.WarehouseID, VariantID: u.VariantID, Condition: "refurbished", OwnerSellerID: u.OwnerSellerID,
+		Delta: 1, Reason: "trade_in", DeviceUnitID: &u.ID, RefType: "repair_job", RefID: &jobID, Actor: &actor}); err != nil {
+		return err
+	}
+	return tx.Q.WarrantySetUnit(ctx, store.WarrantySetUnitParams{ID: u.ID, Status: "in_stock", WarehouseID: u.WarehouseID})
 }
 
 // ResolveInput settles a claim that can't be (or wasn't) repaired.

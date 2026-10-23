@@ -1,5 +1,26 @@
 components:
   schemas:
+    AcceptInput:
+      additionalProperties: false
+      properties:
+        accountName:
+          description: As the bank has it; checked with a name enquiry
+          maxLength: 120
+          type: string
+        accountNumber:
+          pattern: ^[0-9]{10}$
+          type: string
+        bankCode:
+          maxLength: 10
+          type: string
+        payoutMethod:
+          enum:
+            - store_credit
+            - bank
+          type: string
+      required:
+        - payoutMethod
+      type: object
     AcceptInviteRequest:
       additionalProperties: false
       properties:
@@ -3665,6 +3686,31 @@ components:
         - grade
         - disposition
       type: object
+    InspectTradeInInput:
+      additionalProperties: false
+      properties:
+        condition:
+          enum:
+            - like_new
+            - good
+            - fair
+            - faulty
+          type: string
+        notes:
+          description: "What was checked: screen, battery, iCloud/Google lock, accessories"
+          maxLength: 1000
+          type: string
+        offer:
+          description: Kobo. Leave out to price from the catalogue and the grade
+          format: int64
+          minimum: 0
+          type: integer
+        variantId:
+          description: The catalogue model, if the request didn't have one (needed to stock it)
+          type: string
+      required:
+        - condition
+      type: object
     InventoryDeviceUnit:
       additionalProperties: false
       properties:
@@ -7284,10 +7330,12 @@ components:
           minLength: 8
           type: string
         provider:
+          description: store_credit pays the whole order from your store credit
           enum:
             - paystack
             - opay
             - moniepoint
+            - store_credit
           type: string
       required:
         - addressId
@@ -8050,6 +8098,22 @@ components:
       required:
         - reason
       type: object
+    ReceiveInput:
+      additionalProperties: false
+      properties:
+        imei:
+          description: Required for phones and tablets
+          maxLength: 20
+          type: string
+        serial:
+          description: Laptops, consoles, watches
+          maxLength: 40
+          type: string
+        storeId:
+          type: string
+      required:
+        - storeId
+      type: object
     RefreshTokensRequest:
       additionalProperties: false
       properties:
@@ -8189,6 +8253,80 @@ components:
           type: string
       required:
         - status
+      type: object
+    RepairView:
+      additionalProperties: false
+      properties:
+        claimNumber:
+          type:
+            - string
+            - "null"
+        createdAt:
+          format: date-time
+          type: string
+        device:
+          type: string
+        diagnosis:
+          type:
+            - string
+            - "null"
+        finishedAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        id:
+          type: string
+        imeiOrSerial:
+          type:
+            - string
+            - "null"
+        notes:
+          type:
+            - string
+            - "null"
+        purpose:
+          enum:
+            - warranty
+            - refurbish
+          type: string
+        startedAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        status:
+          enum:
+            - queued
+            - diagnosing
+            - awaiting_parts
+            - repairing
+            - done
+            - unrepairable
+          type: string
+        technician:
+          type:
+            - string
+            - "null"
+        tradeIn:
+          description: The trade-in a refurbishment came from
+          type:
+            - string
+            - "null"
+      required:
+        - purpose
+        - claimNumber
+        - tradeIn
+        - device
+        - imeiOrSerial
+        - id
+        - status
+        - diagnosis
+        - notes
+        - technician
+        - startedAt
+        - finishedAt
+        - createdAt
       type: object
     ReplyBody:
       additionalProperties: false
@@ -10350,6 +10488,19 @@ components:
       required:
         - decision
       type: object
+    StaffEstimateTradeInRequest:
+      additionalProperties: false
+      properties:
+        estimate:
+          description: Kobo
+          format: int64
+          minimum: 0
+          type: integer
+        variantId:
+          type: string
+      required:
+        - estimate
+      type: object
     StaffExcludePayoutRequest:
       additionalProperties: false
       properties:
@@ -10432,6 +10583,16 @@ components:
             - "null"
       required:
         - decision
+      type: object
+    StaffPayTradeInRequest:
+      additionalProperties: false
+      properties:
+        reference:
+          description: The bank transfer reference
+          maxLength: 80
+          type: string
+      required:
+        - reference
       type: object
     StaffProviderHealthResponse:
       additionalProperties: false
@@ -11386,6 +11547,296 @@ components:
         - placedAt
         - parcels
         - history
+      type: object
+    TradeIn:
+      additionalProperties: false
+      properties:
+        accountLast4:
+          type:
+            - string
+            - "null"
+        accountName:
+          type:
+            - string
+            - "null"
+        createdAt:
+          format: date-time
+          type: string
+        customer:
+          description: Staff lists only
+          type: string
+        declaredCondition:
+          type: string
+        device:
+          description: Brand, model and storage
+          type: string
+        deviceType:
+          type: string
+        dropOff:
+          description: Where to bring the device while it's estimated
+          items:
+            $ref: "#/components/schemas/Store"
+          type:
+            - array
+            - "null"
+        estimate:
+          description: Kobo
+          format: int64
+          type:
+            - integer
+            - "null"
+        imei:
+          type:
+            - string
+            - "null"
+        inspectedCondition:
+          type:
+            - string
+            - "null"
+        inspectionNotes:
+          type:
+            - string
+            - "null"
+        offer:
+          description: Kobo, after inspection
+          format: int64
+          type:
+            - integer
+            - "null"
+        offerExpiresAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        paidAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        payoutMethod:
+          enum:
+            - bank
+            - store_credit
+          type:
+            - string
+            - "null"
+        payoutReference:
+          type:
+            - string
+            - "null"
+        receivedAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        reference:
+          type: string
+        serial:
+          type:
+            - string
+            - "null"
+        status:
+          enum:
+            - submitted
+            - estimated
+            - awaiting_inspection
+            - inspected
+            - offer_sent
+            - accepted
+            - declined
+            - paid
+            - cancelled
+            - blocked
+          type: string
+        store:
+          type:
+            - string
+            - "null"
+      required:
+        - inspectedCondition
+        - inspectionNotes
+        - imei
+        - serial
+        - store
+        - receivedAt
+        - accountLast4
+        - accountName
+        - paidAt
+        - payoutReference
+        - dropOff
+        - reference
+        - deviceType
+        - device
+        - declaredCondition
+        - estimate
+        - offer
+        - status
+        - payoutMethod
+        - customer
+        - offerExpiresAt
+        - createdAt
+      type: object
+    TradeInDevice:
+      additionalProperties: false
+      properties:
+        brand:
+          type: string
+        estimates:
+          additionalProperties:
+            format: int64
+            type: integer
+          description: "Kobo per condition: like_new, good, fair, faulty"
+          type: object
+        productName:
+          type: string
+        variantId:
+          type: string
+        variantName:
+          type: string
+      required:
+        - variantId
+        - brand
+        - productName
+        - variantName
+        - estimates
+      type: object
+    TradeInInput:
+      additionalProperties: false
+      properties:
+        brand:
+          description: When the model isn't in the list
+          maxLength: 60
+          type: string
+        condition:
+          enum:
+            - like_new
+            - good
+            - fair
+            - faulty
+          type: string
+        deviceType:
+          enum:
+            - phone
+            - laptop
+            - tablet
+            - console
+            - smartwatch
+          type: string
+        imei:
+          description: "Phones and tablets: dial *#06#"
+          maxLength: 20
+          type: string
+        model:
+          maxLength: 80
+          type: string
+        storage:
+          maxLength: 20
+          type: string
+        variantId:
+          description: The matching catalogue model, for an instant estimate
+          type: string
+      required:
+        - deviceType
+        - condition
+      type: object
+    TradeInRow:
+      additionalProperties: false
+      properties:
+        createdAt:
+          format: date-time
+          type: string
+        customer:
+          description: Staff lists only
+          type: string
+        declaredCondition:
+          type: string
+        device:
+          description: Brand, model and storage
+          type: string
+        deviceType:
+          type: string
+        estimate:
+          description: Kobo
+          format: int64
+          type:
+            - integer
+            - "null"
+        offer:
+          description: Kobo, after inspection
+          format: int64
+          type:
+            - integer
+            - "null"
+        offerExpiresAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        payoutMethod:
+          enum:
+            - bank
+            - store_credit
+          type:
+            - string
+            - "null"
+        reference:
+          type: string
+        status:
+          enum:
+            - submitted
+            - estimated
+            - awaiting_inspection
+            - inspected
+            - offer_sent
+            - accepted
+            - declined
+            - paid
+            - cancelled
+            - blocked
+          type: string
+      required:
+        - reference
+        - deviceType
+        - device
+        - declaredCondition
+        - estimate
+        - offer
+        - status
+        - payoutMethod
+        - customer
+        - offerExpiresAt
+        - createdAt
+      type: object
+    TradeInSummary:
+      additionalProperties: false
+      properties:
+        avgPaid:
+          description: Kobo, last 90 days
+          format: int64
+          type: integer
+        awaitingInspection:
+          format: int32
+          type: integer
+        needsEstimate:
+          format: int32
+          type: integer
+        offersOut:
+          format: int32
+          type: integer
+        paidThisMonth:
+          format: int32
+          type: integer
+        payoutsDue:
+          description: Accepted, to be paid by bank transfer
+          format: int32
+          type: integer
+      required:
+        - needsEstimate
+        - awaitingInspection
+        - offersOut
+        - payoutsDue
+        - paidThisMonth
+        - avgPaid
       type: object
     TransferAccount:
       additionalProperties: false
@@ -14850,6 +15301,171 @@ paths:
       summary: Reply on your ticket (reopens a resolved one)
       tags:
         - Support
+  /api/v1/me/trade-ins:
+    get:
+      operationId: myTradeIns
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/TradeInRow"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Your trade-ins, newest first
+      tags:
+        - Trade-ins
+    post:
+      operationId: startTradeIn
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TradeInInput"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeIn"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Get an estimate, then bring the device to a store
+      tags:
+        - Trade-ins
+  /api/v1/me/trade-ins/{ref}:
+    get:
+      operationId: myTradeIn
+      parameters:
+        - in: path
+          name: ref
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeIn"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: One of your trade-ins
+      tags:
+        - Trade-ins
+  /api/v1/me/trade-ins/{ref}/accept:
+    post:
+      operationId: acceptTradeIn
+      parameters:
+        - in: path
+          name: ref
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcceptInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeIn"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: "Take the offer: store credit at once, or a bank transfer"
+      tags:
+        - Trade-ins
+  /api/v1/me/trade-ins/{ref}/cancel:
+    post:
+      operationId: cancelTradeIn
+      parameters:
+        - in: path
+          name: ref
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeIn"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Withdraw before handing the device in
+      tags:
+        - Trade-ins
+  /api/v1/me/trade-ins/{ref}/decline:
+    post:
+      operationId: declineTradeIn
+      parameters:
+        - in: path
+          name: ref
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeIn"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Turn the offer down and collect the device
+      tags:
+        - Trade-ins
   /api/v1/me/warranty-claims:
     get:
       operationId: myWarrantyClaims
@@ -20748,6 +21364,245 @@ paths:
       summary: Change a ticket's status or priority
       tags:
         - Staff · Support
+  /api/v1/staff/trade-ins:
+    get:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffTradeIns
+      parameters:
+        - explode: false
+          in: query
+          name: status
+          schema:
+            enum:
+              - active
+              - payout_due
+              - submitted
+              - estimated
+              - awaiting_inspection
+              - offer_sent
+              - accepted
+              - declined
+              - paid
+              - cancelled
+              - blocked
+              - ""
+            type: string
+        - description: Reference or IMEI
+          explode: false
+          in: query
+          name: q
+          schema:
+            description: Reference or IMEI
+            maxLength: 40
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/TradeInRow"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: "Trade-ins: work waiting first"
+      tags:
+        - Staff · Trade-ins
+  /api/v1/staff/trade-ins/summary:
+    get:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffTradeInSummary
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeInSummary"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Trade-in counts
+      tags:
+        - Staff · Trade-ins
+  /api/v1/staff/trade-ins/{ref}:
+    get:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffTradeIn
+      parameters:
+        - in: path
+          name: ref
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeIn"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: One trade-in
+      tags:
+        - Staff · Trade-ins
+  /api/v1/staff/trade-ins/{ref}/estimate:
+    post:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffEstimateTradeIn
+      parameters:
+        - in: path
+          name: ref
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffEstimateTradeInRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeIn"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Price a device we couldn't price automatically
+      tags:
+        - Staff · Trade-ins
+  /api/v1/staff/trade-ins/{ref}/inspection:
+    post:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffInspectTradeIn
+      parameters:
+        - in: path
+          name: ref
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InspectTradeInInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeIn"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Grade the device and send the offer (valid 7 days)
+      tags:
+        - Staff · Trade-ins
+  /api/v1/staff/trade-ins/{ref}/paid:
+    post:
+      description: Requires permission `refunds.approve`.
+      operationId: staffPayTradeIn
+      parameters:
+        - in: path
+          name: ref
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffPayTradeInRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeIn"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Record the bank transfer for an accepted trade-in (finance; not whoever priced it)
+      tags:
+        - Staff · Trade-ins
+  /api/v1/staff/trade-ins/{ref}/receive:
+    post:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffReceiveTradeIn
+      parameters:
+        - in: path
+          name: ref
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReceiveInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeIn"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Take the device at a store (IMEI and risk check)
+      tags:
+        - Staff · Trade-ins
   /api/v1/staff/vendors:
     get:
       description: Requires permission `vendors.view`.
@@ -21176,6 +22031,56 @@ paths:
       summary: Replace from stock, or refund one unit (finance approves)
       tags:
         - Staff · Warranty
+  /api/v1/staff/warranty/repairs:
+    get:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffRepairQueue
+      parameters:
+        - explode: false
+          in: query
+          name: status
+          schema:
+            enum:
+              - active
+              - queued
+              - diagnosing
+              - awaiting_parts
+              - repairing
+              - done
+              - unrepairable
+              - ""
+            type: string
+        - explode: false
+          in: query
+          name: purpose
+          schema:
+            enum:
+              - warranty
+              - refurbish
+              - ""
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/RepairView"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: "The workshop: warranty repairs and refurbishments"
+      tags:
+        - Staff · Warranty
   /api/v1/staff/warranty/repairs/{id}:
     post:
       description: Requires permission `aftersales.manage`.
@@ -21197,7 +22102,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Claim"
+                $ref: "#/components/schemas/RepairView"
           description: OK
         default:
           content:
@@ -21207,7 +22112,7 @@ paths:
           description: Error
       security:
         - bearer: []
-      summary: Record workshop progress (done makes the claim ready)
+      summary: "Record workshop progress (done: a claim is ready to collect, a refurbished device goes into stock)"
       tags:
         - Staff · Warranty
   /api/v1/staff/warranty/stores:
@@ -21734,6 +22639,42 @@ paths:
       summary: Track an order with its number and phone
       tags:
         - Orders
+  /api/v1/trade-ins/devices:
+    get:
+      operationId: tradeInDevices
+      parameters:
+        - explode: false
+          in: query
+          name: type
+          required: true
+          schema:
+            enum:
+              - phone
+              - laptop
+              - tablet
+              - console
+              - smartwatch
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/TradeInDevice"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      summary: Models we can price instantly, with an estimate per condition (final value after inspection)
+      tags:
+        - Trade-ins
   /api/v1/unsubscribe:
     get:
       operationId: checkUnsubscribe

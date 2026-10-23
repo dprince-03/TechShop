@@ -139,13 +139,26 @@ func (s *Service) warrantyRoutes(r *kit.Routes) {
 			out, err := s.StartRepair(ctx, in.Number, in.Body)
 			return &claimOut{out}, err
 		})
-	httpx.Register(g, st(httpx.Op{ID: "staffUpdateRepair", Method: http.MethodPost, Path: "/api/v1/staff/warranty/repairs/{id}", Summary: "Record workshop progress (done makes the claim ready)"}),
+	httpx.Register(g, st(httpx.Op{ID: "staffRepairQueue", Method: http.MethodGet, Path: "/api/v1/staff/warranty/repairs", Summary: "The workshop: warranty repairs and refurbishments"}),
+		func(ctx context.Context, in *struct {
+			Status  string `query:"status" enum:"active,queued,diagnosing,awaiting_parts,repairing,done,unrepairable,"`
+			Purpose string `query:"purpose" enum:"warranty,refurbish,"`
+		}) (*struct{ Body []RepairView }, error) {
+			rows, err := s.d.Q.WarrantyRepairQueue(ctx, store.WarrantyRepairQueueParams{Status: optional(in.Status), Purpose: optional(in.Purpose)})
+			out := make([]RepairView, len(rows))
+			for i, r := range rows {
+				out[i] = repairViewOf(r)
+			}
+			return &struct{ Body []RepairView }{out}, err
+		})
+	httpx.Register(g, st(httpx.Op{ID: "staffUpdateRepair", Method: http.MethodPost, Path: "/api/v1/staff/warranty/repairs/{id}",
+		Summary: "Record workshop progress (done: a claim is ready to collect, a refurbished device goes into stock)"}),
 		func(ctx context.Context, in *struct {
 			ID   uuid.UUID `path:"id"`
 			Body RepairUpdate
-		}) (*claimOut, error) {
+		}) (*struct{ Body RepairView }, error) {
 			out, err := s.UpdateRepair(ctx, in.ID, in.Body)
-			return &claimOut{out}, err
+			return &struct{ Body RepairView }{out}, err
 		})
 	httpx.Register(g, st(httpx.Op{ID: "staffResolveClaim", Method: http.MethodPost, Path: "/api/v1/staff/warranty/claims/{number}/resolution", Summary: "Replace from stock, or refund one unit (finance approves)"}),
 		func(ctx context.Context, in *struct {

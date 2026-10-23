@@ -122,6 +122,11 @@ func (s *Service) Providers(ctx context.Context) []string {
 
 // Intent implements sales.PaymentPort: a payment row in the checkout transaction.
 func (s *Service) Intent(ctx context.Context, tx *uow.Tx, o store.SalesOrder, provider string) (store.PaymentsPayment, error) {
+	if provider == StoreCredit {
+		if err := s.holdStoreCredit(ctx, tx, o); err != nil {
+			return store.PaymentsPayment{}, err
+		}
+	}
 	n, err := tx.Q.PaymentsCountForOrder(ctx, &o.ID)
 	if err != nil {
 		return store.PaymentsPayment{}, err
@@ -131,7 +136,37 @@ func (s *Service) Intent(ctx context.Context, tx *uow.Tx, o store.SalesOrder, pr
 	if err != nil {
 		return p, httpx.DB(err, "payment")
 	}
+	if provider == StoreCredit { // settled at once; the order is marked paid in the same transaction
+		ref := "store-credit"
+		return tx.Q.PaymentsSetStatus(ctx, store.PaymentsSetStatusParams{ID: p.ID, Status: "succeeded", ProviderStatus: &ref})
+	}
 	return p, nil
+}
+
+// StoreCredit is the "provider" for orders paid from the customer's store credit. For now it
+// pays the whole order or nothing (docs/plan.md 2026-10-23: split payments come later).
+const StoreCredit = "store_credit"
+
+// holdStoreCredit locks the customer's credit account and checks it covers the order, so two
+// checkouts can't spend the same credit.
+func (s *Service) holdStoreCredit(ctx context.Context, tx *uow.Tx, o store.SalesOrder) error {
+	if o.CustomerUserID == nil {
+		return httpx.Invalid("store_credit_unavailable", "Sign in to pay with store credit.")
+	}
+	code := ledger.StoreCredit(*o.CustomerUserID)
+	if _, err := tx.Q.PaymentsLockAccount(ctx, code); errors.Is(err, pgx.ErrNoRows) {
+		return httpx.Invalid("store_credit_insufficient", "You don't have store credit yet.")
+	} else if err != nil {
+		return err
+	}
+	bal, err := tx.Q.FinanceAccountBalance(ctx, code)
+	if err != nil {
+		return err
+	}
+	if -bal < o.TotalKobo { // a liability: credit balances are negative
+		return httpx.Invalid("store_credit_insufficient", "Your store credit ("+money.Format(-bal)+") doesn't cover this order ("+money.Format(o.TotalKobo)+"). Choose another way to pay.")
+	}
+	return nil
 }
 
 // reference is the merchant reference sent to providers (unique per payment).
@@ -144,6 +179,9 @@ func (s *Service) Open(ctx context.Context, paymentID uuid.UUID) (sales.PaymentA
 	p, err := s.d.Q.PaymentsGet(ctx, paymentID)
 	if err != nil {
 		return sales.PaymentAction{}, err
+	}
+	if p.Provider == StoreCredit {
+		return sales.PaymentAction{PaymentID: p.ID, Provider: p.Provider, Status: p.Status, Message: "Paid with your store credit."}, nil
 	}
 	prov, err := s.provider(p.Provider)
 	if err != nil {
@@ -436,7 +474,7 @@ func (s *Service) latePayment(ctx context.Context, tx *uow.Tx, p store.PaymentsP
 		}
 	}
 	// Not reinstated: book the money as owed back to the customer, then ask for the refund.
-	if err := s.ledger.Sale(ctx, tx, p.ID, *p.OrderID, p.Provider, paid, 0, paid, nil); err != nil {
+	if err := s.ledger.Sale(ctx, tx, p.ID, *p.OrderID, ledger.Clearing(p.Provider), paid, 0, paid, nil); err != nil {
 		return err
 	}
 	return s.requestExcessRefund(ctx, tx, p, paid, "late payment for a cancelled order")
@@ -505,7 +543,7 @@ func (s *Service) ExpireOrders(ctx context.Context) (int, error) {
 					// Partial transfer then expiry: the partial amount goes back (§4.3).
 					for _, p := range pays {
 						if derefStr(p.Channel) == "bank_transfer" {
-							if err := s.ledger.Sale(ctx, tx, p.ID, o.ID, p.Provider, va.ReceivedKobo, 0, va.ReceivedKobo, nil); err != nil {
+							if err := s.ledger.Sale(ctx, tx, p.ID, o.ID, ledger.Clearing(p.Provider), va.ReceivedKobo, 0, va.ReceivedKobo, nil); err != nil {
 								return err
 							}
 							if err := s.requestExcessRefund(ctx, tx, p, va.ReceivedKobo, "partial transfer before the order expired"); err != nil {
@@ -651,7 +689,8 @@ func (s *Service) Execute(ctx context.Context, refundID uuid.UUID) error {
 	var res RefundResult
 	var storeCreditFor *uuid.UUID
 	switch {
-	case r.Method == "store_credit" && o.CustomerUserID != nil:
+	case (r.Method == "store_credit" || pay.Provider == StoreCredit) && o.CustomerUserID != nil:
+		// Asked for store credit, or the order was paid with it: the money goes back there.
 		storeCreditFor = o.CustomerUserID
 		res = RefundResult{Status: "processed", Reference: "store-credit"}
 	default:

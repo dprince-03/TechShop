@@ -78,6 +78,7 @@ type AftersalesRepairJob struct {
 	CreatedAt       time.Time  `json:"createdAt"`
 	UpdatedAt       time.Time  `json:"updatedAt"`
 	Notes           *string    `json:"notes"`
+	Purpose         string     `json:"purpose"`
 }
 
 // [aftersales] Inspection of returned items: serial must match the unit sold (swap fraud), grade and disposition.
@@ -145,6 +146,20 @@ type AftersalesTradeIn struct {
 	PaidAt                 *time.Time `json:"paidAt"`
 	CreatedAt              time.Time  `json:"createdAt"`
 	UpdatedAt              time.Time  `json:"updatedAt"`
+	// The catalogue variant it matches (prices the estimate; needed before it can enter stock).
+	VariantID       *uuid.UUID `json:"variantId"`
+	SerialNumber    *string    `json:"serialNumber"`
+	StoreID         *uuid.UUID `json:"storeId"`
+	ReceivedAt      *time.Time `json:"receivedAt"`
+	ReceivedBy      *uuid.UUID `json:"receivedBy"`
+	InspectedAt     *time.Time `json:"inspectedAt"`
+	InspectionNotes *string    `json:"inspectionNotes"`
+	OfferExpiresAt  *time.Time `json:"offerExpiresAt"`
+	DecidedAt       *time.Time `json:"decidedAt"`
+	AccountName     *string    `json:"accountName"`
+	PayoutReference *string    `json:"payoutReference"`
+	PaidBy          *uuid.UUID `json:"paidBy"`
+	RepairJobID     *uuid.UUID `json:"repairJobId"`
 }
 
 // [aftersales] Warranty claims, identified by IMEI/serial.

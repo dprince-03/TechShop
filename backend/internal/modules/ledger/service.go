@@ -195,8 +195,10 @@ type SaleLine struct {
 // Sale posts "payment captured": clearing ← paid; revenue/VAT for TechShop stock, seller
 // payables for marketplace items, delivery revenue, TechShop-funded discounts as an expense,
 // and any overpayment as a refund liability.
-func (s *Service) Sale(ctx context.Context, tx *uow.Tx, paymentID, orderID uuid.UUID, provider string, paid, deliveryFee, overpaid int64, lines []SaleLine) error {
-	ls := []Line{{Clearing(provider), paid}}
+// from is where the money came from: the provider's clearing account, or the customer's store
+// credit.
+func (s *Service) Sale(ctx context.Context, tx *uow.Tx, paymentID, orderID uuid.UUID, from string, paid, deliveryFee, overpaid int64, lines []SaleLine) error {
+	ls := []Line{{from, paid}}
 	for _, l := range lines {
 		net := l.Gross - l.Discount
 		switch {

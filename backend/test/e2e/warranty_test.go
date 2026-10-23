@@ -58,8 +58,11 @@ func TestWarrantyClaimRepairCollect(t *testing.T) {
 	expect(t, post(t, "/api/v1/staff/warranty/repairs/"+job, tech, map[string]any{"status": "repairing"}), 200, "repairing")
 	done := post(t, "/api/v1/staff/warranty/repairs/"+job, tech, map[string]any{"status": "done", "notes": "Port replaced, charges at full speed"})
 	expect(t, done, 200, "done")
-	if done.str("status") != "ready" || done.str("resolution") != "repaired" {
-		t.Fatalf("a finished repair is ready to collect: %s", done.Raw)
+	if done.str("status") != "done" || done.str("claimNumber") != number || done.str("purpose") != "warranty" {
+		t.Fatalf("finished job: %s", done.Raw)
+	}
+	if c := get(t, "/api/v1/staff/warranty/claims/"+number, tech); c.str("status") != "ready" || c.str("resolution") != "repaired" {
+		t.Fatalf("a finished repair is ready to collect: %s", c.Raw)
 	}
 	mine := get(t, "/api/v1/me/warranty-claims/"+number, cust)
 	if mine.str("status") != "ready" || mine.str("store") != "Victoria Island store" {

@@ -126,8 +126,32 @@ from aftersales.repair_jobs r left join identity.users u on u.id = r.technician_
 where r.warranty_claim_id = $1 order by r.created_at;
 
 -- name: WarrantyRepairForUpdate :one
-select r.*, wc.claim_number from aftersales.repair_jobs r join aftersales.warranty_claims wc on wc.id = r.warranty_claim_id
+select r.*, wc.claim_number, t.reference as trade_in_ref from aftersales.repair_jobs r
+left join aftersales.warranty_claims wc on wc.id = r.warranty_claim_id
+left join aftersales.trade_ins t on t.repair_job_id = r.id
 where r.id = $1 for update of r;
+
+-- name: WarrantyRepairQueue :many
+-- The workshop: warranty repairs and refurbishments, unfinished first.
+select r.*, wc.claim_number, t.reference as trade_in_ref, p.name as product_name, v.name as variant_name, du.imei, du.serial_number,
+       u.first_name as technician_first_name
+from aftersales.repair_jobs r
+left join aftersales.warranty_claims wc on wc.id = r.warranty_claim_id
+left join aftersales.trade_ins t on t.repair_job_id = r.id
+left join inventory.device_units du on du.id = r.device_unit_id
+left join sales.order_lines ol on ol.id = wc.order_line_id
+left join catalog.product_variants v on v.id = coalesce(du.variant_id, ol.variant_id)
+left join catalog.products p on p.id = v.product_id
+left join identity.users u on u.id = r.technician_id
+where (sqlc.narg('status')::text is null or r.status = sqlc.narg('status')
+       or (sqlc.narg('status') = 'active' and r.status not in ('done', 'unrepairable')))
+  and (sqlc.narg('purpose')::text is null or r.purpose = sqlc.narg('purpose'))
+  and (sqlc.narg('id')::uuid is null or r.id = sqlc.narg('id'))
+order by (r.status not in ('done', 'unrepairable')) desc, r.created_at
+limit 200;
+
+-- name: WarrantyUnit :one
+select * from inventory.device_units where id = $1 for update;
 
 -- name: WarrantyUpdateRepair :one
 update aftersales.repair_jobs

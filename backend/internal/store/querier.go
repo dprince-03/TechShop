@@ -494,6 +494,8 @@ type Querier interface {
 	PaymentsLatestForOrder(ctx context.Context, orderID *uuid.UUID) (PaymentsPayment, error)
 	PaymentsListExceptions(ctx context.Context, arg PaymentsListExceptionsParams) ([]PaymentsReconciliationException, error)
 	PaymentsListRefunds(ctx context.Context, arg PaymentsListRefundsParams) ([]PaymentsListRefundsRow, error)
+	// Locks a ledger account row so two checkouts can't spend the same store credit.
+	PaymentsLockAccount(ctx context.Context, code string) (uuid.UUID, error)
 	PaymentsMarkEventProcessed(ctx context.Context, arg PaymentsMarkEventProcessedParams) error
 	PaymentsOrderRefunds(ctx context.Context, orderID uuid.UUID) ([]PaymentsRefund, error)
 	PaymentsOrderWithCustomer(ctx context.Context, id uuid.UUID) (PaymentsOrderWithCustomerRow, error)
@@ -825,6 +827,33 @@ type Querier interface {
 	SupportTicketsForCustomer(ctx context.Context, customerUserID *uuid.UUID) ([]SupportTicketsForCustomerRow, error)
 	SupportTicketsForSeller(ctx context.Context, sellerID *uuid.UUID) ([]SupportTicketsForSellerRow, error)
 	SupportUserContact(ctx context.Context, id uuid.UUID) (SupportUserContactRow, error)
+	TradeIn(ctx context.Context, reference string) (TradeInRow, error)
+	TradeInAccountAgeDays(ctx context.Context, id uuid.UUID) (float64, error)
+	TradeInBlock(ctx context.Context, arg TradeInBlockParams) (AftersalesTradeIn, error)
+	TradeInCreate(ctx context.Context, arg TradeInCreateParams) (AftersalesTradeIn, error)
+	TradeInCreateRefurb(ctx context.Context, arg TradeInCreateRefurbParams) (AftersalesRepairJob, error)
+	TradeInCreateUnit(ctx context.Context, arg TradeInCreateUnitParams) (InventoryDeviceUnit, error)
+	TradeInDecide(ctx context.Context, arg TradeInDecideParams) (AftersalesTradeIn, error)
+	// Trade-ins: catalogue estimate, drop-off, inspection, offer, payout. Plan: docs/plan.md 2026-10-23.
+	// Catalogue variants we can price, with today's lowest new price on a live listing.
+	TradeInDevices(ctx context.Context, slugs []string) ([]TradeInDevicesRow, error)
+	// Offers not answered within 7 days lapse: the device waits at the store for collection.
+	TradeInExpireOffers(ctx context.Context) ([]TradeInExpireOffersRow, error)
+	TradeInFirstPartySeller(ctx context.Context) (uuid.UUID, error)
+	TradeInForUpdate(ctx context.Context, reference string) (AftersalesTradeIn, error)
+	TradeInLinkUnit(ctx context.Context, arg TradeInLinkUnitParams) error
+	TradeInOffer(ctx context.Context, arg TradeInOfferParams) (AftersalesTradeIn, error)
+	TradeInPaid(ctx context.Context, arg TradeInPaidParams) (AftersalesTradeIn, error)
+	TradeInReceive(ctx context.Context, arg TradeInReceiveParams) (AftersalesTradeIn, error)
+	// Trade-ins by the same person in the last 7 days (a velocity feature).
+	TradeInRecent(ctx context.Context, userID uuid.UUID) (int32, error)
+	TradeInSetEstimate(ctx context.Context, arg TradeInSetEstimateParams) (AftersalesTradeIn, error)
+	TradeInSetStatus(ctx context.Context, arg TradeInSetStatusParams) (AftersalesTradeIn, error)
+	TradeInStaffList(ctx context.Context, arg TradeInStaffListParams) ([]TradeInStaffListRow, error)
+	TradeInSummary(ctx context.Context) (TradeInSummaryRow, error)
+	// One variant's lowest new price (for the estimate) and its category.
+	TradeInVariantPrice(ctx context.Context, id uuid.UUID) (TradeInVariantPriceRow, error)
+	TradeInsForUser(ctx context.Context, userID uuid.UUID) ([]AftersalesTradeIn, error)
 	WarrantyClaim(ctx context.Context, claimNumber string) (WarrantyClaimRow, error)
 	WarrantyClaimForUpdate(ctx context.Context, claimNumber string) (AftersalesWarrantyClaim, error)
 	WarrantyClaimsForUser(ctx context.Context, customerUserID uuid.UUID) ([]WarrantyClaimsForUserRow, error)
@@ -844,6 +873,8 @@ type Querier interface {
 	WarrantyReceive(ctx context.Context, arg WarrantyReceiveParams) (AftersalesWarrantyClaim, error)
 	WarrantyReject(ctx context.Context, arg WarrantyRejectParams) (AftersalesWarrantyClaim, error)
 	WarrantyRepairForUpdate(ctx context.Context, id uuid.UUID) (WarrantyRepairForUpdateRow, error)
+	// The workshop: warranty repairs and refurbishments, unfinished first.
+	WarrantyRepairQueue(ctx context.Context, arg WarrantyRepairQueueParams) ([]WarrantyRepairQueueRow, error)
 	WarrantyRepairs(ctx context.Context, warrantyClaimID *uuid.UUID) ([]WarrantyRepairsRow, error)
 	// An in-stock unit of the same variant to swap in, found by its IMEI or serial.
 	WarrantyReplacementUnit(ctx context.Context, arg WarrantyReplacementUnitParams) (InventoryDeviceUnit, error)
@@ -855,6 +886,7 @@ type Querier interface {
 	// Where customers can bring a device: TechShop stores and warehouses (not hubs).
 	WarrantyStores(ctx context.Context) ([]WarrantyStoresRow, error)
 	WarrantySummary(ctx context.Context) (WarrantySummaryRow, error)
+	WarrantyUnit(ctx context.Context, id uuid.UUID) (InventoryDeviceUnit, error)
 	WarrantyUpdateRepair(ctx context.Context, arg WarrantyUpdateRepairParams) (AftersalesRepairJob, error)
 }
 

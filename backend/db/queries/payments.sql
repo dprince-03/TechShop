@@ -145,3 +145,7 @@ select * from payments.refunds
 where status = 'processing' and provider_reference is not null
   and (sqlc.narg('older_than')::timestamptz is null or updated_at < sqlc.narg('older_than'))
 order by updated_at limit 100;
+
+-- name: PaymentsLockAccount :one
+-- Locks a ledger account row so two checkouts can't spend the same store credit.
+select id from finance.ledger_accounts where code = $1 for update;
