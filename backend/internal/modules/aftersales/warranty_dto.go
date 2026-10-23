@@ -172,3 +172,41 @@ func last4(imei, serial *string) *string {
 	}
 	return nil
 }
+
+// RepairView is a workshop job with what it's for.
+type RepairView struct {
+	RepairJob
+	Purpose      string  `json:"purpose" enum:"warranty,refurbish"`
+	ClaimNumber  *string `json:"claimNumber"`
+	TradeIn      *string `json:"tradeIn" doc:"The trade-in a refurbishment came from"`
+	Device       string  `json:"device"`
+	IMEIOrSerial *string `json:"imeiOrSerial"`
+}
+
+func repairViewOf(r store.WarrantyRepairQueueRow) RepairView {
+	device := ""
+	if r.ProductName != nil {
+		device = *r.ProductName
+		if r.VariantName != nil {
+			device += " " + *r.VariantName
+		}
+	}
+	serial := r.Imei
+	if serial == nil {
+		serial = r.SerialNumber
+	}
+	return RepairView{RepairJob: RepairJob{ID: r.ID, Status: r.Status, Diagnosis: r.Diagnosis, Notes: r.Notes, Technician: r.TechnicianFirstName,
+		StartedAt: r.StartedAt, FinishedAt: r.FinishedAt, CreatedAt: r.CreatedAt}, Purpose: r.Purpose, ClaimNumber: r.ClaimNumber, TradeIn: r.TradeInRef,
+		Device: device, IMEIOrSerial: serial}
+}
+
+func (s *Service) repairView(ctx context.Context, id uuid.UUID) (RepairView, error) {
+	rows, err := s.d.Q.WarrantyRepairQueue(ctx, store.WarrantyRepairQueueParams{ID: &id})
+	if err != nil {
+		return RepairView{}, err
+	}
+	if len(rows) == 0 {
+		return RepairView{}, httpx.NotFound("Repair job")
+	}
+	return repairViewOf(rows[0]), nil
+}

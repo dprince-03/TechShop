@@ -718,6 +718,18 @@ func (q *Queries) PaymentsListRefunds(ctx context.Context, arg PaymentsListRefun
 	return items, nil
 }
 
+const paymentsLockAccount = `-- name: PaymentsLockAccount :one
+select id from finance.ledger_accounts where code = $1 for update
+`
+
+// Locks a ledger account row so two checkouts can't spend the same store credit.
+func (q *Queries) PaymentsLockAccount(ctx context.Context, code string) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, paymentsLockAccount, code)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
 const paymentsMarkEventProcessed = `-- name: PaymentsMarkEventProcessed :exec
 update payments.payment_events set processed_at = now(), payment_id = coalesce(payment_id, $2),
   payout_id = coalesce(payout_id, $3) where id = $1

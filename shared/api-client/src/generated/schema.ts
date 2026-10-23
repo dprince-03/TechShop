@@ -1540,6 +1540,92 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/me/trade-ins": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Your trade-ins, newest first */
+    get: operations["myTradeIns"];
+    put?: never;
+    /** Get an estimate, then bring the device to a store */
+    post: operations["startTradeIn"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/trade-ins/{ref}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** One of your trade-ins */
+    get: operations["myTradeIn"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/trade-ins/{ref}/accept": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Take the offer: store credit at once, or a bank transfer */
+    post: operations["acceptTradeIn"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/trade-ins/{ref}/cancel": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Withdraw before handing the device in */
+    post: operations["cancelTradeIn"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/trade-ins/{ref}/decline": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Turn the offer down and collect the device */
+    post: operations["declineTradeIn"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/me/warranty-claims": {
     parameters: {
       query?: never;
@@ -4801,6 +4887,146 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/staff/trade-ins": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Trade-ins: work waiting first
+     * @description Requires permission `aftersales.manage`.
+     */
+    get: operations["staffTradeIns"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/trade-ins/summary": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Trade-in counts
+     * @description Requires permission `aftersales.manage`.
+     */
+    get: operations["staffTradeInSummary"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/trade-ins/{ref}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * One trade-in
+     * @description Requires permission `aftersales.manage`.
+     */
+    get: operations["staffTradeIn"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/trade-ins/{ref}/estimate": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Price a device we couldn't price automatically
+     * @description Requires permission `aftersales.manage`.
+     */
+    post: operations["staffEstimateTradeIn"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/trade-ins/{ref}/inspection": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Grade the device and send the offer (valid 7 days)
+     * @description Requires permission `aftersales.manage`.
+     */
+    post: operations["staffInspectTradeIn"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/trade-ins/{ref}/paid": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Record the bank transfer for an accepted trade-in (finance; not whoever priced it)
+     * @description Requires permission `refunds.approve`.
+     */
+    post: operations["staffPayTradeIn"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/trade-ins/{ref}/receive": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Take the device at a store (IMEI and risk check)
+     * @description Requires permission `aftersales.manage`.
+     */
+    post: operations["staffReceiveTradeIn"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/staff/vendors": {
     parameters: {
       query?: never;
@@ -5025,6 +5251,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/staff/warranty/repairs": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The workshop: warranty repairs and refurbishments
+     * @description Requires permission `aftersales.manage`.
+     */
+    get: operations["staffRepairQueue"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/staff/warranty/repairs/{id}": {
     parameters: {
       query?: never;
@@ -5035,7 +5281,7 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Record workshop progress (done makes the claim ready)
+     * Record workshop progress (done: a claim is ready to collect, a refurbished device goes into stock)
      * @description Requires permission `aftersales.manage`.
      */
     post: operations["staffUpdateRepair"];
@@ -5367,6 +5613,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/trade-ins/devices": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Models we can price instantly, with an estimate per condition (final value after inspection) */
+    get: operations["tradeInDevices"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/unsubscribe": {
     parameters: {
       query?: never;
@@ -5440,6 +5703,14 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    AcceptInput: {
+      /** @description As the bank has it; checked with a name enquiry */
+      accountName?: string;
+      accountNumber?: string;
+      bankCode?: string;
+      /** @enum {string} */
+      payoutMethod: "store_credit" | "bank";
+    };
     AcceptInviteRequest: {
       password: string;
       token: string;
@@ -6831,6 +7102,19 @@ export interface components {
       /** @description Where restocked items go */
       warehouseId: string;
     };
+    InspectTradeInInput: {
+      /** @enum {string} */
+      condition: "like_new" | "good" | "fair" | "faulty";
+      /** @description What was checked: screen, battery, iCloud/Google lock, accessories */
+      notes?: string;
+      /**
+       * Format: int64
+       * @description Kobo. Leave out to price from the catalogue and the grade
+       */
+      offer?: number;
+      /** @description The catalogue model, if the request didn't have one (needed to stock it) */
+      variantId?: string;
+    };
     InventoryDeviceUnit: {
       acquiredVia: string;
       condition: string;
@@ -8219,8 +8503,11 @@ export interface components {
       addressId: string;
       couponCode?: string;
       priceHash: string;
-      /** @enum {string} */
-      provider: "paystack" | "opay" | "moniepoint";
+      /**
+       * @description store_credit pays the whole order from your store credit
+       * @enum {string}
+       */
+      provider: "paystack" | "opay" | "moniepoint" | "store_credit";
     };
     Placed: {
       orderId: string;
@@ -8514,6 +8801,13 @@ export interface components {
     ReasonBody: {
       reason: string;
     };
+    ReceiveInput: {
+      /** @description Required for phones and tablets */
+      imei?: string;
+      /** @description Laptops, consoles, watches */
+      serial?: string;
+      storeId: string;
+    };
     RefreshTokensRequest: {
       refreshToken: string;
     };
@@ -8564,6 +8858,33 @@ export interface components {
       status:
         "diagnosing" | "awaiting_parts" | "repairing" | "done" | "unrepairable";
       technicianId?: string;
+    };
+    RepairView: {
+      claimNumber: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      device: string;
+      diagnosis: string | null;
+      /** Format: date-time */
+      finishedAt: string | null;
+      id: string;
+      imeiOrSerial: string | null;
+      notes: string | null;
+      /** @enum {string} */
+      purpose: "warranty" | "refurbish";
+      /** Format: date-time */
+      startedAt: string | null;
+      /** @enum {string} */
+      status:
+        | "queued"
+        | "diagnosing"
+        | "awaiting_parts"
+        | "repairing"
+        | "done"
+        | "unrepairable";
+      technician: string | null;
+      /** @description The trade-in a refurbishment came from */
+      tradeIn: string | null;
     };
     ReplyBody: {
       message: string;
@@ -9426,6 +9747,14 @@ export interface components {
       /** @enum {string} */
       decision: "accepted" | "rejected";
     };
+    StaffEstimateTradeInRequest: {
+      /**
+       * Format: int64
+       * @description Kobo
+       */
+      estimate: number;
+      variantId?: string;
+    };
     StaffExcludePayoutRequest: {
       /** @description Also hold the seller's later payouts until finance releases it */
       hold?: boolean;
@@ -9457,6 +9786,10 @@ export interface components {
       decision: "approved" | "changes_requested" | "rejected" | "suspended";
       note?: string;
       reasons?: string[] | null;
+    };
+    StaffPayTradeInRequest: {
+      /** @description The bank transfer reference */
+      reference: string;
     };
     StaffProviderHealthResponse: {
       available: string[] | null;
@@ -9812,6 +10145,138 @@ export interface components {
       /** Format: date-time */
       placedAt: string;
       status: string;
+    };
+    TradeIn: {
+      accountLast4: string | null;
+      accountName: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** @description Staff lists only */
+      customer: string;
+      declaredCondition: string;
+      /** @description Brand, model and storage */
+      device: string;
+      deviceType: string;
+      /** @description Where to bring the device while it's estimated */
+      dropOff: components["schemas"]["Store"][] | null;
+      /**
+       * Format: int64
+       * @description Kobo
+       */
+      estimate: number | null;
+      imei: string | null;
+      inspectedCondition: string | null;
+      inspectionNotes: string | null;
+      /**
+       * Format: int64
+       * @description Kobo, after inspection
+       */
+      offer: number | null;
+      /** Format: date-time */
+      offerExpiresAt: string | null;
+      /** Format: date-time */
+      paidAt: string | null;
+      /** @enum {string|null} */
+      payoutMethod: "bank" | "store_credit" | null;
+      payoutReference: string | null;
+      /** Format: date-time */
+      receivedAt: string | null;
+      reference: string;
+      serial: string | null;
+      /** @enum {string} */
+      status:
+        | "submitted"
+        | "estimated"
+        | "awaiting_inspection"
+        | "inspected"
+        | "offer_sent"
+        | "accepted"
+        | "declined"
+        | "paid"
+        | "cancelled"
+        | "blocked";
+      store: string | null;
+    };
+    TradeInDevice: {
+      brand: string;
+      /** @description Kobo per condition: like_new, good, fair, faulty */
+      estimates: {
+        [key: string]: number;
+      };
+      productName: string;
+      variantId: string;
+      variantName: string;
+    };
+    TradeInInput: {
+      /** @description When the model isn't in the list */
+      brand?: string;
+      /** @enum {string} */
+      condition: "like_new" | "good" | "fair" | "faulty";
+      /** @enum {string} */
+      deviceType: "phone" | "laptop" | "tablet" | "console" | "smartwatch";
+      /** @description Phones and tablets: dial *#06# */
+      imei?: string;
+      model?: string;
+      storage?: string;
+      /** @description The matching catalogue model, for an instant estimate */
+      variantId?: string;
+    };
+    TradeInRow: {
+      /** Format: date-time */
+      createdAt: string;
+      /** @description Staff lists only */
+      customer: string;
+      declaredCondition: string;
+      /** @description Brand, model and storage */
+      device: string;
+      deviceType: string;
+      /**
+       * Format: int64
+       * @description Kobo
+       */
+      estimate: number | null;
+      /**
+       * Format: int64
+       * @description Kobo, after inspection
+       */
+      offer: number | null;
+      /** Format: date-time */
+      offerExpiresAt: string | null;
+      /** @enum {string|null} */
+      payoutMethod: "bank" | "store_credit" | null;
+      reference: string;
+      /** @enum {string} */
+      status:
+        | "submitted"
+        | "estimated"
+        | "awaiting_inspection"
+        | "inspected"
+        | "offer_sent"
+        | "accepted"
+        | "declined"
+        | "paid"
+        | "cancelled"
+        | "blocked";
+    };
+    TradeInSummary: {
+      /**
+       * Format: int64
+       * @description Kobo, last 90 days
+       */
+      avgPaid: number;
+      /** Format: int32 */
+      awaitingInspection: number;
+      /** Format: int32 */
+      needsEstimate: number;
+      /** Format: int32 */
+      offersOut: number;
+      /** Format: int32 */
+      paidThisMonth: number;
+      /**
+       * Format: int32
+       * @description Accepted, to be paid by bank transfer
+       */
+      payoutsDue: number;
     };
     TransferAccount: {
       accountNumber: string;
@@ -13164,6 +13629,196 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Ticket"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  myTradeIns: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TradeInRow"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  startTradeIn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TradeInInput"];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TradeIn"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  myTradeIn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ref: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TradeIn"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  acceptTradeIn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ref: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AcceptInput"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TradeIn"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  cancelTradeIn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ref: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TradeIn"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  declineTradeIn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ref: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TradeIn"];
         };
       };
       /** @description Error */
@@ -19298,6 +19953,251 @@ export interface operations {
       };
     };
   };
+  staffTradeIns: {
+    parameters: {
+      query?: {
+        status?:
+          | "active"
+          | "payout_due"
+          | "submitted"
+          | "estimated"
+          | "awaiting_inspection"
+          | "offer_sent"
+          | "accepted"
+          | "declined"
+          | "paid"
+          | "cancelled"
+          | "blocked"
+          | "";
+        /** @description Reference or IMEI */
+        q?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TradeInRow"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffTradeInSummary: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TradeInSummary"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffTradeIn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ref: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TradeIn"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffEstimateTradeIn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ref: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StaffEstimateTradeInRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TradeIn"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffInspectTradeIn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ref: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["InspectTradeInInput"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TradeIn"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffPayTradeIn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ref: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StaffPayTradeInRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TradeIn"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffReceiveTradeIn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ref: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReceiveInput"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TradeIn"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   staffListVendors: {
     parameters: {
       query?: {
@@ -19717,6 +20617,46 @@ export interface operations {
       };
     };
   };
+  staffRepairQueue: {
+    parameters: {
+      query?: {
+        status?:
+          | "active"
+          | "queued"
+          | "diagnosing"
+          | "awaiting_parts"
+          | "repairing"
+          | "done"
+          | "unrepairable"
+          | "";
+        purpose?: "warranty" | "refurbish" | "";
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RepairView"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   staffUpdateRepair: {
     parameters: {
       query?: never;
@@ -19738,7 +20678,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["Claim"];
+          "application/json": components["schemas"]["RepairView"];
         };
       };
       /** @description Error */
@@ -20314,6 +21254,37 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Tracking"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  tradeInDevices: {
+    parameters: {
+      query: {
+        type: "phone" | "laptop" | "tablet" | "console" | "smartwatch";
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TradeInDevice"][] | null;
         };
       };
       /** @description Error */

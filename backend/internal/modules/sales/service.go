@@ -285,7 +285,7 @@ func (s *Service) PlaceOrder(ctx context.Context, in CheckoutInput) (*Placed, er
 	if ok, err := s.d.Limiter.Allow(ctx, checkoutLimit, in.UserID.String()); err == nil && !ok {
 		return nil, httpx.E(429, "rate_limited", "Too many checkout attempts. Please wait a few minutes.")
 	}
-	if !contains(s.Pay.Providers(ctx), in.Provider) {
+	if in.Provider != "store_credit" && !contains(s.Pay.Providers(ctx), in.Provider) {
 		return nil, httpx.Invalid("provider_unavailable", "That payment method isn't available right now; please choose another.")
 	}
 	var out Placed
@@ -383,6 +383,11 @@ func (s *Service) PlaceOrder(ctx context.Context, in CheckoutInput) (*Placed, er
 			return err
 		}
 		tx.Emit("order", order.ID, "order.placed", map[string]any{"orderId": order.ID, "orderNumber": order.OrderNumber, "userId": in.UserID, "totalKobo": order.TotalKobo})
+		if pay.Status == "succeeded" { // store credit settles at once
+			if _, err := s.MarkPaid(ctx, tx, order.ID, pay, order.TotalKobo); err != nil {
+				return err
+			}
+		}
 		out = Placed{OrderID: order.ID, OrderNumber: order.OrderNumber, TotalKobo: order.TotalKobo, PaymentDueAt: due}
 		return nil
 	})
@@ -475,7 +480,11 @@ func (s *Service) afterPaid(ctx context.Context, tx *uow.Tx, o store.SalesOrder,
 		}
 		sl = append(sl, x)
 	}
-	if err := s.ledger.Sale(ctx, tx, pay.ID, o.ID, pay.Provider, paid, o.DeliveryFeeKobo, paid-o.TotalKobo, sl); err != nil {
+	from := ledger.Clearing(pay.Provider)
+	if pay.Provider == "store_credit" && o.CustomerUserID != nil {
+		from = ledger.StoreCredit(*o.CustomerUserID)
+	}
+	if err := s.ledger.Sale(ctx, tx, pay.ID, o.ID, from, paid, o.DeliveryFeeKobo, paid-o.TotalKobo, sl); err != nil {
 		return err
 	}
 	tx.Emit("order", o.ID, "order.paid", map[string]any{"orderId": o.ID, "orderNumber": o.OrderNumber, "userId": o.CustomerUserID, "totalKobo": o.TotalKobo})

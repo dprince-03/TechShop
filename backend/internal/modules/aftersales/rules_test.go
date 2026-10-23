@@ -81,3 +81,24 @@ func TestRepairTransitions(t *testing.T) {
 		t.Fatal("finished jobs don't move; parts must arrive before done")
 	}
 }
+
+func TestTradeInEstimate(t *testing.T) {
+	cases := []struct {
+		price int64
+		cond  string
+		want  int64
+	}{
+		{100_000_000, "like_new", 55_000_000}, // ₦1,000,000 → ₦550,000
+		{100_000_000, "good", 45_000_000},
+		{100_000_000, "fair", 35_000_000},
+		{100_000_000, "faulty", 10_000_000},
+		{89_999_900, "good", 40_450_000}, // ₦404,999.55 rounds down to ₦404,500
+		{100_000_000, "mint", 0},
+		{0, "good", 0},
+	}
+	for _, c := range cases {
+		if got := tradeInEstimate(c.price, c.cond); got != c.want {
+			t.Errorf("tradeInEstimate(%d, %s) = %d, want %d", c.price, c.cond, got, c.want)
+		}
+	}
+}

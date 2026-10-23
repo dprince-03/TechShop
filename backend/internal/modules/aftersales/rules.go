@@ -106,3 +106,34 @@ var repairNext = map[string][]string{
 }
 
 func repairCanMove(from, to string) bool { return slices.Contains(repairNext[from], to) }
+
+// Trade-in rules (docs/plan.md 2026-10-23).
+
+// tradeInFactor is the share of today's new price offered per condition. Swappa's trade-in
+// quotes run 43–68 % of used resale value, and used devices resell below new, so the bands sit
+// a little under those figures.
+var tradeInFactor = map[string]int64{"like_new": 55, "good": 45, "fair": 35, "faulty": 10}
+
+// tradeInEstimate prices a device from today's new price and its condition, rounded down to
+// the nearest ₦500 so offers look deliberate rather than computed.
+func tradeInEstimate(newPrice int64, condition string) int64 {
+	f, ok := tradeInFactor[condition]
+	if !ok || newPrice <= 0 {
+		return 0
+	}
+	v := newPrice * f / 100
+	return v - v%50_000
+}
+
+// tradeInCategories maps a device type to the catalogue categories that price it.
+var tradeInCategories = map[string][]string{
+	"phone":   {"phones"},
+	"laptop":  {"laptops", "workstations"},
+	"console": {"gaming"},
+	// Tablets and smartwatches have no catalogue category yet: staff estimate them by hand.
+	"tablet":     {},
+	"smartwatch": {},
+}
+
+// tradeInOfferWindow is how long a customer has to accept an offer.
+const tradeInOfferWindow = 7 * 24 * time.Hour

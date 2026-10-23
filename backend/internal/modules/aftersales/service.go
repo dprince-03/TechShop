@@ -18,11 +18,11 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/dprince-03/techshop/backend/internal/modules/inventory"
+	"github.com/dprince-03/techshop/backend/internal/modules/ledger"
 	"github.com/dprince-03/techshop/backend/internal/modules/notify"
 	"github.com/dprince-03/techshop/backend/internal/modules/payments"
 	"github.com/dprince-03/techshop/backend/internal/modules/risk"
 	"github.com/dprince-03/techshop/backend/internal/platform/httpx"
-	"github.com/dprince-03/techshop/backend/internal/platform/jobs"
 	"github.com/dprince-03/techshop/backend/internal/platform/kit"
 	"github.com/dprince-03/techshop/backend/internal/platform/outbox"
 	"github.com/dprince-03/techshop/backend/internal/platform/uow"
@@ -36,18 +36,16 @@ type Service struct {
 	inv    *inventory.Service
 	risk   *risk.Service
 	notify *notify.Service
+	ledger *ledger.Service
 }
 
 // New creates the module.
-func New(d *kit.Deps, pay *payments.Service, inv *inventory.Service, rk *risk.Service, n *notify.Service) *Service {
-	return &Service{d: d, pay: pay, inv: inv, risk: rk, notify: n}
+func New(d *kit.Deps, pay *payments.Service, inv *inventory.Service, rk *risk.Service, n *notify.Service, led *ledger.Service) *Service {
+	return &Service{d: d, pay: pay, inv: inv, risk: rk, notify: n, ledger: led}
 }
 
 // Name implements kit.Module.
 func (s *Service) Name() string { return "aftersales" }
-
-// Jobs implements kit.Module.
-func (s *Service) Jobs(*jobs.Registry) {}
 
 // Events implements kit.Module.
 func (s *Service) Events(*outbox.Relay) {}
