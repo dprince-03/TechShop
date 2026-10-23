@@ -33,11 +33,33 @@ type Return struct {
 	RejectionReason *string      `json:"rejectionReason"`
 	Items           []ReturnItem `json:"items"`
 	Refund          int64        `json:"refund" doc:"Kobo: the items, plus delivery when a whole parcel comes back for an our-fault reason"`
+	Pickup          *Pickup      `json:"pickup" doc:"Rider collection, for pickup returns in a delivery zone"`
+	Dispute         *Dispute     `json:"dispute" doc:"A seller's dispute of the inspection, if any"`
 	CreatedAt       time.Time    `json:"createdAt"`
 }
 
+// Pickup is the rider job collecting a return.
+type Pickup struct {
+	Status     string     `json:"status" enum:"unassigned,assigned,picked_up,en_route,delivered,failed,returned,cancelled"`
+	Assigned   bool       `json:"assigned"`
+	HandedInAt *time.Time `json:"handedInAt"`
+}
+
+// Dispute is a seller's challenge to an inspection.
+type Dispute struct {
+	Reason    string     `json:"reason"`
+	At        time.Time  `json:"at"`
+	Decision  *string    `json:"decision" enum:"upheld,rejected"`
+	Note      *string    `json:"note"`
+	DecidedAt *time.Time `json:"decidedAt"`
+}
+
 func returnView(r store.AftersalesGetReturnRow, items []store.AftersalesItemsRow) Return {
-	out := Return{Refund: refundTotal(r.Reason, items), RMA: r.RmaNumber, OrderNumber: r.OrderNumber, Reason: r.Reason, Details: r.Details, Method: r.ReturnMethod, Status: r.Status,
+	var dispute *Dispute
+	if r.SellerDisputedAt != nil && r.SellerDisputeReason != nil {
+		dispute = &Dispute{Reason: *r.SellerDisputeReason, At: *r.SellerDisputedAt, Decision: r.DisputeDecision, Note: r.DisputeNote, DecidedAt: r.DisputeDecidedAt}
+	}
+	out := Return{Dispute: dispute, Refund: refundTotal(r.Reason, items), RMA: r.RmaNumber, OrderNumber: r.OrderNumber, Reason: r.Reason, Details: r.Details, Method: r.ReturnMethod, Status: r.Status,
 		AutoApproved: r.AutoApproved, RejectionReason: r.RejectionReason, CreatedAt: r.CreatedAt, Items: make([]ReturnItem, len(items))}
 	for i, it := range items {
 		refund := lineRefund(it.LineTotalKobo, it.LineQuantity, it.Quantity)

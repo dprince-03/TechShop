@@ -170,8 +170,10 @@ func (s *Service) Routes(r *kit.Routes) {
 			rows, err := s.d.Q.LogisticsRiderJobs(ctx, &rd.UserID)
 			out := make([]RiderJob, 0, len(rows))
 			for _, j := range rows {
-				out = append(out, riderJob(j.ID, j.Kind, j.Status, j.OrderNumber, j.RecipientName, j.ShipTo, j.DropoffLatitude, j.DropoffLongitude,
-					j.PickupWarehouseName, j.PickupWarehouseAddress, j.WindowStart, j.WindowEnd, j.Attempts, j.RouteSequence))
+				rj := riderJob(j.ID, j.Kind, j.Status, j.OrderNumber, j.RecipientName, j.ShipTo, j.DropoffLatitude, j.DropoffLongitude,
+					j.PickupWarehouseName, j.PickupWarehouseAddress, j.WindowStart, j.WindowEnd, j.Attempts, j.RouteSequence)
+				rj.RMA = deref(j.RmaNumber)
+				out = append(out, rj)
 			}
 			return &struct{ Body []RiderJob }{out}, err
 		})
@@ -273,6 +275,7 @@ func (s *Service) Routes(r *kit.Routes) {
 			}
 			d := JobDetail{RiderJob: riderJob(v.ID, v.Kind, v.Status, v.OrderNumber, v.RecipientName, v.ShipTo, v.DropoffLatitude, v.DropoffLongitude,
 				v.PickupWarehouseName, v.PickupWarehouseAddress, v.WindowStart, v.WindowEnd, v.Attempts, v.RouteSequence), RiderID: v.RiderID, ZoneID: v.ZoneID, Proof: v.ProofMethod}
+			d.RMA = deref(v.RmaNumber)
 			d.Events, err = s.d.Q.LogisticsJobEvents(ctx, in.ID)
 			return &struct{ Body JobDetail }{d}, err
 		})

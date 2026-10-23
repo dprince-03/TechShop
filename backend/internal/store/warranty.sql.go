@@ -14,9 +14,11 @@ import (
 
 const warrantyClaim = `-- name: WarrantyClaim :one
 select wc.id, wc.claim_number, wc.customer_user_id, wc.order_line_id, wc.device_unit_id, wc.imei_or_serial, wc.fault_description, wc.status, wc.resolution, wc.created_at, wc.updated_at, wc.warranty_provider, wc.warranty_ends_on, wc.store_id, wc.received_at, wc.received_by, wc.rejection_reason, wc.resolution_note, wc.replacement_unit_id, wc.refund_id, wc.closed_at, ol.product_name, ol.variant_name, ol.variant_id, ol.line_total_kobo, ol.quantity as line_quantity, ol.order_id, o.order_number,
+       ol.seller_id, ol.vat_kobo, ol.seller_earning_kobo, ol.commission_bps, sl.type as seller_type,
        st.name as store_name, u.first_name as customer_first_name, u.last_name as customer_last_name
 from aftersales.warranty_claims wc
 left join sales.order_lines ol on ol.id = wc.order_line_id
+left join sellers.sellers sl on sl.id = ol.seller_id
 left join sales.orders o on o.id = ol.order_id
 left join inventory.warehouses st on st.id = wc.store_id
 join identity.users u on u.id = wc.customer_user_id
@@ -52,6 +54,11 @@ type WarrantyClaimRow struct {
 	LineQuantity      *int32     `json:"lineQuantity"`
 	OrderID           *uuid.UUID `json:"orderId"`
 	OrderNumber       *string    `json:"orderNumber"`
+	SellerID          *uuid.UUID `json:"sellerId"`
+	VatKobo           *int64     `json:"vatKobo"`
+	SellerEarningKobo *int64     `json:"sellerEarningKobo"`
+	CommissionBps     *int32     `json:"commissionBps"`
+	SellerType        *string    `json:"sellerType"`
 	StoreName         *string    `json:"storeName"`
 	CustomerFirstName string     `json:"customerFirstName"`
 	CustomerLastName  string     `json:"customerLastName"`
@@ -89,6 +96,11 @@ func (q *Queries) WarrantyClaim(ctx context.Context, claimNumber string) (Warran
 		&i.LineQuantity,
 		&i.OrderID,
 		&i.OrderNumber,
+		&i.SellerID,
+		&i.VatKobo,
+		&i.SellerEarningKobo,
+		&i.CommissionBps,
+		&i.SellerType,
 		&i.StoreName,
 		&i.CustomerFirstName,
 		&i.CustomerLastName,

@@ -30,6 +30,7 @@ type RiderJob struct {
 	Attempts        int16      `json:"attempts"`
 	RouteSequence   *int16     `json:"routeSequence,omitempty"`
 	CanCallCustomer bool       `json:"canCallCustomer" doc:"Calls go through the masked call line; the number is never sent to the app"`
+	RMA             string     `json:"rma,omitempty" doc:"Return pickups: the return being collected. The address is where to collect; pickupName/pickupAddress is where to bring it"`
 }
 
 func riderJob(id uuid.UUID, kind, status string, number *string, recipient *string, ship []byte, lat, lng *float64, pickName, pickAddr *string,
@@ -89,6 +90,7 @@ type BoardJob struct {
 	ZoneName       string  `json:"zoneName"`
 	OrderNumber    *string `json:"orderNumber"`
 	RiderFirstName *string `json:"riderFirstName"`
+	RMA            *string `json:"rma"`
 }
 
 func boardJob(r store.LogisticsBoardRow) BoardJob {
@@ -98,7 +100,7 @@ func boardJob(r store.LogisticsBoardRow) BoardJob {
 		WindowStart: r.WindowStart, WindowEnd: r.WindowEnd, Attempts: r.Attempts, AssignedBy: r.AssignedBy, AssignedAt: r.AssignedAt,
 		DeliveredAt: r.DeliveredAt, RecipientName: r.RecipientName, OtpExpiresAt: r.OtpExpiresAt, OtpVerifiedAt: r.OtpVerifiedAt,
 		ProofMethod: r.ProofMethod, ProofFileID: r.ProofFileID, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt}),
-		ZoneName: r.ZoneName, OrderNumber: r.OrderNumber, RiderFirstName: r.RiderFirstName}
+		ZoneName: r.ZoneName, OrderNumber: r.OrderNumber, RiderFirstName: r.RiderFirstName, RMA: r.RmaNumber}
 }
 
 // JobDetail is the dispatcher's view of a job with its event trail.

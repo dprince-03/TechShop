@@ -457,6 +457,10 @@ components:
             - "null"
         riderId:
           type: string
+        rma:
+          type:
+            - string
+            - "null"
         routeSequence:
           format: int32
           type:
@@ -485,6 +489,7 @@ components:
         - zoneName
         - orderNumber
         - riderFirstName
+        - rma
         - id
         - kind
         - fulfilmentId
@@ -2321,6 +2326,37 @@ components:
       required:
         - zoneIds
       type: object
+    Dispute:
+      additionalProperties: false
+      properties:
+        at:
+          format: date-time
+          type: string
+        decidedAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        decision:
+          enum:
+            - upheld
+            - rejected
+          type:
+            - string
+            - "null"
+        note:
+          type:
+            - string
+            - "null"
+        reason:
+          type: string
+      required:
+        - reason
+        - at
+        - decision
+        - note
+        - decidedAt
+      type: object
     Dropoff:
       additionalProperties: false
       properties:
@@ -3657,11 +3693,13 @@ components:
       additionalProperties: false
       properties:
         disposition:
+          description: "Seller-shipped items: return_to_seller"
           enum:
             - restock_new
             - restock_open_box
             - repair
             - return_to_supplier
+            - return_to_seller
             - write_off
           type: string
         grade:
@@ -4332,6 +4370,9 @@ components:
         recipientName:
           type: string
         riderId:
+          type: string
+        rma:
+          description: "Return pickups: the return being collected. The address is where to collect; pickupName/pickupAddress is where to bring it"
           type: string
         routeSequence:
           format: int32
@@ -6901,6 +6942,7 @@ components:
     PaymentsListRefundsRow:
       additionalProperties: false
       properties:
+        allocation: {}
         amountKobo:
           format: int64
           type: integer
@@ -6956,6 +6998,7 @@ components:
         - failureReason
         - createdAt
         - updatedAt
+        - allocation
         - orderNumber
       type: object
     PaymentsPayment:
@@ -7125,6 +7168,7 @@ components:
     PaymentsRefund:
       additionalProperties: false
       properties:
+        allocation: {}
         amountKobo:
           format: int64
           type: integer
@@ -7178,6 +7222,7 @@ components:
         - failureReason
         - createdAt
         - updatedAt
+        - allocation
       type: object
     PayoutBatch:
       additionalProperties: false
@@ -7316,6 +7361,32 @@ components:
         - pickerId
         - createdAt
         - updatedAt
+      type: object
+    Pickup:
+      additionalProperties: false
+      properties:
+        assigned:
+          type: boolean
+        handedInAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        status:
+          enum:
+            - unassigned
+            - assigned
+            - picked_up
+            - en_route
+            - delivered
+            - failed
+            - returned
+            - cancelled
+          type: string
+      required:
+        - status
+        - assigned
+        - handedInAt
       type: object
     PlaceOrderRequest:
       additionalProperties: false
@@ -8453,6 +8524,9 @@ components:
           type:
             - string
             - "null"
+        dispute:
+          $ref: "#/components/schemas/Dispute"
+          description: A seller's dispute of the inspection, if any
         items:
           items:
             $ref: "#/components/schemas/ReturnItem"
@@ -8465,6 +8539,9 @@ components:
             - "null"
         orderNumber:
           type: string
+        pickup:
+          $ref: "#/components/schemas/Pickup"
+          description: Rider collection, for pickup returns in a delivery zone
         reason:
           type: string
         refund:
@@ -8500,6 +8577,8 @@ components:
         - rejectionReason
         - items
         - refund
+        - pickup
+        - dispute
         - createdAt
       type: object
     ReturnInput:
@@ -8684,6 +8763,9 @@ components:
         pickupName:
           type: string
         recipientName:
+          type: string
+        rma:
+          description: "Return pickups: the return being collected. The address is where to collect; pickupName/pickupAddress is where to bring it"
           type: string
         routeSequence:
           format: int32
@@ -9716,6 +9798,15 @@ components:
       required:
         - reason
       type: object
+    SellerDisputeReturnRequest:
+      additionalProperties: false
+      properties:
+        reason:
+          maxLength: 1000
+          type: string
+      required:
+        - reason
+      type: object
     SellerOrder:
       additionalProperties: false
       properties:
@@ -9854,6 +9945,90 @@ components:
           type: string
       required:
         - text
+      type: object
+    SellerReturn:
+      additionalProperties: false
+      properties:
+        autoApproved:
+          type: boolean
+        canDispute:
+          type: boolean
+        charge:
+          description: Kobo taken from your payable for these items (after commission is handed back)
+          format: int64
+          type: integer
+        createdAt:
+          format: date-time
+          type: string
+        details:
+          type:
+            - string
+            - "null"
+        dispute:
+          $ref: "#/components/schemas/Dispute"
+          description: A seller's dispute of the inspection, if any
+        disputeUntil:
+          description: Last moment to dispute the inspection
+          format: date-time
+          type:
+            - string
+            - "null"
+        items:
+          items:
+            $ref: "#/components/schemas/ReturnItem"
+          type:
+            - array
+            - "null"
+        method:
+          type:
+            - string
+            - "null"
+        orderNumber:
+          type: string
+        pickup:
+          $ref: "#/components/schemas/Pickup"
+          description: Rider collection, for pickup returns in a delivery zone
+        reason:
+          type: string
+        refund:
+          description: "Kobo: the items, plus delivery when a whole parcel comes back for an our-fault reason"
+          format: int64
+          type: integer
+        rejectionReason:
+          type:
+            - string
+            - "null"
+        rma:
+          type: string
+        status:
+          enum:
+            - requested
+            - approved
+            - rejected
+            - awaiting_pickup
+            - received
+            - inspected
+            - refunded
+            - replaced
+            - closed
+          type: string
+      required:
+        - charge
+        - disputeUntil
+        - canDispute
+        - rma
+        - orderNumber
+        - reason
+        - details
+        - method
+        - status
+        - autoApproved
+        - rejectionReason
+        - items
+        - refund
+        - pickup
+        - dispute
+        - createdAt
       type: object
     SellerReview:
       additionalProperties: false
@@ -10441,6 +10616,21 @@ components:
         - address
         - city
         - stateCode
+      type: object
+    StaffDecideReturnDisputeRequest:
+      additionalProperties: false
+      properties:
+        decision:
+          enum:
+            - upheld
+            - rejected
+          type: string
+        note:
+          maxLength: 1000
+          type: string
+      required:
+        - decision
+        - note
       type: object
     StaffDecideReturnRequest:
       additionalProperties: false
@@ -16946,6 +17136,107 @@ paths:
       summary: "A payout statement: the orders it covers"
       tags:
         - Seller Centre · Payouts
+  /api/v1/seller/shops/{shopId}/returns:
+    get:
+      operationId: sellerReturns
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/ReturnRow"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Returns of your items, newest first
+      tags:
+        - Seller Centre
+  /api/v1/seller/shops/{shopId}/returns/{rma}:
+    get:
+      operationId: sellerReturn
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: rma
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SellerReturn"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: A return of your items, with your charge
+      tags:
+        - Seller Centre
+  /api/v1/seller/shops/{shopId}/returns/{rma}/dispute:
+    post:
+      operationId: sellerDisputeReturn
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: rma
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SellerDisputeReturnRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SellerReturn"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Dispute our inspection (within 3 days)
+      tags:
+        - Seller Centre
   /api/v1/seller/shops/{shopId}/reviews:
     get:
       operationId: sellerListReviews
@@ -20299,6 +20590,13 @@ paths:
               - closed
               - ""
             type: string
+        - description: Only returns with an open seller dispute
+          explode: false
+          in: query
+          name: disputed
+          schema:
+            description: Only returns with an open seller dispute
+            type: boolean
         - explode: false
           in: query
           name: cursor
@@ -20388,6 +20686,40 @@ paths:
       security:
         - bearer: []
       summary: Approve or reject a return waiting for support
+      tags:
+        - Staff · Returns
+  /api/v1/staff/returns/{rma}/dispute-decision:
+    post:
+      description: Requires permission `returns.manage`.
+      operationId: staffDecideReturnDispute
+      parameters:
+        - in: path
+          name: rma
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffDecideReturnDisputeRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Return"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: "Settle a seller's dispute (upheld: the seller is credited, TechShop bears it)"
       tags:
         - Staff · Returns
   /api/v1/staff/returns/{rma}/items/{itemId}/inspection:

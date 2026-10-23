@@ -1,14 +1,15 @@
-// Package aftersales runs returns (RMA) — request, approval, receiving, inspection with the
-// serial check, restocking and the refund — warranty claims with workshop repairs, and trade-ins.
+// Package aftersales runs returns (RMA) — request, approval, rider pickup or store drop-off,
+// receiving, inspection with the serial check, restocking (or back to the seller) and an
+// item-exact refund — warranty claims with workshop repairs, and trade-ins.
 // Plan: orders-fulfilment.md §7; refunds go through payments' dual control (payments-finance.md §7).
 //
-// Scope now: items TechShop shipped. Seller-shipped items need the seller hand-over decision
-// (docs/plan.md, 2026-10-21) and change-of-mind returns need the owner's policy, so both are
-// refused with an explanation.
+// Items shipped by marketplace sellers come back through TechShop like any other; the seller
+// bears their refund and may dispute the inspection within 3 days (docs/plan.md 2026-10-23).
 package aftersales
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -19,9 +20,11 @@ import (
 
 	"github.com/dprince-03/techshop/backend/internal/modules/inventory"
 	"github.com/dprince-03/techshop/backend/internal/modules/ledger"
+	"github.com/dprince-03/techshop/backend/internal/modules/logistics"
 	"github.com/dprince-03/techshop/backend/internal/modules/notify"
 	"github.com/dprince-03/techshop/backend/internal/modules/payments"
 	"github.com/dprince-03/techshop/backend/internal/modules/risk"
+	"github.com/dprince-03/techshop/backend/internal/modules/sellers"
 	"github.com/dprince-03/techshop/backend/internal/platform/httpx"
 	"github.com/dprince-03/techshop/backend/internal/platform/kit"
 	"github.com/dprince-03/techshop/backend/internal/platform/outbox"
@@ -31,24 +34,44 @@ import (
 
 // Service is the after-sales module.
 type Service struct {
-	d      *kit.Deps
-	pay    *payments.Service
-	inv    *inventory.Service
-	risk   *risk.Service
-	notify *notify.Service
-	ledger *ledger.Service
+	d       *kit.Deps
+	pay     *payments.Service
+	inv     *inventory.Service
+	risk    *risk.Service
+	notify  *notify.Service
+	ledger  *ledger.Service
+	lg      *logistics.Service
+	sellers *sellers.Service
 }
 
 // New creates the module.
-func New(d *kit.Deps, pay *payments.Service, inv *inventory.Service, rk *risk.Service, n *notify.Service, led *ledger.Service) *Service {
-	return &Service{d: d, pay: pay, inv: inv, risk: rk, notify: n, ledger: led}
+func New(d *kit.Deps, pay *payments.Service, inv *inventory.Service, rk *risk.Service, n *notify.Service, led *ledger.Service, lg *logistics.Service, sel *sellers.Service) *Service {
+	return &Service{d: d, pay: pay, inv: inv, risk: rk, notify: n, ledger: led, lg: lg, sellers: sel}
 }
 
 // Name implements kit.Module.
 func (s *Service) Name() string { return "aftersales" }
 
-// Events implements kit.Module.
-func (s *Service) Events(*outbox.Relay) {}
+// Events implements kit.Module: a rider handing a collected return in at the hub marks it
+// received.
+func (s *Service) Events(r *outbox.Relay) {
+	r.On("return.handed_in", func(ctx context.Context, tx *uow.Tx, ev outbox.Event) error {
+		var p struct {
+			ReturnID uuid.UUID `json:"returnId"`
+		}
+		if err := json.Unmarshal(ev.Payload, &p); err != nil {
+			return err
+		}
+		rr, err := tx.Q.AftersalesReturnByID(ctx, p.ReturnID)
+		if err != nil || rr.Status != "awaiting_pickup" {
+			return err // already received at a store, or gone
+		}
+		if _, err := tx.Q.AftersalesSetStatus(ctx, store.AftersalesSetStatusParams{ID: rr.ID, Status: "received"}); err != nil {
+			return err
+		}
+		return tx.Audit("return.received", "return", rr.ID.String(), map[string]string{"by": "rider hand-in"})
+	})
+}
 
 // ReturnItemInput is one order line (and how many) to send back.
 type ReturnItemInput struct {
@@ -98,8 +121,6 @@ func (s *Service) RequestReturn(ctx context.Context, userID uuid.UUID, orderNumb
 				return httpx.Invalid("unknown_item", "One of the items isn’t on this order (or is listed twice).")
 			case l.CancelledAt != nil || l.FulfilmentStatus != "delivered":
 				return httpx.Invalid("not_delivered", "Only delivered items can be returned.")
-			case l.FulfilledBy != "techshop":
-				return httpx.Conflict("seller_return_unavailable", "Returns for items shipped by a marketplace seller aren’t open yet. Contact support and we’ll help.")
 			case !withinWindow(l.DeliveredAt, now):
 				return httpx.Invalid("return_window_closed", "The 7-day return window has passed. If it’s faulty, make a warranty claim.")
 			case changeOfMind && !changeOfMindAllowed(l.CategorySlug, l.ParentCategorySlug, in.Unopened):
@@ -135,6 +156,11 @@ func (s *Service) RequestReturn(ctx context.Context, userID uuid.UUID, orderNumb
 		}
 		for _, it := range in.Items {
 			if err := tx.Q.AftersalesAddItem(ctx, store.AftersalesAddItemParams{ReturnRequestID: r.ID, OrderLineID: it.OrderLineID, Quantity: it.Quantity}); err != nil {
+				return err
+			}
+		}
+		if status == "awaiting_pickup" {
+			if _, err := s.lg.CreateReturnPickupJob(ctx, tx, r.ID); err != nil {
 				return err
 			}
 		}
@@ -174,6 +200,11 @@ func (s *Service) Decide(ctx context.Context, rma, decision, reason string) (Ret
 		if _, err := tx.Q.AftersalesDecide(ctx, store.AftersalesDecideParams{ID: r.ID, Status: status, DecidedBy: &actor, RejectionReason: why}); err != nil {
 			return err
 		}
+		if status == "awaiting_pickup" {
+			if _, err := s.lg.CreateReturnPickupJob(ctx, tx, r.ID); err != nil {
+				return err
+			}
+		}
 		if err := tx.Audit("return.decided", "return", r.ID.String(), map[string]string{"decision": status}); err != nil {
 			return err
 		}
@@ -211,7 +242,7 @@ type InspectInput struct {
 	WarehouseID   uuid.UUID `json:"warehouseId" doc:"Where restocked items go"`
 	ScannedSerial string    `json:"scannedSerial,omitempty" maxLength:"40" doc:"IMEI or serial on the item (required for serialised devices)"`
 	Grade         string    `json:"grade" enum:"A,B,C,faulty"`
-	Disposition   string    `json:"disposition" enum:"restock_new,restock_open_box,repair,return_to_supplier,write_off"`
+	Disposition   string    `json:"disposition" enum:"restock_new,restock_open_box,repair,return_to_supplier,return_to_seller,write_off" doc:"Seller-shipped items: return_to_seller"`
 	Notes         string    `json:"notes,omitempty" maxLength:"500"`
 }
 
@@ -245,6 +276,13 @@ func (s *Service) Inspect(ctx context.Context, rma string, itemID uuid.UUID, in 
 		}
 		if item.Grade != nil {
 			return httpx.Conflict("already_inspected", "This item was already inspected.")
+		}
+		// A seller's own item isn't TechShop's to restock or scrap: it goes back to them.
+		if item.FulfilledBy == "seller" && in.Disposition != "return_to_seller" {
+			return httpx.Invalid("return_to_seller", "This item was shipped by a marketplace seller: send it back to them (return to seller).")
+		}
+		if in.Disposition == "return_to_seller" && item.SellerType == "first_party" {
+			return httpx.Invalid("not_a_seller_item", "This is TechShop's own stock: restock, repair or write it off.")
 		}
 		var match *bool
 		if item.DeviceUnitID != nil {
@@ -332,8 +370,8 @@ func (s *Service) Refund(ctx context.Context, rma string) (Return, error) {
 		if err != nil {
 			return err
 		}
-		amount := refundTotal(r.Reason, items)
-		if _, err := s.pay.RequestReturnRefund(ctx, tx, r.OrderID, r.ID, amount, "Return "+r.RmaNumber, &actor); err != nil {
+		amount, alloc := returnRefund(r.Reason, items)
+		if _, err := s.pay.RequestReturnRefund(ctx, tx, r.OrderID, r.ID, amount, "Return "+r.RmaNumber, alloc, &actor); err != nil {
 			return err
 		}
 		resolution := "refund"
@@ -358,7 +396,16 @@ func (s *Service) view(ctx context.Context, q *store.Queries, rma string) (Retur
 		return Return{}, err
 	}
 	items, err := q.AftersalesItems(ctx, r.ID)
-	return returnView(r, items), err
+	if err != nil {
+		return Return{}, err
+	}
+	out := returnView(r, items)
+	if j, err := q.AftersalesPickupJob(ctx, &r.ID); err == nil {
+		out.Pickup = &Pickup{Status: j.Status, Assigned: j.RiderID != nil, HandedInAt: j.DeliveredAt}
+	} else if !errors.Is(err, pgx.ErrNoRows) {
+		return Return{}, err
+	}
+	return out, nil
 }
 
 func optional(s string) *string {
@@ -370,18 +417,27 @@ func optional(s string) *string {
 
 func humanise(s string) string { return strings.ReplaceAll(s, "_", " ") }
 
-// refundTotal is the money back for a return (see Refund).
-func refundTotal(reason string, items []store.AftersalesItemsRow) int64 {
-	var amount int64
+// returnRefund is the money back for a return (see Refund) and who bears it, item by item.
+func returnRefund(reason string, items []store.AftersalesItemsRow) (int64, []ledger.Line) {
+	var amount, delivery int64
 	units := map[uuid.UUID]int32{}
 	fees := map[uuid.UUID]store.AftersalesItemsRow{}
+	shares := make([]refundShare, 0, len(items))
 	for _, it := range items {
 		amount += lineRefund(it.LineTotalKobo, it.LineQuantity, it.Quantity)
 		units[it.FulfilmentID] += it.Quantity
 		fees[it.FulfilmentID] = it
+		shares = append(shares, refundShare{FirstParty: it.SellerType == "first_party", SellerID: it.SellerID, LineTotal: it.LineTotalKobo, VAT: it.VatKobo,
+			SellerEarning: it.SellerEarningKobo, CommissionBps: it.CommissionBps, LineQty: it.LineQuantity, Qty: it.Quantity, CommissionPosted: it.DeliveredAt != nil})
 	}
 	for fid, it := range fees {
-		amount += deliveryRefund(reason, it.DeliveryFeeKobo, units[fid], it.FulfilmentUnits)
+		delivery += deliveryRefund(reason, it.DeliveryFeeKobo, units[fid], it.FulfilmentUnits)
 	}
+	return amount + delivery, refundAllocation(shares, delivery)
+}
+
+// refundTotal is the money back for a return.
+func refundTotal(reason string, items []store.AftersalesItemsRow) int64 {
+	amount, _ := returnRefund(reason, items)
 	return amount
 }

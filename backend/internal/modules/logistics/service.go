@@ -138,6 +138,40 @@ func (s *Service) CreateDeliveryJob(ctx context.Context, tx *uow.Tx, fulfilmentI
 	return j, nil
 }
 
+// CreateReturnPickupJob opens a rider job to collect an approved return from the customer's
+// delivery address and bring it to the warehouse that shipped it (pickup_warehouse_id is the
+// destination for this kind). False means no rider zone covers the address: staff arrange it.
+func (s *Service) CreateReturnPickupJob(ctx context.Context, tx *uow.Tx, returnID uuid.UUID) (bool, error) {
+	if _, err := tx.Q.LogisticsJobForReturn(ctx, &returnID); err == nil {
+		return true, nil // already has one
+	}
+	info, err := tx.Q.LogisticsReturnPickupInfo(ctx, returnID)
+	if err != nil {
+		return false, err
+	}
+	var a shipTo
+	if err := json.Unmarshal(info.ShipTo, &a); err != nil {
+		return false, err
+	}
+	z, err := tx.Q.LogisticsResolveZone(ctx, store.LogisticsResolveZoneParams{StateCode: a.StateCode, Lga: deref(a.LGA)})
+	if err != nil {
+		return false, nil
+	}
+	name := a.RecipientName
+	if first := strings.Fields(a.RecipientName); len(first) > 0 {
+		name = first[0] // riders see the first name only
+	}
+	start := time.Now()
+	end := start.Add(48 * time.Hour)
+	j, err := tx.Q.LogisticsCreateJob(ctx, store.LogisticsCreateJobParams{Kind: "return_pickup", ReturnRequestID: &returnID, ZoneID: z.ID, PickupWarehouseID: &info.WarehouseID,
+		PickupAddress: info.ShipTo, DropoffLatitude: a.Latitude, DropoffLongitude: a.Longitude, WindowStart: &start, WindowEnd: &end, RecipientName: &name})
+	if err != nil {
+		return false, httpx.DB(err, "return pickup job")
+	}
+	tx.Notify("realtime", map[string]any{"topic": "dispatch", "event": "job", "data": map[string]any{"jobId": j.ID, "status": j.Status, "zoneId": z.ID}})
+	return true, nil
+}
+
 // Assign gives a job to a rider on shift.
 func (s *Service) Assign(ctx context.Context, jobID, riderID, actor uuid.UUID, sequence *int16) (store.LogisticsDeliveryJob, error) {
 	var out store.LogisticsDeliveryJob
@@ -411,9 +445,25 @@ func (s *Service) apply(ctx context.Context, tx *uow.Tx, riderID uuid.UUID, a Ac
 }
 
 // pickedUp: the scanned label must belong to this job's parcel; the customer gets their delivery code.
+// A return pickup instead needs a photo of the item as collected (no code: nothing is delivered
+// to the customer).
 func (s *Service) pickedUp(ctx context.Context, tx *uow.Tx, j store.LogisticsDeliveryJob, a Action, riderID uuid.UUID) error {
 	if j.Status != "assigned" {
 		return httpx.Conflict("bad_transition", "This job isn't waiting for pickup.")
+	}
+	if j.Kind == "return_pickup" {
+		if a.PhotoFileID == nil {
+			return httpx.Invalid("photo_required", "Take a photo of the item you're collecting.")
+		}
+		if _, err := tx.Q.LogisticsSetJobStatus(ctx, store.LogisticsSetJobStatusParams{ID: j.ID, Status: "picked_up"}); err != nil {
+			return err
+		}
+		if err := tx.Q.LogisticsSetRiderStatus(ctx, store.LogisticsSetRiderStatusParams{UserID: riderID, Status: "on_delivery"}); err != nil {
+			return err
+		}
+		tx.Emit("return", *j.ReturnRequestID, "return.collected", map[string]any{"returnId": j.ReturnRequestID, "jobId": j.ID})
+		s.publishJob(tx, j.ID, "picked_up", riderID)
+		return nil
 	}
 	if j.FulfilmentID != nil {
 		parcels, err := tx.Q.FulfilmentParcelsForFulfilment(ctx, *j.FulfilmentID)
@@ -479,7 +529,10 @@ func (s *Service) deliver(ctx context.Context, tx *uow.Tx, j store.LogisticsDeli
 	if a.RecipientName != "" {
 		p.RecipientName = &a.RecipientName
 	}
-	if a.OTP != "" {
+	if j.Kind == "return_pickup" && a.PhotoFileID == nil {
+		return httpx.Invalid("photo_required", "Take a photo of the item being handed in at the hub.")
+	}
+	if a.OTP != "" && j.Kind != "return_pickup" {
 		switch {
 		case j.OtpHash == nil || j.OtpExpiresAt == nil || time.Now().After(*j.OtpExpiresAt):
 			return httpx.Conflict("otp_expired", "The delivery code has expired. Ask dispatch to resend it, or use photo proof.")
@@ -511,6 +564,9 @@ func (s *Service) deliver(ctx context.Context, tx *uow.Tx, j store.LogisticsDeli
 		if _, err := s.sales.Move(ctx, tx, *j.FulfilmentID, "delivered", &riderID, "Delivered ("+*p.ProofMethod+")"); err != nil {
 			return err
 		}
+	}
+	if j.Kind == "return_pickup" && j.ReturnRequestID != nil {
+		tx.Emit("return", *j.ReturnRequestID, "return.handed_in", map[string]any{"returnId": j.ReturnRequestID, "jobId": j.ID, "warehouseId": j.PickupWarehouseID})
 	}
 	s.publishJob(tx, j.ID, "delivered", riderID)
 	return s.refreshRiderStatus(ctx, tx, riderID)

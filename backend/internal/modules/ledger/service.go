@@ -270,8 +270,8 @@ func (s *Service) RefundApprove(ctx context.Context, tx *uow.Tx, refundID, order
 	var promo int64
 	for _, e := range entries {
 		switch {
-		case strings.HasPrefix(e.AccountCode, "clearing:"):
-			paid += e.AmountKobo
+		case strings.HasPrefix(e.AccountCode, "clearing:"), strings.HasPrefix(e.AccountCode, "liability:store_credit:") && e.AmountKobo > 0:
+			paid += e.AmountKobo // what funded the sale: a provider, or the customer's store credit
 		case e.AccountCode == ExpensePromotions:
 			promo += e.AmountKobo
 		case e.AmountKobo < 0 && e.AccountCode != LiabilityRefunds:
@@ -279,7 +279,7 @@ func (s *Service) RefundApprove(ctx context.Context, tx *uow.Tx, refundID, order
 		}
 	}
 	if paid <= 0 {
-		return fmt.Errorf("ledger: sale journal %s has no clearing debit", sale.ID)
+		return fmt.Errorf("ledger: sale journal %s has no funding debit", sale.ID)
 	}
 	// Reverse the credits for amount × (credits+promo)/paid: the promo share is added back.
 	promoBack := amount * promo / paid
@@ -296,6 +296,16 @@ func (s *Service) RefundApprove(ctx context.Context, tx *uow.Tx, refundID, order
 		ls = append(ls, Line{c.AccountCode, parts[i]})
 	}
 	_, _, err = s.Post(ctx, tx, Journal{Key: "refund:" + refundID.String() + ":approved", Kind: "refund", RefType: "refund", RefID: refundID, PostedBy: actor,
+		Memo: "Refund approved for order " + orderID.String(), Lines: ls})
+	return err
+}
+
+// RefundApproveLines is RefundApprove for a refund whose cost is known item by item (a return
+// or a warranty refund): the given debits (revenue and VAT for TechShop items, the seller's
+// payable for theirs, delivery) move into liability:customer_refunds.
+func (s *Service) RefundApproveLines(ctx context.Context, tx *uow.Tx, refundID, orderID uuid.UUID, amount int64, debits []Line, actor *uuid.UUID) error {
+	ls := append([]Line{{LiabilityRefunds, -amount}}, debits...)
+	_, _, err := s.Post(ctx, tx, Journal{Key: "refund:" + refundID.String() + ":approved", Kind: "refund", RefType: "refund", RefID: refundID, PostedBy: actor,
 		Memo: "Refund approved for order " + orderID.String(), Lines: ls})
 	return err
 }

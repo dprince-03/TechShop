@@ -2311,6 +2311,57 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/seller/shops/{shopId}/returns": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Returns of your items, newest first */
+    get: operations["sellerReturns"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/returns/{rma}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** A return of your items, with your charge */
+    get: operations["sellerReturn"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/returns/{rma}/dispute": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Dispute our inspection (within 3 days) */
+    post: operations["sellerDisputeReturn"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/seller/shops/{shopId}/reviews": {
     parameters: {
       query?: never;
@@ -4299,6 +4350,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/staff/returns/{rma}/dispute-decision": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Settle a seller's dispute (upheld: the seller is credited, TechShop bears it)
+     * @description Requires permission `returns.manage`.
+     */
+    post: operations["staffDecideReturnDispute"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/staff/returns/{rma}/items/{itemId}/inspection": {
     parameters: {
       query?: never;
@@ -5890,6 +5961,7 @@ export interface components {
       returnRequestId: string;
       riderFirstName: string | null;
       riderId: string;
+      rma: string | null;
       /** Format: int32 */
       routeSequence: number | null;
       status: string;
@@ -6585,6 +6657,16 @@ export interface components {
     DispatchSetRiderZonesRequest: {
       zoneIds: string[] | null;
     };
+    Dispute: {
+      /** Format: date-time */
+      at: string;
+      /** Format: date-time */
+      decidedAt: string | null;
+      /** @enum {string|null} */
+      decision: "upheld" | "rejected" | null;
+      note: string | null;
+      reason: string;
+    };
     Dropoff: {
       /**
        * @description Own rider (delivery job created) or a carrier (shipment booked)
@@ -7087,12 +7169,16 @@ export interface components {
       unread: number;
     };
     InspectInput: {
-      /** @enum {string} */
+      /**
+       * @description Seller-shipped items: return_to_seller
+       * @enum {string}
+       */
       disposition:
         | "restock_new"
         | "restock_open_box"
         | "repair"
         | "return_to_supplier"
+        | "return_to_seller"
         | "write_off";
       /** @enum {string} */
       grade: "A" | "B" | "C" | "faulty";
@@ -7352,6 +7438,8 @@ export interface components {
       proofMethod: string | null;
       recipientName: string;
       riderId: string;
+      /** @description Return pickups: the return being collected. The address is where to collect; pickupName/pickupAddress is where to bring it */
+      rma?: string;
       /** Format: int32 */
       routeSequence?: number;
       stateCode: string;
@@ -8345,6 +8433,7 @@ export interface components {
       updatedAt: string;
     };
     PaymentsListRefundsRow: {
+      allocation: unknown;
       /** Format: int64 */
       amountKobo: number;
       approvedBy: string;
@@ -8421,6 +8510,7 @@ export interface components {
       updatedAt: string;
     };
     PaymentsRefund: {
+      allocation: unknown;
       /** Format: int64 */
       amountKobo: number;
       approvedBy: string;
@@ -8498,6 +8588,21 @@ export interface components {
       /** Format: date-time */
       waveAt: string;
       zone: string | null;
+    };
+    Pickup: {
+      assigned: boolean;
+      /** Format: date-time */
+      handedInAt: string | null;
+      /** @enum {string} */
+      status:
+        | "unassigned"
+        | "assigned"
+        | "picked_up"
+        | "en_route"
+        | "delivered"
+        | "failed"
+        | "returned"
+        | "cancelled";
     };
     PlaceOrderRequest: {
       addressId: string;
@@ -8942,9 +9047,13 @@ export interface components {
       /** Format: date-time */
       createdAt: string;
       details: string | null;
+      /** @description A seller's dispute of the inspection, if any */
+      dispute: components["schemas"]["Dispute"];
       items: components["schemas"]["ReturnItem"][] | null;
       method: string | null;
       orderNumber: string;
+      /** @description Rider collection, for pickup returns in a delivery zone */
+      pickup: components["schemas"]["Pickup"];
       reason: string;
       /**
        * Format: int64
@@ -9046,6 +9155,8 @@ export interface components {
       pickupAddress?: string;
       pickupName?: string;
       recipientName: string;
+      /** @description Return pickups: the return being collected. The address is where to collect; pickupName/pickupAddress is where to bring it */
+      rma?: string;
       /** Format: int32 */
       routeSequence?: number;
       stateCode: string;
@@ -9452,6 +9563,9 @@ export interface components {
       /** @enum {string} */
       reason: "out_of_stock" | "damaged" | "price_error" | "other";
     };
+    SellerDisputeReturnRequest: {
+      reason: string;
+    };
     SellerOrder: {
       /**
        * Format: date-time
@@ -9507,6 +9621,49 @@ export interface components {
     };
     SellerRespondToReviewRequest: {
       text: string;
+    };
+    SellerReturn: {
+      autoApproved: boolean;
+      canDispute: boolean;
+      /**
+       * Format: int64
+       * @description Kobo taken from your payable for these items (after commission is handed back)
+       */
+      charge: number;
+      /** Format: date-time */
+      createdAt: string;
+      details: string | null;
+      /** @description A seller's dispute of the inspection, if any */
+      dispute: components["schemas"]["Dispute"];
+      /**
+       * Format: date-time
+       * @description Last moment to dispute the inspection
+       */
+      disputeUntil: string | null;
+      items: components["schemas"]["ReturnItem"][] | null;
+      method: string | null;
+      orderNumber: string;
+      /** @description Rider collection, for pickup returns in a delivery zone */
+      pickup: components["schemas"]["Pickup"];
+      reason: string;
+      /**
+       * Format: int64
+       * @description Kobo: the items, plus delivery when a whole parcel comes back for an our-fault reason
+       */
+      refund: number;
+      rejectionReason: string | null;
+      rma: string;
+      /** @enum {string} */
+      status:
+        | "requested"
+        | "approved"
+        | "rejected"
+        | "awaiting_pickup"
+        | "received"
+        | "inspected"
+        | "refunded"
+        | "replaced"
+        | "closed";
     };
     SellerReview: {
       body: string | null;
@@ -9729,6 +9886,11 @@ export interface components {
       longitude?: number;
       name: string;
       stateCode: string;
+    };
+    StaffDecideReturnDisputeRequest: {
+      /** @enum {string} */
+      decision: "upheld" | "rejected";
+      note: string;
     };
     StaffDecideReturnRequest: {
       /** @enum {string} */
@@ -15339,6 +15501,105 @@ export interface operations {
       };
     };
   };
+  sellerReturns: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReturnRow"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerReturn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+        rma: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SellerReturn"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerDisputeReturn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+        rma: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SellerDisputeReturnRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SellerReturn"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   sellerListReviews: {
     parameters: {
       query?: {
@@ -18839,6 +19100,8 @@ export interface operations {
           | "replaced"
           | "closed"
           | "";
+        /** @description Only returns with an open seller dispute */
+        disputed?: boolean;
         cursor?: string;
         limit?: number;
       };
@@ -18911,6 +19174,41 @@ export interface operations {
     requestBody: {
       content: {
         "application/json": components["schemas"]["StaffDecideReturnRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Return"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffDecideReturnDispute: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        rma: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StaffDecideReturnDisputeRequest"];
       };
     };
     responses: {

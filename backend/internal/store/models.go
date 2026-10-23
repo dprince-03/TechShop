@@ -105,20 +105,27 @@ type AftersalesReturnItem struct {
 
 // [aftersales] Customer return requests (RMA) and their outcome. Faulty items within 7 days may be auto-approved.
 type AftersalesReturnRequest struct {
-	ID              uuid.UUID  `json:"id"`
-	RmaNumber       string     `json:"rmaNumber"`
-	OrderID         uuid.UUID  `json:"orderId"`
-	RequestedBy     uuid.UUID  `json:"requestedBy"`
-	Reason          string     `json:"reason"`
-	Details         *string    `json:"details"`
-	ReturnMethod    *string    `json:"returnMethod"`
-	Status          string     `json:"status"`
-	AutoApproved    bool       `json:"autoApproved"`
-	Resolution      *string    `json:"resolution"`
-	DecidedBy       *uuid.UUID `json:"decidedBy"`
-	RejectionReason *string    `json:"rejectionReason"`
-	CreatedAt       time.Time  `json:"createdAt"`
-	UpdatedAt       time.Time  `json:"updatedAt"`
+	ID                  uuid.UUID  `json:"id"`
+	RmaNumber           string     `json:"rmaNumber"`
+	OrderID             uuid.UUID  `json:"orderId"`
+	RequestedBy         uuid.UUID  `json:"requestedBy"`
+	Reason              string     `json:"reason"`
+	Details             *string    `json:"details"`
+	ReturnMethod        *string    `json:"returnMethod"`
+	Status              string     `json:"status"`
+	AutoApproved        bool       `json:"autoApproved"`
+	Resolution          *string    `json:"resolution"`
+	DecidedBy           *uuid.UUID `json:"decidedBy"`
+	RejectionReason     *string    `json:"rejectionReason"`
+	CreatedAt           time.Time  `json:"createdAt"`
+	UpdatedAt           time.Time  `json:"updatedAt"`
+	SellerDisputeReason *string    `json:"sellerDisputeReason"`
+	SellerDisputedAt    *time.Time `json:"sellerDisputedAt"`
+	SellerDisputedBy    *uuid.UUID `json:"sellerDisputedBy"`
+	DisputeDecision     *string    `json:"disputeDecision"`
+	DisputeNote         *string    `json:"disputeNote"`
+	DisputeDecidedBy    *uuid.UUID `json:"disputeDecidedBy"`
+	DisputeDecidedAt    *time.Time `json:"disputeDecidedAt"`
 }
 
 // [aftersales] Trade-ins from estimate to inspection, offer and payout (bank or store credit); accepted devices become device units.
@@ -1848,6 +1855,8 @@ type PaymentsRefund struct {
 	FailureReason     *string    `json:"failureReason"`
 	CreatedAt         time.Time  `json:"createdAt"`
 	UpdatedAt         time.Time  `json:"updatedAt"`
+	// Ledger debits for this refund as [{"code": account, "amount": kobo}], summing to the amount. Null = pro rata over the sale.
+	Allocation json.RawMessage `json:"allocation"`
 }
 
 // [payments] One line per settled transaction; matched to our payments by reference and amount.

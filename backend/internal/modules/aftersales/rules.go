@@ -4,6 +4,10 @@ import (
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
+
+	"github.com/dprince-03/techshop/backend/internal/modules/ledger"
 )
 
 // Return rules (orders-fulfilment.md §7). Pure, so they're unit-tested without a database.
@@ -137,3 +141,43 @@ var tradeInCategories = map[string][]string{
 
 // tradeInOfferWindow is how long a customer has to accept an offer.
 const tradeInOfferWindow = 7 * 24 * time.Hour
+
+// refundShare is one refunded item, as the refund journal needs it.
+type refundShare struct {
+	FirstParty       bool
+	SellerID         uuid.UUID
+	LineTotal, VAT   int64
+	SellerEarning    *int64 // marketplace lines: net price plus any TechShop-funded discount
+	CommissionBps    int32
+	LineQty, Qty     int32
+	CommissionPosted bool // delivered, so the sale's commission was already charged
+}
+
+// refundAllocation is who bears a refund, item by item: TechShop's revenue and VAT for its own
+// stock; the seller's payable for theirs (their commission and any TechShop-funded discount are
+// handed back); and the delivery fee. The lines are debits and sum to the refund.
+func refundAllocation(items []refundShare, delivery int64) []ledger.Line {
+	var ls []ledger.Line
+	for _, it := range items {
+		refund := lineRefund(it.LineTotal, it.LineQty, it.Qty)
+		if it.FirstParty {
+			vat := it.VAT * int64(it.Qty) / int64(it.LineQty)
+			ls = append(ls, ledger.Line{Code: ledger.RevenueFirstParty, Amount: refund - vat}, ledger.Line{Code: ledger.LiabilityVAT, Amount: vat})
+			continue
+		}
+		earning := refund
+		if it.SellerEarning != nil {
+			earning = *it.SellerEarning * int64(it.Qty) / int64(it.LineQty)
+		}
+		payable := ledger.SellerPayable(it.SellerID)
+		ls = append(ls, ledger.Line{Code: payable, Amount: earning}, ledger.Line{Code: ledger.ExpensePromotions, Amount: refund - earning})
+		if it.CommissionPosted {
+			comm := (it.LineTotal*int64(it.CommissionBps) + 5000) / 10000 * int64(it.Qty) / int64(it.LineQty)
+			ls = append(ls, ledger.Line{Code: ledger.RevenueCommission, Amount: comm}, ledger.Line{Code: payable, Amount: -comm})
+		}
+	}
+	if delivery > 0 {
+		ls = append(ls, ledger.Line{Code: ledger.RevenueDelivery, Amount: delivery})
+	}
+	return ls
+}
