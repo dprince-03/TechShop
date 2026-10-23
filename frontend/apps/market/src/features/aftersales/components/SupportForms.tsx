@@ -1,6 +1,10 @@
 "use client";
 
-import { ActionForm, Field } from "@techshop/ui/components";
+import {
+  ActionForm,
+  ContactForm as SharedContactForm,
+  Field,
+} from "@techshop/ui/components";
 
 import { contactUs, openTicket, replyTicket } from "../actions";
 
@@ -77,55 +81,7 @@ export function TicketReplyForm({ number }: { number: string }) {
   );
 }
 
-/** The public contact form. The hidden "website" field is a trap for bots. */
+/** The public contact form. */
 export function ContactForm() {
-  return (
-    <ActionForm
-      action={contactUs}
-      submitLabel="Send message"
-      pendingLabel="Sending…"
-      variant="primary"
-      resetOnSuccess
-    >
-      <Field name="name" label="Full name" autoComplete="name" maxLength={80} />
-      <Field
-        name="email"
-        label="Email address"
-        type="email"
-        autoComplete="email"
-        maxLength={254}
-        optional
-        hint="Give us an email or a phone number."
-      />
-      <Field
-        name="phone"
-        label="Phone number"
-        type="tel"
-        autoComplete="tel"
-        inputMode="tel"
-        optional
-      />
-      <Field
-        name="orderNumber"
-        label="Order number"
-        optional
-        hint="For example TS-10482."
-        maxLength={20}
-      />
-      <Field name="topic" label="Topic" type="select" options={topics} />
-      <Field name="subject" label="Subject" maxLength={140} />
-      <Field
-        name="message"
-        label="How can we help?"
-        type="textarea"
-        maxLength={5000}
-      />
-      <div className="visually-hidden" aria-hidden="true">
-        <label>
-          Leave this empty
-          <input name="website" tabIndex={-1} autoComplete="off" />
-        </label>
-      </div>
-    </ActionForm>
-  );
+  return <SharedContactForm action={contactUs} topics={topics} />;
 }

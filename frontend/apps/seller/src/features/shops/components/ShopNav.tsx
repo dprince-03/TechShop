@@ -6,10 +6,12 @@ const sections = [
   { key: "overview", label: "Overview", path: "" },
   { key: "listings", label: "Listings", path: "/listings" },
   { key: "orders", label: "Orders", path: "/orders" },
+  { key: "returns", label: "Returns", path: "/returns" },
   { key: "reviews", label: "Reviews", path: "/reviews" },
   { key: "verification", label: "Verification", path: "/verification" },
   { key: "payouts", label: "Payouts", path: "/payouts" },
   { key: "team", label: "Team", path: "/team" },
+  { key: "support", label: "Support", path: "/support" },
 ] as const;
 
 export type Section = (typeof sections)[number]["key"];

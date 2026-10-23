@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 
-import { PageHeader, PreviewForm } from "@techshop/ui/components";
+import { PageHeader, ContactForm } from "@techshop/ui/components";
+
+import { contact } from "@/features/contact/actions";
 
 export const metadata: Metadata = {
   title: "Contact seller support | TechShop Seller Centre",
@@ -19,60 +21,19 @@ export default function SellerContactPage() {
           ]}
         />
         <div className="card card--roomy">
-          <PreviewForm
-            id="sellersupport"
-            groups={[
+          <ContactForm
+            action={contact}
+            topics={[
               {
-                fields: [
-                  {
-                    name: "name",
-                    label: "Full name",
-                    required: true,
-                    autoComplete: "name",
-                    half: true,
-                  },
-                  { name: "shop", label: "Shop name", half: true },
-                  {
-                    name: "email",
-                    label: "Email address",
-                    type: "email",
-                    required: true,
-                    autoComplete: "email",
-                    half: true,
-                  },
-                  {
-                    name: "phone",
-                    label: "Phone number",
-                    type: "tel",
-                    autoComplete: "tel",
-                    half: true,
-                  },
-                  {
-                    name: "topic",
-                    label: "Topic",
-                    type: "select",
-                    required: true,
-                    options: [
-                      "Registration & verification",
-                      "Listings",
-                      "Orders & delivery",
-                      "Payouts",
-                      "Returns",
-                      "Something else",
-                    ],
-                  },
-                  {
-                    name: "message",
-                    label: "Message",
-                    type: "textarea",
-                    required: true,
-                  },
-                ],
+                value: "selling",
+                label: "Registration, verification or listings",
               },
+              { value: "order", label: "Orders and delivery" },
+              { value: "payment", label: "Payouts" },
+              { value: "return", label: "Returns" },
+              { value: "other", label: "Something else" },
             ]}
-            submitLabel="Send message"
-            successTitle="Message ready"
-            successMessage="In the live Seller Centre this would open a support ticket."
+            askOrder={false}
           />
         </div>
       </div>

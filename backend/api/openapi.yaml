@@ -1815,6 +1815,7 @@ components:
             - corporate
             - market
             - wholesale
+            - seller
           type: string
         subject:
           maxLength: 140
@@ -13615,7 +13616,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
           description: Error
-      summary: "Public contact form (corporate, market, wholesale): becomes a support ticket"
+      summary: "Public contact form (corporate, market, wholesale, Seller Centre): becomes a support ticket"
       tags:
         - Support
   /api/v1/content/banners:

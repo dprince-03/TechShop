@@ -29,7 +29,7 @@ func (s *Service) Routes(r *kit.Routes) {
 	}
 
 	httpx.Register(g, httpx.Op{ID: "contactUs", Method: http.MethodPost, Path: "/api/v1/contact", Tag: "Support", Status: 202, MaxBody: 32 << 10,
-		Summary: "Public contact form (corporate, market, wholesale): becomes a support ticket"},
+		Summary: "Public contact form (corporate, market, wholesale, Seller Centre): becomes a support ticket"},
 		func(ctx context.Context, in *struct{ Body ContactInput }) (*struct{ Body ContactReceipt }, error) {
 			out, err := s.Contact(ctx, in.Body)
 			return &struct{ Body ContactReceipt }{out}, err

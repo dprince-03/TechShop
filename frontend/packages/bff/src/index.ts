@@ -8,4 +8,5 @@ export { assertSameOrigin, createBff } from "./server";
 export type { Bff } from "./server";
 export type { Session } from "./session";
 export { failure } from "./forms";
+export { submitContact, type ContactSite } from "./contact";
 export type { ActionState } from "./forms";
