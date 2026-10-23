@@ -10,15 +10,16 @@ import (
 
 // ReturnItem is one item in a return, with its inspection once done.
 type ReturnItem struct {
-	ID          uuid.UUID `json:"id"`
-	OrderLineID uuid.UUID `json:"orderLineId"`
-	ProductName string    `json:"productName"`
-	VariantName string    `json:"variantName"`
-	Quantity    int32     `json:"quantity"`
-	Refund      int64     `json:"refund" doc:"Kobo: the price paid for these units"`
-	Serialised  bool      `json:"serialised" doc:"The inspector must scan the IMEI or serial"`
-	Grade       *string   `json:"grade"`
-	Disposition *string   `json:"disposition"`
+	ID            uuid.UUID `json:"id"`
+	OrderLineID   uuid.UUID `json:"orderLineId"`
+	ProductName   string    `json:"productName"`
+	VariantName   string    `json:"variantName"`
+	Quantity      int32     `json:"quantity"`
+	Refund        int64     `json:"refund" doc:"Kobo: the price paid for these units"`
+	Serialised    bool      `json:"serialised" doc:"The inspector must scan the IMEI or serial"`
+	SellerShipped bool      `json:"sellerShipped" doc:"Shipped by a marketplace seller: it can only go back to them"`
+	Grade         *string   `json:"grade"`
+	Disposition   *string   `json:"disposition"`
 }
 
 // Return is a return request (RMA) as the customer and staff see it.
@@ -64,7 +65,7 @@ func returnView(r store.AftersalesGetReturnRow, items []store.AftersalesItemsRow
 	for i, it := range items {
 		refund := lineRefund(it.LineTotalKobo, it.LineQuantity, it.Quantity)
 		out.Items[i] = ReturnItem{ID: it.ID, OrderLineID: it.OrderLineID, ProductName: it.ProductName, VariantName: it.VariantName,
-			Quantity: it.Quantity, Refund: refund, Serialised: it.DeviceUnitID != nil, Grade: it.Grade, Disposition: it.Disposition}
+			Quantity: it.Quantity, Refund: refund, Serialised: it.DeviceUnitID != nil, SellerShipped: it.FulfilledBy == "seller", Grade: it.Grade, Disposition: it.Disposition}
 	}
 	return out
 }

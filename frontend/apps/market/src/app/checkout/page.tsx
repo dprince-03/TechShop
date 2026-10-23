@@ -7,6 +7,7 @@ import { EmptyState, PageHeader } from "@techshop/ui/components";
 import { listAddresses } from "@/features/account/server";
 import { getCart } from "@/features/cart/server";
 import { getStates } from "@/features/catalogue/api";
+import { storeCredit } from "@/features/aftersales/server";
 import { CheckoutForm } from "@/features/checkout/components/CheckoutForm";
 import { initialQuote, paymentMethods } from "@/features/checkout/server";
 import { bff } from "@/lib/bff";
@@ -51,7 +52,10 @@ export default async function CheckoutPage() {
     );
   }
   const first = addresses.find((a) => a.isDefault) ?? addresses[0];
-  const quote = await initialQuote(first?.id);
+  const [quote, credit] = await Promise.all([
+    initialQuote(first?.id),
+    storeCredit().catch(() => null),
+  ]);
   return (
     <main id="main" className="section section--page">
       <div className="container stack stack--lg">
@@ -61,6 +65,7 @@ export default async function CheckoutPage() {
           states={states}
           methods={methods}
           initial={quote}
+          storeCredit={credit?.balanceKobo ?? 0}
         />
       </div>
     </main>

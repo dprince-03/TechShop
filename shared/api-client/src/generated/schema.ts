@@ -926,6 +926,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/me/banks": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Banks a trade-in can be paid to */
+    get: operations["tradeInBanks"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/me/consents": {
     parameters: {
       query?: never;
@@ -9292,6 +9309,8 @@ export interface components {
        * @description Kobo: the price paid for these units
        */
       refund: number;
+      /** @description Shipped by a marketplace seller: it can only go back to them */
+      sellerShipped: boolean;
       /** @description The inspector must scan the IMEI or serial */
       serialised: boolean;
       variantName: string;
@@ -9988,8 +10007,8 @@ export interface components {
       released: boolean;
     };
     StaffAssignTicketRequest: {
-      /** @description null unassigns */
-      agentId: string;
+      /** @description Leave out to unassign */
+      agentId?: string;
     };
     StaffBankAccount: {
       /** @description The name the seller typed */
@@ -12851,6 +12870,35 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  tradeInBanks: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Bank"][] | null;
+        };
       };
       /** @description Error */
       default: {

@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/riverqueue/river"
 
+	"github.com/dprince-03/techshop/backend/internal/modules/payments"
 	"github.com/dprince-03/techshop/backend/internal/platform/auth"
 	"github.com/dprince-03/techshop/backend/internal/platform/httpx"
 	"github.com/dprince-03/techshop/backend/internal/platform/jobs"
@@ -42,6 +43,15 @@ func (s *Service) tradeInRoutes(r *kit.Routes) {
 		})
 
 	me := func(o httpx.Op) httpx.Op { o.Tag = "Trade-ins"; o.Auth = shoppers; return o }
+	httpx.Register(g, me(httpx.Op{ID: "tradeInBanks", Method: http.MethodGet, Path: "/api/v1/me/banks", Summary: "Banks a trade-in can be paid to"}),
+		func(ctx context.Context, _ *struct{}) (*struct{ Body []payments.Bank }, error) {
+			banks, err := s.pay.Banks(ctx)
+			if err != nil {
+				s.d.Logger.Warn("bank list failed", "error", err)
+				return nil, httpx.E(503, "bank_unavailable", "The bank list isn't available right now. Try again shortly.")
+			}
+			return &struct{ Body []payments.Bank }{banks}, nil
+		})
 	httpx.Register(g, me(httpx.Op{ID: "startTradeIn", Method: http.MethodPost, Path: "/api/v1/me/trade-ins", Status: 201, Summary: "Get an estimate, then bring the device to a store"}),
 		func(ctx context.Context, in *struct{ Body TradeInInput }) (*tradeInOut, error) {
 			out, err := s.CreateTradeIn(ctx, httpx.MustPrincipal(ctx).UserID, in.Body)

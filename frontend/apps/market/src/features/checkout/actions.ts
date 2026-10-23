@@ -9,7 +9,7 @@ import { bff } from "@/lib/bff";
 
 type Quote = Schema<"Quote">;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const PROVIDERS = ["paystack", "opay", "moniepoint"] as const;
+const PROVIDERS = ["paystack", "opay", "moniepoint", "store_credit"] as const;
 type Provider = (typeof PROVIDERS)[number];
 
 export type PreviewResult =
@@ -143,6 +143,13 @@ export async function placeOrder(input: {
       };
     if (e instanceof ApiError && e.code === "cart_empty")
       return { ok: false, message: "Your cart is empty." };
+    if (e instanceof ApiError && e.code === "store_credit_insufficient")
+      return {
+        ok: false,
+        message:
+          e.detail ??
+          "Your store credit doesn't cover this order. Choose another way to pay.",
+      };
     return {
       ok: false,
       message:
@@ -150,6 +157,9 @@ export async function placeOrder(input: {
     };
   }
 
+  // Store credit settles at once: straight to the order.
+  if (placed.payment.status === "succeeded")
+    redirect(`/orders/${placed.orderNumber}?placed=1`);
   const url = safePaymentUrl(placed.payment.checkoutUrl, bff.config().apiUrl);
   if (url) redirect(url);
   // Bank transfers have no hosted page: the form shows the account to pay into.

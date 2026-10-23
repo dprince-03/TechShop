@@ -8721,6 +8721,9 @@ components:
           description: "Kobo: the price paid for these units"
           format: int64
           type: integer
+        sellerShipped:
+          description: "Shipped by a marketplace seller: it can only go back to them"
+          type: boolean
         serialised:
           description: The inspector must scan the IMEI or serial
           type: boolean
@@ -8734,6 +8737,7 @@ components:
         - quantity
         - refund
         - serialised
+        - sellerShipped
         - grade
         - disposition
       type: object
@@ -10478,10 +10482,8 @@ components:
       additionalProperties: false
       properties:
         agentId:
-          description: null unassigns
+          description: Leave out to unassign
           type: string
-      required:
-        - agentId
       type: object
     StaffBankAccount:
       additionalProperties: false
@@ -14714,6 +14716,31 @@ paths:
       summary: Replace an address
       tags:
         - Addresses
+  /api/v1/me/banks:
+    get:
+      operationId: tradeInBanks
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/Bank"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Banks a trade-in can be paid to
+      tags:
+        - Trade-ins
   /api/v1/me/consents:
     get:
       operationId: listConsents
