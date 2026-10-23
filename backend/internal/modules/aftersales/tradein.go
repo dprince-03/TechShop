@@ -172,7 +172,7 @@ func (s *Service) ReceiveTradeIn(ctx context.Context, ref string, in ReceiveInpu
 		if _, err := tx.Q.TradeInReceive(ctx, store.TradeInReceiveParams{ID: t.ID, StoreID: &in.StoreID, ReceivedBy: &actor, Imei: optional(imei), Serial: optional(serial)}); err != nil {
 			return httpx.DB(err, "store")
 		}
-		if dec.Held() || dec.Outcome == "step_up" {
+		if dec.Held() || dec.Outcome == "step_up" { // in hand at the store: staff see the case before making an offer
 			return tx.Audit("trade_in.flagged", "trade_in", t.ID.String(), map[string]any{"score": dec.Score, "case": dec.CaseRef})
 		}
 		return nil

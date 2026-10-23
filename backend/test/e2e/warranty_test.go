@@ -130,15 +130,15 @@ func TestWarrantyReplacement(t *testing.T) {
 	w := post(t, "/api/v1/staff/warranty/claims", tech, map[string]any{"imeiOrSerial": imei, "fault": "Speaker crackles", "storeId": seed.Extra["storeVIId"]})
 	expect(t, w, 201, "walk-in")
 	number := w.str("number")
-	before := stockOf(t, seed.Extra["variant_p18"], "new")
 	expectCode(t, post(t, "/api/v1/staff/warranty/claims/"+number+"/resolution", tech, map[string]any{"resolution": "replaced", "replacementSerial": imei}), 422, "replacement_unavailable", "the faulty unit itself")
 	rep := post(t, "/api/v1/staff/warranty/claims/"+number+"/resolution", tech, map[string]any{"resolution": "replaced", "replacementSerial": spare})
 	expect(t, rep, 200, "replace")
 	if rep.str("status") != "ready" || rep.str("resolution") != "replaced" {
 		t.Fatalf("replacement ready to collect: %s", rep.Raw)
 	}
-	if after := stockOf(t, seed.Extra["variant_p18"], "new"); after != before-1 {
-		t.Fatalf("replacement leaves stock: before %v, after %v", before, after)
-	}
+	// The spare left stock: it can't be handed over a second time.
+	_, _, imei2 := deliveredPhone(t, "Tolu2", 631)
+	w2 := post(t, "/api/v1/staff/warranty/claims", tech, map[string]any{"imeiOrSerial": imei2, "fault": "Speaker crackles", "storeId": seed.Extra["storeVIId"]})
+	expectCode(t, post(t, "/api/v1/staff/warranty/claims/"+w2.str("number")+"/resolution", tech, map[string]any{"resolution": "replaced", "replacementSerial": spare}), 422, "replacement_unavailable", "spare already used")
 	expect(t, post(t, "/api/v1/staff/warranty/claims/"+number+"/collect", tech, nil), 200, "collect")
 }

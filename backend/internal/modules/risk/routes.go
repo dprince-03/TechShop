@@ -13,6 +13,7 @@ import (
 
 // Routes implements kit.Module.
 func (s *Service) Routes(r *kit.Routes) {
+	s.ruleRoutes(r)
 	g := r.Public
 	st := func(perm string, o httpx.Op) httpx.Op {
 		o.Tag = "Staff · Risk"

@@ -57,6 +57,7 @@ type Check struct {
 	CaseKind    string // the case kind if a hold or block opens one
 	CaseTitle   string // e.g. "Order TS-10482"
 	NoCase      bool   // the caller handles non-allow outcomes itself (returns wait for support)
+	StepUpHolds bool   // the checkpoint can't step up yet, so a step-up waits for review too
 }
 
 // Decision is the engine's answer.
@@ -67,12 +68,12 @@ type Decision struct {
 	Fired   []FiredRule
 	CaseID  *uuid.UUID
 	CaseRef string
+	hold    bool
 }
 
-// Held reports whether the checkpoint must stop and wait for review.
-func (d Decision) Held() bool {
-	return d.Outcome == "hold" || d.Outcome == "fallback_hold"
-}
+// Held reports whether the checkpoint must stop and wait for review (a hold or block, a
+// fallback hold, or a step-up where the checkpoint holds instead).
+func (d Decision) Held() bool { return d.hold }
 
 // reasons is the stored shape of risk_decisions.reasons: what fired and what the engine saw.
 type reasons struct {
@@ -127,7 +128,8 @@ func (s *Service) Evaluate(ctx context.Context, tx *uow.Tx, c Check) (Decision, 
 		return Decision{}, err
 	}
 	d := Decision{ID: id, Score: res.Score, Outcome: res.Outcome, Fired: res.Fired}
-	if c.NoCase || (res.Outcome != "hold" && res.Outcome != "block" && res.Outcome != "fallback_hold") {
+	d.hold = res.Outcome == "hold" || res.Outcome == "block" || res.Outcome == "fallback_hold" || (c.StepUpHolds && res.Outcome == "step_up")
+	if c.NoCase || !d.hold {
 		return d, nil
 	}
 	cs, err := s.OpenCase(ctx, tx, NewCase{Kind: c.CaseKind, SubjectType: c.SubjectType, SubjectID: c.SubjectID, Reason: caseReason(c.CaseTitle, res),

@@ -795,7 +795,7 @@ func (q *Queries) PaymentsOrderRefunds(ctx context.Context, orderID uuid.UUID) (
 }
 
 const paymentsOrderWithCustomer = `-- name: PaymentsOrderWithCustomer :one
-select o.id, o.order_number, o.channel, o.customer_user_id, o.business_id, o.quote_id, o.pos_shift_id, o.status, o.subtotal_kobo, o.delivery_fee_kobo, o.discount_kobo, o.vat_kobo, o.total_kobo, o.currency, o.ship_to, o.contact_phone, o.price_hash, o.payment_due_at, o.attributed_notification_id, o.placed_at, o.cancelled_at, o.created_at, o.updated_at, u.email as customer_email, u.phone as customer_phone, u.first_name as customer_first_name
+select o.id, o.order_number, o.channel, o.customer_user_id, o.business_id, o.quote_id, o.pos_shift_id, o.status, o.subtotal_kobo, o.delivery_fee_kobo, o.discount_kobo, o.vat_kobo, o.total_kobo, o.currency, o.ship_to, o.contact_phone, o.price_hash, o.payment_due_at, o.attributed_notification_id, o.placed_at, o.cancelled_at, o.created_at, o.updated_at, o.review_hold_at, o.review_case_id, u.email as customer_email, u.phone as customer_phone, u.first_name as customer_first_name
 from sales.orders o left join identity.users u on u.id = o.customer_user_id where o.id = $1
 `
 
@@ -823,6 +823,8 @@ type PaymentsOrderWithCustomerRow struct {
 	CancelledAt              *time.Time      `json:"cancelledAt"`
 	CreatedAt                time.Time       `json:"createdAt"`
 	UpdatedAt                time.Time       `json:"updatedAt"`
+	ReviewHoldAt             *time.Time      `json:"reviewHoldAt"`
+	ReviewCaseID             *uuid.UUID      `json:"reviewCaseId"`
 	CustomerEmail            *string         `json:"customerEmail"`
 	CustomerPhone            *string         `json:"customerPhone"`
 	CustomerFirstName        *string         `json:"customerFirstName"`
@@ -855,6 +857,8 @@ func (q *Queries) PaymentsOrderWithCustomer(ctx context.Context, id uuid.UUID) (
 		&i.CancelledAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ReviewHoldAt,
+		&i.ReviewCaseID,
 		&i.CustomerEmail,
 		&i.CustomerPhone,
 		&i.CustomerFirstName,
