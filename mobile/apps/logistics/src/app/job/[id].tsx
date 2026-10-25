@@ -9,6 +9,7 @@ import { Body, Button, Card, Field, Notice, Screen, Title } from "@techshop/mobi
 import { useSession } from "@/features/auth/SessionProvider";
 import { performAction, type ActionInput } from "@/features/jobs/actions";
 import { LabelScanner } from "@/features/jobs/LabelScanner";
+import { PhotoProof } from "@/features/jobs/PhotoProof";
 import { useJobs } from "@/features/jobs/useJobs";
 import { tokens, useColors } from "@/theme";
 
@@ -27,7 +28,10 @@ async function position() {
   return pos ? { latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracyM: pos.coords.accuracy ?? undefined } : undefined;
 }
 
-/** One job, one primary action per state: pick up → start delivery → deliver (code) or couldn't deliver. */
+/**
+ * One job, one primary action per state. Delivery: pick up → start delivery → deliver (code) or
+ * couldn't deliver. Return pickup: collect from the customer (photo) → hand in at the hub (photo).
+ */
 export default function JobScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { session } = useSession();
@@ -43,6 +47,7 @@ export default function JobScreen() {
   const [note, setNote] = useState("");
 
   const job = jobs.find((j) => j.id === id);
+  const isReturn = job?.kind === "return_pickup";
   // Still loading (from the API or the phone's cache): don't claim the job is gone yet.
   if (!job && loading) return <ActivityIndicator style={{ flex: 1 }} accessibilityLabel="Loading job" />;
   if (!job) {
@@ -80,15 +85,32 @@ export default function JobScreen() {
       <Body>{[job.address, job.city, job.stateCode].filter(Boolean).join(", ")}</Body>
       {job.landmark ? <Body muted>Landmark: {job.landmark}</Body> : null}
       {job.orderNumber ? <Body small muted>Order {job.orderNumber} · attempt {job.attempts + 1}</Body> : null}
-      {job.status === "assigned" && job.pickupName ? <Card><Body>Pick up from {job.pickupName}</Body>{job.pickupAddress ? <Body small muted>{job.pickupAddress}</Body> : null}</Card> : null}
+      {isReturn ? (
+        <Card>
+          <Body>Collect return {job.rma} from the customer</Body>
+          {job.pickupName ? <Body small muted>Then bring it to {job.pickupName}{job.pickupAddress ? `, ${job.pickupAddress}` : ""}</Body> : null}
+        </Card>
+      ) : job.status === "assigned" && job.pickupName ? (
+        <Card><Body>Pick up from {job.pickupName}</Body>{job.pickupAddress ? <Body small muted>{job.pickupAddress}</Body> : null}</Card>
+      ) : null}
       <Button label="Navigate" onPress={navigate} />
       {message ? <Notice tone={message.tone}>{message.text}</Notice> : null}
 
-      {job.status === "assigned" ? <LabelScanner busy={busy} onLabel={(labelCode) => act({ kind: "picked_up", labelCode }, "Picked up. The customer has been sent their delivery code.")} /> : null}
+      {job.status === "assigned" && isReturn && !failing ? (
+        <View style={styles.block}>
+          <PhotoProof session={session} busy={busy} label="Photo of the item you're collecting" onPhoto={(photoFileId) => act({ kind: "picked_up", photoFileId }, "Collected. Bring it to the hub.")} />
+          <Button label="Couldn’t collect" onPress={() => setFailing(true)} />
+        </View>
+      ) : null}
+      {(job.status === "picked_up" || job.status === "en_route") && isReturn ? (
+        <PhotoProof session={session} busy={busy} label="Photo at the hub hand-in" onPhoto={(photoFileId) => act({ kind: "delivered", photoFileId }, "Handed in. Thanks!")} />
+      ) : null}
 
-      {job.status === "picked_up" ? <Button label="Start delivery" variant="primary" busy={busy} onPress={() => act({ kind: "en_route" }, "On your way. The customer can now follow you.")} /> : null}
+      {job.status === "assigned" && !isReturn ? <LabelScanner busy={busy} onLabel={(labelCode) => act({ kind: "picked_up", labelCode }, "Picked up. The customer has been sent their delivery code.")} /> : null}
 
-      {(job.status === "picked_up" || job.status === "en_route") && !failing ? (
+      {job.status === "picked_up" && !isReturn ? <Button label="Start delivery" variant="primary" busy={busy} onPress={() => act({ kind: "en_route" }, "On your way. The customer can now follow you.")} /> : null}
+
+      {(job.status === "picked_up" || job.status === "en_route") && !isReturn && !failing ? (
         <View style={styles.block}>
           <Field label="Customer’s delivery code" value={otp} onChangeText={(t) => setOtp(t.replace(/\D/g, "").slice(0, 6))} keyboardType="number-pad" maxLength={6} hint="Ask the customer for the 6-digit code from their SMS." />
           <Field label="Who received it (optional)" value={recipient} onChangeText={setRecipient} autoCapitalize="words" />

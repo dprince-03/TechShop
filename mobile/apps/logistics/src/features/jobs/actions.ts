@@ -17,6 +17,7 @@ const refusal: Record<string, string> = {
   otp_wrong: "That code isn’t right. Ask the customer to read it again.",
   otp_locked: "Too many wrong codes. Call dispatch.",
   proof_required: "Enter the customer’s delivery code.",
+  photo_required: "Take the photo first.",
   job_reassigned: "This job was given to another rider. Hand the parcel back at the hub.",
   bad_transition: "That step isn’t possible now. Refresh your jobs.",
   not_on_shift: "Start your shift first.",
