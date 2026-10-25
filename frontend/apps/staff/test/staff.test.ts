@@ -264,10 +264,11 @@ describe("operations modules", () => {
         token: ct,
         path: { id: l.cartItemId },
       });
-    // Orbit One 15 Max: sold and shipped by TechShop from the Ikeja warehouse (serialised).
+    // Nova X5 Pro: sold and shipped by TechShop from the Ikeja warehouse (serialised). Under
+    // ₦1m, so a new account's first order isn't held for a risk review.
     await api.post("/api/v1/cart/items", {
       token: ct,
-      body: { listingId: seed().extra.listing_p2, quantity: 1 },
+      body: { listingId: seed().extra.listing_p1, quantity: 1 },
     });
     const addressId = ((await api.get("/api/v1/me/addresses", { token: ct })) ??
       [])[0]?.id;

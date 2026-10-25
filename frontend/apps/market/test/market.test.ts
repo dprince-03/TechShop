@@ -603,3 +603,191 @@ describe("reviews", () => {
     assert.equal(twice.value.ok, false);
   });
 });
+
+describe("after-sales", () => {
+  test("return, warranty claim, trade-in and support from the account; the public contact form", async () => {
+    const phone = freshPhone();
+    const token = await tokenForPhone(phone, "market", "Amaka");
+    const { orderNumber, lineId } = await deliveredOrder(token, listing(21));
+    const password = `Pw-${randomInt(1e9, 9e9)}-${Date.now().toString(36)}`;
+    await api.post("/api/v1/me/password", {
+      token,
+      body: { newPassword: password },
+    });
+    const b = browser();
+    await b.get("/sign-in?next=%2Faccount");
+    const signed = await b.action("/sign-in", "signInStep", [
+      { step: "start" },
+      form({
+        intent: "password",
+        identifier: phone,
+        password,
+        next: "/account",
+      }),
+    ]);
+    assert.equal(signed.redirect, "/account", signed.raw.slice(-300));
+
+    // Return: the order offers it, the form validates, and a faulty item is approved at once.
+    assert.match(
+      textOf((await b.get(`/orders/${orderNumber}`)).html),
+      /Return items/,
+    );
+    const returnPath = `/orders/${orderNumber}/return`;
+    assert.match(
+      textOf((await b.get(returnPath)).html),
+      /Why are you returning it/,
+    );
+    const none = await b.action<{ ok: boolean; message: string }>(
+      "/orders/[number]/return",
+      "requestReturn",
+      [
+        orderNumber,
+        {},
+        form({
+          [`qty:${lineId}`]: "0",
+          reason: "faulty",
+          method: "store_dropoff",
+        }),
+      ],
+      { url: returnPath },
+    );
+    assert.equal(none.value.ok, false);
+    const ret = await b.action(
+      "/orders/[number]/return",
+      "requestReturn",
+      [
+        orderNumber,
+        {},
+        form({
+          [`qty:${lineId}`]: "1",
+          reason: "faulty",
+          method: "store_dropoff",
+          details: "Won't pair",
+        }),
+      ],
+      { url: returnPath },
+    );
+    assert.match(
+      ret.redirect ?? "",
+      /^\/account\/returns\/RMA-\d+\?new=1$/,
+      ret.raw.slice(-300),
+    );
+    const rma = ret.redirect!.split("/").pop()!.split("?")[0];
+    const returnPage = textOf((await b.get(`/account/returns/${rma}`)).html);
+    assert.match(returnPage, /approved/i);
+    assert.match(
+      textOf((await b.get("/account/returns")).html),
+      new RegExp(rma),
+    );
+
+    // Warranty: the delivered item is covered; a claim needs the serial and a fault.
+    const warranty = textOf((await b.get("/account/warranty")).html);
+    assert.match(warranty, /Make a claim/);
+    await b.get(`/account/warranty/new?line=${lineId}`);
+    const claim = await b.action(
+      "/account/warranty/new",
+      "makeClaim",
+      [
+        {},
+        form({
+          orderLineId: lineId,
+          imeiOrSerial: "SN-998877",
+          fault: "Stopped turning on after a week",
+        }),
+      ],
+      { url: `/account/warranty/new?line=${lineId}` },
+    );
+    assert.match(
+      claim.redirect ?? "",
+      /^\/account\/warranty\/WR-\d+\?new=1$/,
+      claim.raw.slice(-300),
+    );
+    assert.match(
+      textOf((await b.get(claim.redirect!)).html),
+      /Bring it to a store/,
+    );
+
+    // Trade-in: a catalogue phone gets an instant estimate.
+    const tradePage = textOf((await b.get("/trade-in?type=phone")).html);
+    assert.match(tradePage, /up to ₦/);
+    const ti = await b.action(
+      "/trade-in",
+      "startTradeIn",
+      [
+        {},
+        form({
+          deviceType: "phone",
+          variantId: seed().extra.variant_p1,
+          condition: "good",
+          owner: "on",
+        }),
+      ],
+      { url: "/trade-in?type=phone" },
+    );
+    assert.match(
+      ti.redirect ?? "",
+      /^\/account\/trade-ins\/TI-\d+\?new=1$/,
+      ti.raw.slice(-300),
+    );
+    assert.match(
+      textOf((await b.get(ti.redirect!)).html),
+      /Your estimate is ₦/,
+    );
+
+    // Support: open a ticket about the order, then reply on it.
+    await b.get("/account/support/new");
+    const t = await b.action(
+      "/account/support/new",
+      "openTicket",
+      [
+        {},
+        form({
+          topic: "return",
+          orderNumber,
+          subject: "Return drop-off",
+          message: "Which store is closest to Yaba?",
+        }),
+      ],
+      { url: "/account/support/new" },
+    );
+    assert.match(
+      t.redirect ?? "",
+      /^\/account\/support\/TKT-\d+$/,
+      t.raw.slice(-300),
+    );
+    const number = t.redirect!.split("/").pop()!;
+    await b.get(t.redirect!);
+    const reply = await b.action<{ ok: boolean; message: string }>(
+      "/account/support/[number]",
+      "replyTicket",
+      [number, {}, form({ message: "Also, can I return the box separately?" })],
+      { url: t.redirect! },
+    );
+    assert.equal(reply.value.ok, true, reply.value.message);
+    assert.match(
+      textOf((await b.get(t.redirect!)).html),
+      /return the box separately/,
+    );
+
+    // The public contact form works without an account.
+    const guest = browser();
+    await guest.get("/help/contact");
+    const sent = await guest.action<{ ok: boolean; message: string }>(
+      "/help/[topic]",
+      "contactUs",
+      [
+        {},
+        form({
+          name: "Bola Ade",
+          email: `bola${Date.now()}@example.com`,
+          topic: "delivery",
+          subject: "Delivery to Ikorodu",
+          message: "Do you deliver to Ikorodu?",
+        }),
+      ],
+      { url: "/help/contact" },
+    );
+    assert.equal(sent.value.ok, true, sent.value.message);
+    assert.match(sent.value.message, /TKT-\d+/);
+  });
+});
