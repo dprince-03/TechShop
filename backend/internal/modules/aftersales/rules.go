@@ -1,8 +1,13 @@
 package aftersales
 
 import (
+	"slices"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
+
+	"github.com/dprince-03/techshop/backend/internal/modules/ledger"
 )
 
 // Return rules (orders-fulfilment.md §7). Pure, so they're unit-tested without a database.
@@ -33,25 +38,21 @@ func deliveryRefund(reason string, fee int64, returnedUnits, parcelUnits int32) 
 	return fee
 }
 
-// highReturnRate is the share of delivered orders returned in 90 days above which a customer
-// isn't auto-approved (trust-safety.md §3: "returns > 30 % of orders in 90 days").
-const highReturnRate = 0.30
-
 // withinWindow reports whether a delivery is still inside the return window.
 func withinWindow(deliveredAt *time.Time, now time.Time) bool {
 	return deliveredAt != nil && now.Sub(*deliveredAt) <= returnWindow
 }
 
-// goodStanding: no open risk case, and returns at most 30 % of delivered orders in 90 days
-// (counting this request).
-func goodStanding(returns90d, orders90d, openCases int) bool {
-	if openCases > 0 {
-		return false
+// returnRate is the share of delivered orders in 90 days that were returned, counting this
+// request: the "return" checkpoint's high_return_rate rule compares it with 30 %.
+func returnRate(returns90d, orders90d int) float64 {
+	if returns90d == 0 {
+		return 0 // a first return is always in good standing
 	}
 	if orders90d == 0 {
-		return returns90d == 0
+		return 1
 	}
-	return float64(returns90d+1)/float64(orders90d) <= highReturnRate || returns90d == 0
+	return float64(returns90d+1) / float64(orders90d)
 }
 
 // lineRefund is the money back for qty of a line: its price share (line total already net of
@@ -83,4 +84,100 @@ func stockCondition(disposition string) (string, bool) {
 	default:
 		return "", false
 	}
+}
+
+// Warranty rules (docs/plan.md 2026-10-23).
+
+// warrantyEnds is the last day of cover: the listing's months from delivery.
+func warrantyEnds(deliveredAt time.Time, months int16) time.Time {
+	return deliveredAt.AddDate(0, int(months), 0)
+}
+
+// underWarranty reports whether a delivered item is still covered.
+func underWarranty(deliveredAt *time.Time, months *int16, provider *string, now time.Time) bool {
+	if deliveredAt == nil || months == nil || *months <= 0 || provider == nil || *provider == "none" {
+		return false
+	}
+	return !now.After(warrantyEnds(*deliveredAt, *months))
+}
+
+// repairNext lists where a repair job can go from each status.
+var repairNext = map[string][]string{
+	"queued":         {"diagnosing", "awaiting_parts", "repairing", "done", "unrepairable"},
+	"diagnosing":     {"awaiting_parts", "repairing", "done", "unrepairable"},
+	"awaiting_parts": {"repairing", "unrepairable"},
+	"repairing":      {"awaiting_parts", "done", "unrepairable"},
+}
+
+func repairCanMove(from, to string) bool { return slices.Contains(repairNext[from], to) }
+
+// Trade-in rules (docs/plan.md 2026-10-23).
+
+// tradeInFactor is the share of today's new price offered per condition. Swappa's trade-in
+// quotes run 43–68 % of used resale value, and used devices resell below new, so the bands sit
+// a little under those figures.
+var tradeInFactor = map[string]int64{"like_new": 55, "good": 45, "fair": 35, "faulty": 10}
+
+// tradeInEstimate prices a device from today's new price and its condition, rounded down to
+// the nearest ₦500 so offers look deliberate rather than computed.
+func tradeInEstimate(newPrice int64, condition string) int64 {
+	f, ok := tradeInFactor[condition]
+	if !ok || newPrice <= 0 {
+		return 0
+	}
+	v := newPrice * f / 100
+	return v - v%50_000
+}
+
+// tradeInCategories maps a device type to the catalogue categories that price it.
+var tradeInCategories = map[string][]string{
+	"phone":   {"phones"},
+	"laptop":  {"laptops", "workstations"},
+	"console": {"gaming"},
+	// Tablets and smartwatches have no catalogue category yet: staff estimate them by hand.
+	"tablet":     {},
+	"smartwatch": {},
+}
+
+// tradeInOfferWindow is how long a customer has to accept an offer.
+const tradeInOfferWindow = 7 * 24 * time.Hour
+
+// refundShare is one refunded item, as the refund journal needs it.
+type refundShare struct {
+	FirstParty       bool
+	SellerID         uuid.UUID
+	LineTotal, VAT   int64
+	SellerEarning    *int64 // marketplace lines: net price plus any TechShop-funded discount
+	CommissionBps    int32
+	LineQty, Qty     int32
+	CommissionPosted bool // delivered, so the sale's commission was already charged
+}
+
+// refundAllocation is who bears a refund, item by item: TechShop's revenue and VAT for its own
+// stock; the seller's payable for theirs (their commission and any TechShop-funded discount are
+// handed back); and the delivery fee. The lines are debits and sum to the refund.
+func refundAllocation(items []refundShare, delivery int64) []ledger.Line {
+	var ls []ledger.Line
+	for _, it := range items {
+		refund := lineRefund(it.LineTotal, it.LineQty, it.Qty)
+		if it.FirstParty {
+			vat := it.VAT * int64(it.Qty) / int64(it.LineQty)
+			ls = append(ls, ledger.Line{Code: ledger.RevenueFirstParty, Amount: refund - vat}, ledger.Line{Code: ledger.LiabilityVAT, Amount: vat})
+			continue
+		}
+		earning := refund
+		if it.SellerEarning != nil {
+			earning = *it.SellerEarning * int64(it.Qty) / int64(it.LineQty)
+		}
+		payable := ledger.SellerPayable(it.SellerID)
+		ls = append(ls, ledger.Line{Code: payable, Amount: earning}, ledger.Line{Code: ledger.ExpensePromotions, Amount: refund - earning})
+		if it.CommissionPosted {
+			comm := (it.LineTotal*int64(it.CommissionBps) + 5000) / 10000 * int64(it.Qty) / int64(it.LineQty)
+			ls = append(ls, ledger.Line{Code: ledger.RevenueCommission, Amount: comm}, ledger.Line{Code: payable, Amount: -comm})
+		}
+	}
+	if delivery > 0 {
+		ls = append(ls, ledger.Line{Code: ledger.RevenueDelivery, Amount: delivery})
+	}
+	return ls
 }

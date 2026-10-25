@@ -676,3 +676,75 @@ Format: `### YYYY-MM-DD` heading, then one bullet per action.
   - Staff web 17/17.
   - Contract 46/46, market 16/16 and seller 2/2 after one rerun. Their first run, straight after the backend suite, hit rate limits (API log: nine 429s on `/auth/otp/request`, two on `/orders`, no 5xx).
   - All web apps and mobile typecheck and lint clean.
+
+## 2026-10-23 — M5 backend complete (branch feat/m5-after-sales)
+
+- **Risk** (`internal/modules/risk`, migrations 00032, 00037):
+  - Pure rule engine with versioned rule sets: launch rules for checkout, payout, trade-in and return, from trust-safety.md §3.
+  - Every decision is logged with the features it saw. Engine failures fall back by amount.
+  - Case queue: claim, note, escalate, clear or block, with a timeline. Resolving a case emits `risk.case_resolved`.
+  - Stolen-device blocklist with IMEI check-digit validation.
+  - Rules editor: draft, weights, thresholds, test bench over the last 30 days, publish with fresh MFA.
+  - **Checkout:** a held order stays paid but hidden from the warehouse and sellers until cleared. A block cancels and refunds it. Step-up counts as a hold for now.
+  - **Payout:** a held seller is skipped and gets a case.
+  - **Returns:** good standing now comes from the engine.
+- **Support** (`internal/modules/support`, 00033):
+  - Customer, seller and public contact-form tickets. The contact form has a honeypot and per-IP and per-address limits.
+  - Staff queue with assign, claim, reply, internal notes and status changes.
+  - SLA targets 24 h, or 4 h for payment and refund topics. An hourly job auto-resolves (7 days) and auto-closes (4 days).
+- **Warranty and repairs** (00034):
+  - Claims from customers or at the counter, checked against the IMEI sold and the blocklist.
+  - Workshop jobs with transitions; then repaired, replaced from stock (new stock reason `warranty_replacement`), refunded or not covered.
+  - Warranty terms are now copied onto order lines at checkout.
+- **Trade-ins** (00035):
+  - Catalogue estimates (55/45/35/10 % of today's new price, rounded down to ₦500) or a manual estimate.
+  - Store appraisal through the risk checkpoint, then an offer valid 7 days (an hourly job lapses old ones).
+  - Payout as store credit, or by bank transfer (name enquiry, sealed number, finance records it, separation of duties).
+  - The device is refurbished and only then enters stock. New journal kind `trade_in`.
+  - Store credit can pay a whole order at checkout. Refunds of such orders go back to credit.
+- **Returns** (00036):
+  - Seller-shipped items can be returned; they can only go back to the seller.
+  - Sellers see their returns and charge, and can dispute an inspection within 3 days. A support lead decides; upheld means the seller is credited and the cost is written off.
+  - Rider return pickups: photo when collected and when handed in; handing in marks the return received.
+  - **Money fix:** return and warranty refunds now carry an exact per-item ledger breakdown. Before, approval reversed the sale pro rata, which could charge the wrong seller. Refund approval also failed for store-credit orders; fixed.
+- **Verification:**
+  - Unit tests: engine scoring and thresholds, ticket rules and email check, warranty cover and repair transitions, trade-in pricing, refund breakdown.
+  - New e2e tests: `TestDeviceBlocklist`, `TestSupportCustomerTicket`, `TestSupportContactForm`, `TestSupportSellerTicket`, `TestWarrantyClaimRepairCollect`, `TestWarrantyWalkInStolenAndRefund`, `TestWarrantyReplacement`, `TestTradeInStoreCreditRefurbishAndSpend`, `TestTradeInBankPayoutStolenAndManual`, `TestSellerReturnAndDispute`, `TestReturnRiderPickup`, `TestCheckoutRiskHoldClearAndBlock`, `TestRiskRulesEditor`. The swap-fraud test now also covers the case queue.
+  - Full backend e2e on a fresh stack: all pass (195 s). Lint 0 issues; unit tests pass. API 312 paths; TypeScript types regenerated.
+  - Test fixes for parallel runs: one shared rider sign-in (phone codes are rate limited per number), and no stock-count assertions on shared variants.
+
+## 2026-10-25 — M5 screens complete; M5 done (branch feat/m5-after-sales)
+
+- **Market:**
+  - Return request from the order (7-day window), returns list and detail with rider-pickup status.
+  - Warranty: covered items, claim form and claim detail with drop-off stores.
+  - Trade-in page on the live API: model picker with "up to" estimates and an ownership confirmation. Trade-in list and detail with accept (store credit, or bank with a name check) or decline.
+  - Support: tickets, new ticket, conversation.
+  - The Help › Contact form is now live.
+  - Store credit: balance on the account page, and a checkout option when it covers the whole order.
+  - Order page: an alert when an order is held for review, plus links to return, claim or ask about it.
+- **Staff:**
+  - Returns: tabs, decide, receive, inspect per item (seller items can only go back to the seller), refund, seller-dispute decisions.
+  - Support: queue with figures, conversation, reply or internal note, take or assign, status and priority.
+  - Risk: case queue, case page with decision trace and timeline (claim, note, escalate, clear, block), device blocklist with IMEI check, rules editor (draft, weights, bands, test bench, publish).
+  - Warranty and repairs: claims, walk-in claims, workshop queue (repairs and refurbishment), claim actions.
+  - Trade-ins: figures, estimate, take in, inspect and offer, finance records the bank payout.
+  - The four sample-data previews these replace were removed.
+- **Seller Centre:** Returns (charge, items, dispute within 3 days) and Support (tickets) in the shop menu.
+- **Corporate, wholesale and Seller Centre contact pages:** live contact forms. Shared pieces: `ContactForm` (ui) and `submitContact` (bff), which needs no session.
+- **Mobile:**
+  - Customer app: returns, warranty, trade-in, support and store-credit screens.
+  - Riders' app: return pickups, with a photo when collecting and at hub hand-in (new `PhotoProof`).
+  - New `Choice` and `StatusLine` components in the mobile UI kit.
+- **Shared and API:**
+  - After-sales status words live in `@techshop/api-client`, so web and mobile say the same thing.
+  - New `Query<op>` type helper.
+  - API additions: `/me/banks`; `sellerShipped` on return items; the contact form accepts the `seller` site; ticket assignment takes an optional `agentId` (left out = unassign).
+- **Tests:**
+  - New web e2e tests: market after-sales journey, staff after-sales (support, returns, blocklist), Seller Centre support.
+  - Two older tests switched from the ₦2.15m phone to the ₦899k one. A fresh account's first order over ₦1m is now held for review by design.
+- **Verification on fresh stacks:**
+  - Backend e2e passes (240 s); lint 0 issues; unit tests pass.
+  - Market 17/17, staff 20/20, seller 3/3.
+  - Contract 46/46 on the second run. The first run failed one test: the staff suite had just used the same 30-second authenticator code.
+  - All five web apps lint, typecheck and build. Mobile typechecks, lints and its tests pass. Shared package tests pass (api-client 5, bff 7).

@@ -19,6 +19,7 @@ import {
   paymentStatus,
   providerLabel,
 } from "@/features/orders/status";
+import { inReturnWindow } from "@/features/aftersales/window";
 import { bff } from "@/lib/bff";
 
 export const metadata: Metadata = {
@@ -39,6 +40,13 @@ export default async function OrderPage(props: PageProps<"/orders/[number]">) {
   const awaiting = order.status === "pending_payment";
   const items = (order.fulfilments ?? []).flatMap((f) => f.lines ?? []);
   const itemsKobo = items.reduce((t, l) => t + l.lineTotalKobo, 0);
+  const deliveredParcels = (order.fulfilments ?? []).filter(
+    (f) => f.status === "delivered" && f.deliveredAt,
+  );
+  const delivered = deliveredParcels.length > 0;
+  const returnable = deliveredParcels.some((f) =>
+    inReturnWindow(f.deliveredAt),
+  );
 
   return (
     <main id="main" className="section section--page">
@@ -74,7 +82,13 @@ export default async function OrderPage(props: PageProps<"/orders/[number]">) {
               : ""}
           </p>
         ) : null}
-        {placed && order.status === "paid" ? (
+        {order.reviewHoldAt && order.status === "paid" ? (
+          <p className="alert alert--warning" role="status">
+            We’re confirming this order before we prepare it. This usually takes
+            under 2 hours; we’ll tell you when it’s on its way.
+          </p>
+        ) : null}
+        {placed && order.status === "paid" && !order.reviewHoldAt ? (
           <p className="alert alert--success" role="status">
             Thank you! Your payment is confirmed and your order is being
             prepared.
@@ -223,6 +237,27 @@ export default async function OrderPage(props: PageProps<"/orders/[number]">) {
                   .join(", ")}
               </p>
             ) : null}
+            <div className="stack stack--sm">
+              {returnable ? (
+                <Link
+                  href={`/orders/${order.orderNumber}/return`}
+                  className="btn btn--secondary btn--block"
+                >
+                  Return items
+                </Link>
+              ) : null}
+              {delivered ? (
+                <Link href="/account/warranty" className="link text-sm">
+                  Faulty later? Warranty claims
+                </Link>
+              ) : null}
+              <Link
+                href={`/account/support/new?order=${order.orderNumber}`}
+                className="link text-sm"
+              >
+                Ask about this order
+              </Link>
+            </div>
             <OrderActions
               number={order.orderNumber}
               methods={methods}

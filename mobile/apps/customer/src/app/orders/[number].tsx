@@ -24,6 +24,7 @@ export default function Order() {
       <Title>{orderStatus[o.status] ?? o.status}</Title>
       <Body muted>{`Placed ${when(o.placedAt)}`}</Body>
       {o.status === "pending_payment" ? <Notice tone="warning">We’re waiting for your payment. Pull down to refresh once you’ve paid.</Notice> : null}
+      {o.reviewHoldAt && o.status === "paid" ? <Notice tone="warning">We’re confirming this order before we prepare it. This usually takes under 2 hours.</Notice> : null}
       {(o.fulfilments ?? []).map((f) => (
         <Card key={f.id}>
           <Body>{`From ${f.sellerName} · ${parcelStatus[f.status] ?? f.status}`}</Body>
@@ -45,6 +46,13 @@ export default function Order() {
         {o.discountKobo ? <Body>{`Discounts: −${formatKobo(o.discountKobo)}`}</Body> : null}
         <Body>{`Total: ${formatKobo(o.totalKobo)}`}</Body>
       </Card>
+      {(o.fulfilments ?? []).some((f) => f.status === "delivered") ? (
+        <>
+          <Button label="Return items" onPress={() => router.push({ pathname: "/returns/new", params: { number: o.orderNumber } })} />
+          <Button label="Warranty claims" onPress={() => router.push("/warranty")} />
+        </>
+      ) : null}
+      <Button label="Ask about this order" onPress={() => router.push({ pathname: "/support/new", params: { order: o.orderNumber } })} />
       {(o.history ?? []).map((h) => (
         <Body key={h.id} small muted>{`${orderStatus[h.toStatus] ?? parcelStatus[h.toStatus] ?? h.toStatus} · ${when(h.createdAt)}`}</Body>
       ))}

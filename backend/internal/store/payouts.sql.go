@@ -890,6 +890,30 @@ func (q *Queries) PayoutsReleaseItems(ctx context.Context, payoutID uuid.UUID) e
 	return err
 }
 
+const payoutsRiskFeatures = `-- name: PayoutsRiskFeatures :one
+select coalesce((select avg(po.amount_kobo) from finance.payouts po where po.seller_id = $1::uuid and po.status = 'paid'
+                   and po.paid_at > now() - interval '30 days'), 0)::float8 as avg_paid_30d,
+  coalesce((select count(distinct d.id) from payments.disputes d join payments.payments p on p.id = d.payment_id
+     join sales.fulfilments f on f.order_id = p.order_id where f.seller_id = $1::uuid and d.created_at > now() - interval '90 days'), 0)::int as chargebacks_90d,
+  coalesce((select count(*) from sales.fulfilments f join sales.orders o on o.id = f.order_id
+     where f.seller_id = $1::uuid and o.placed_at > now() - interval '90 days' and o.status not in ('pending_payment', 'cancelled')), 0)::int as orders_90d
+`
+
+type PayoutsRiskFeaturesRow struct {
+	AvgPaid30d     float64 `json:"avgPaid30d"`
+	Chargebacks90d int32   `json:"chargebacks90d"`
+	Orders90d      int32   `json:"orders90d"`
+}
+
+// What the payout risk rules look at: the 30-day average paid out, and the share of the shop's
+// paid orders in 90 days that drew a chargeback.
+func (q *Queries) PayoutsRiskFeatures(ctx context.Context, sellerID uuid.UUID) (PayoutsRiskFeaturesRow, error) {
+	row := q.db.QueryRow(ctx, payoutsRiskFeatures, sellerID)
+	var i PayoutsRiskFeaturesRow
+	err := row.Scan(&i.AvgPaid30d, &i.Chargebacks90d, &i.Orders90d)
+	return i, err
+}
+
 const payoutsSecondApprove = `-- name: PayoutsSecondApprove :one
 update finance.payout_batches set second_approved_by = $1, second_approved_at = now()
 where id = $2 and status = 'submitted' returning id, status, prepared_by, approved_by, approved_at, total_kobo, payout_count, created_at, updated_at, submitted_at, second_approved_by, second_approved_at

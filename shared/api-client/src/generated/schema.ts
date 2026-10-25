@@ -396,6 +396,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/contact": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Public contact form (corporate, market, wholesale, Seller Centre): becomes a support ticket */
+    post: operations["contactUs"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/content/banners": {
     parameters: {
       query?: never;
@@ -904,6 +921,23 @@ export interface paths {
     post?: never;
     /** Delete an address */
     delete: operations["deleteAddress"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/banks": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Banks a trade-in can be paid to */
+    get: operations["tradeInBanks"];
+    put?: never;
+    post?: never;
+    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
@@ -1463,6 +1497,196 @@ export interface paths {
     };
     /** Store credit balance */
     get: operations["getMyStoreCredit"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/tickets": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Your support tickets, latest activity first */
+    get: operations["myTickets"];
+    put?: never;
+    /** Ask support a question */
+    post: operations["openTicket"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/tickets/{number}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** One of your tickets with its messages */
+    get: operations["myTicket"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/tickets/{number}/messages": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Reply on your ticket (reopens a resolved one) */
+    post: operations["replyToMyTicket"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/trade-ins": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Your trade-ins, newest first */
+    get: operations["myTradeIns"];
+    put?: never;
+    /** Get an estimate, then bring the device to a store */
+    post: operations["startTradeIn"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/trade-ins/{ref}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** One of your trade-ins */
+    get: operations["myTradeIn"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/trade-ins/{ref}/accept": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Take the offer: store credit at once, or a bank transfer */
+    post: operations["acceptTradeIn"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/trade-ins/{ref}/cancel": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Withdraw before handing the device in */
+    post: operations["cancelTradeIn"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/trade-ins/{ref}/decline": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Turn the offer down and collect the device */
+    post: operations["declineTradeIn"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/warranty-claims": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Your warranty claims, newest first */
+    get: operations["myWarrantyClaims"];
+    put?: never;
+    /** Claim under warranty, then bring the device to a store */
+    post: operations["makeWarrantyClaim"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/warranty-claims/{number}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** One of your warranty claims */
+    get: operations["myWarrantyClaim"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/warranty/items": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Your delivered items still under warranty */
+    get: operations["myWarrantyItems"];
     put?: never;
     post?: never;
     delete?: never;
@@ -2104,6 +2328,57 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/seller/shops/{shopId}/returns": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Returns of your items, newest first */
+    get: operations["sellerReturns"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/returns/{rma}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** A return of your items, with your charge */
+    get: operations["sellerReturn"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/returns/{rma}/dispute": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Dispute our inspection (within 3 days) */
+    post: operations["sellerDisputeReturn"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/seller/shops/{shopId}/reviews": {
     parameters: {
       query?: never;
@@ -2234,6 +2509,58 @@ export interface paths {
     /** Change a member's role */
     put: operations["sellerSetMemberRole"];
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/tickets": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The shop's support tickets */
+    get: operations["sellerTickets"];
+    put?: never;
+    /** Ask TechShop seller support */
+    post: operations["sellerOpenTicket"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/tickets/{number}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** One of the shop's tickets */
+    get: operations["sellerTicket"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/seller/shops/{shopId}/tickets/{number}/messages": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Reply on a shop ticket */
+    post: operations["sellerReplyTicket"];
     delete?: never;
     options?: never;
     head?: never;
@@ -4040,6 +4367,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/staff/returns/{rma}/dispute-decision": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Settle a seller's dispute (upheld: the seller is credited, TechShop bears it)
+     * @description Requires permission `returns.manage`.
+     */
+    post: operations["staffDecideReturnDispute"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/staff/returns/{rma}/items/{itemId}/inspection": {
     parameters: {
       query?: never;
@@ -4134,6 +4481,350 @@ export interface paths {
      * @description Requires permission `catalog.moderate`.
      */
     post: operations["staffDecideReview"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/risk/cases": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The case queue: open work first, by score × money at risk
+     * @description Requires permission `risk.view`.
+     */
+    get: operations["staffRiskCases"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/risk/cases/{ref}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * A case with its decision trace and timeline
+     * @description Requires permission `risk.view`.
+     */
+    get: operations["staffRiskCase"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/risk/cases/{ref}/claim": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Take a case for review
+     * @description Requires permission `risk.resolve`.
+     */
+    post: operations["staffClaimRiskCase"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/risk/cases/{ref}/escalate": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Send a case to a manager
+     * @description Requires permission `risk.resolve`.
+     */
+    post: operations["staffEscalateRiskCase"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/risk/cases/{ref}/notes": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Add a note to a case
+     * @description Requires permission `risk.resolve`.
+     */
+    post: operations["staffNoteRiskCase"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/risk/cases/{ref}/resolution": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Clear (legitimate: holds are released) or block (fraud: what was held is stopped)
+     * @description Requires permission `risk.resolve`.
+     */
+    post: operations["staffResolveRiskCase"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/risk/devices": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The stolen-device blocklist, newest first
+     * @description Requires permission `risk.view`.
+     */
+    get: operations["staffBlockedDevices"];
+    put?: never;
+    /**
+     * Add an IMEI to the blocklist
+     * @description Requires permission `devices.block`.
+     */
+    post: operations["staffBlockDevice"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/risk/devices/check": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Check an IMEI: check digit and blocklist
+     * @description Requires permission `risk.view`.
+     */
+    get: operations["staffCheckIMEI"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/risk/devices/{imei}/unblock": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Remove an IMEI from the blocklist
+     * @description Requires permission `devices.block`.
+     */
+    post: operations["staffUnblockDevice"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/risk/rule-sets": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Active rule sets and drafts per checkpoint
+     * @description Requires permission `risk.view`.
+     */
+    get: operations["staffRiskRuleSets"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/risk/rule-sets/drafts": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Start a draft from a checkpoint's active rules
+     * @description Requires permission `risk.rules`.
+     */
+    post: operations["staffRiskDraft"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/risk/rule-sets/{id}/discard": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Delete a draft
+     * @description Requires permission `risk.rules`.
+     */
+    post: operations["staffRiskDiscard"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/risk/rule-sets/{id}/publish": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Make a draft live (fresh MFA)
+     * @description Requires permission `risk.rules`.
+     */
+    post: operations["staffRiskPublish"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/risk/rule-sets/{id}/rules/{ruleId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Change a draft rule's weight or switch it
+     * @description Requires permission `risk.rules`.
+     */
+    post: operations["staffRiskUpdateRule"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/risk/rule-sets/{id}/test": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Replay the last 30 days of decisions against this rule set
+     * @description Requires permission `risk.rules`.
+     */
+    post: operations["staffRiskBench"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/risk/rule-sets/{id}/thresholds": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Change a draft's score bands
+     * @description Requires permission `risk.rules`.
+     */
+    post: operations["staffRiskThresholds"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/risk/summary": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Case and blocklist counts
+     * @description Requires permission `risk.view`.
+     */
+    get: operations["staffRiskSummary"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -4264,6 +4955,306 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/staff/support/agents": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * People who can answer tickets
+     * @description Requires permission `support.assign`.
+     */
+    get: operations["staffSupportAgents"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/support/summary": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Queue counts and the average first reply
+     * @description Requires permission `support.view`.
+     */
+    get: operations["staffSupportSummary"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/support/tickets": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The ticket queue
+     * @description Requires permission `support.view`.
+     */
+    get: operations["staffSupportTickets"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/support/tickets/{number}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * A ticket with every message, internal notes included
+     * @description Requires permission `support.view`.
+     */
+    get: operations["staffSupportTicket"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/support/tickets/{number}/assign": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Assign a ticket to an agent (or nobody)
+     * @description Requires permission `support.assign`.
+     */
+    post: operations["staffAssignTicket"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/support/tickets/{number}/claim": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Assign a ticket to yourself
+     * @description Requires permission `support.reply`.
+     */
+    post: operations["staffClaimTicket"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/support/tickets/{number}/messages": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Reply to the requester, or add an internal note
+     * @description Requires permission `support.reply`.
+     */
+    post: operations["staffReplyTicket"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/support/tickets/{number}/status": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Change a ticket's status or priority
+     * @description Requires permission `support.reply`.
+     */
+    post: operations["staffTicketStatus"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/trade-ins": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Trade-ins: work waiting first
+     * @description Requires permission `aftersales.manage`.
+     */
+    get: operations["staffTradeIns"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/trade-ins/summary": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Trade-in counts
+     * @description Requires permission `aftersales.manage`.
+     */
+    get: operations["staffTradeInSummary"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/trade-ins/{ref}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * One trade-in
+     * @description Requires permission `aftersales.manage`.
+     */
+    get: operations["staffTradeIn"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/trade-ins/{ref}/estimate": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Price a device we couldn't price automatically
+     * @description Requires permission `aftersales.manage`.
+     */
+    post: operations["staffEstimateTradeIn"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/trade-ins/{ref}/inspection": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Grade the device and send the offer (valid 7 days)
+     * @description Requires permission `aftersales.manage`.
+     */
+    post: operations["staffInspectTradeIn"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/trade-ins/{ref}/paid": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Record the bank transfer for an accepted trade-in (finance; not whoever priced it)
+     * @description Requires permission `refunds.approve`.
+     */
+    post: operations["staffPayTradeIn"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/trade-ins/{ref}/receive": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Take the device at a store (IMEI and risk check)
+     * @description Requires permission `aftersales.manage`.
+     */
+    post: operations["staffReceiveTradeIn"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/staff/vendors": {
     parameters: {
       query?: never;
@@ -4336,6 +5327,230 @@ export interface paths {
      * @description Requires permission `vendors.view`.
      */
     get: operations["staffGetVendor"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/warranty/claims": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Warranty claims: open ones first, oldest first
+     * @description Requires permission `aftersales.manage`.
+     */
+    get: operations["staffWarrantyClaims"];
+    put?: never;
+    /**
+     * Take a claim at the counter (checked in at once)
+     * @description Requires permission `aftersales.manage`.
+     */
+    post: operations["staffWalkInClaim"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/warranty/claims/{number}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * A claim with its repairs and the device's history
+     * @description Requires permission `aftersales.manage`.
+     */
+    get: operations["staffWarrantyClaim"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/warranty/claims/{number}/collect": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * The customer collected the device
+     * @description Requires permission `aftersales.manage`.
+     */
+    post: operations["staffCollectClaim"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/warranty/claims/{number}/receive": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Check the device in (IMEI must match; stolen devices are refused)
+     * @description Requires permission `aftersales.manage`.
+     */
+    post: operations["staffReceiveClaim"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/warranty/claims/{number}/reject": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Not covered (the customer sees the reason)
+     * @description Requires permission `aftersales.manage`.
+     */
+    post: operations["staffRejectClaim"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/warranty/claims/{number}/repairs": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Send the device to the workshop
+     * @description Requires permission `aftersales.manage`.
+     */
+    post: operations["staffStartRepair"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/warranty/claims/{number}/resolution": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Replace from stock, or refund one unit (finance approves)
+     * @description Requires permission `aftersales.manage`.
+     */
+    post: operations["staffResolveClaim"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/warranty/repairs": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The workshop: warranty repairs and refurbishments
+     * @description Requires permission `aftersales.manage`.
+     */
+    get: operations["staffRepairQueue"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/warranty/repairs/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Record workshop progress (done: a claim is ready to collect, a refurbished device goes into stock)
+     * @description Requires permission `aftersales.manage`.
+     */
+    post: operations["staffUpdateRepair"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/warranty/stores": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Stores and warehouses that take devices in
+     * @description Requires permission `aftersales.manage`.
+     */
+    get: operations["staffWarrantyStores"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/staff/warranty/summary": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Claim counts and turnaround
+     * @description Requires permission `aftersales.manage`.
+     */
+    get: operations["staffWarrantySummary"];
     put?: never;
     post?: never;
     delete?: never;
@@ -4626,6 +5841,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/trade-ins/devices": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Models we can price instantly, with an estimate per condition (final value after inspection) */
+    get: operations["tradeInDevices"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/unsubscribe": {
     parameters: {
       query?: never;
@@ -4699,6 +5931,14 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    AcceptInput: {
+      /** @description As the bank has it; checked with a name enquiry */
+      accountName?: string;
+      accountNumber?: string;
+      bankCode?: string;
+      /** @enum {string} */
+      payoutMethod: "store_credit" | "bank";
+    };
     AcceptInviteRequest: {
       password: string;
       token: string;
@@ -4829,6 +6069,60 @@ export interface components {
       /** @enum {string} */
       status: "scheduled" | "processing" | "paid" | "failed" | "on_hold";
     };
+    BenchResult: {
+      /** @description Outcomes under the draft */
+      after: {
+        [key: string]: number;
+      };
+      /** @description Outcomes as decided */
+      before: {
+        [key: string]: number;
+      };
+      /**
+       * Format: int64
+       * @description Decisions whose outcome would differ
+       */
+      changed: number;
+      /**
+       * Format: int64
+       * @description Decisions replayed (last 30 days, up to 5,000)
+       */
+      decisions: number;
+      /**
+       * Format: int64
+       * @description Confirmed fraud the draft would hold or block
+       */
+      fraudCaught: number;
+      /**
+       * Format: int64
+       * @description Confirmed fraud the draft would let through
+       */
+      fraudMissed: number;
+      /**
+       * Format: int64
+       * @description Cleared (legitimate) cases the draft would still hold or block
+       */
+      legitStopped: number;
+    };
+    BlockDeviceInput: {
+      imei: string;
+      /** @enum {string} */
+      reason: "reported_stolen" | "fraud" | "counterfeit";
+      /** @description Police extract number, case or ticket */
+      reference?: string;
+      /** @description Who reported it, e.g. customer report, police extract, case RK-301 */
+      source: string;
+    };
+    BlockedDevice: {
+      addedBy: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      imei: string;
+      /** @enum {string} */
+      reason: "reported_stolen" | "fraud" | "counterfeit";
+      reference: string | null;
+      source: string;
+    };
     BoardJob: {
       /** Format: date-time */
       assignedAt: string | null;
@@ -4859,6 +6153,7 @@ export interface components {
       returnRequestId: string;
       riderFirstName: string | null;
       riderId: string;
+      rma: string | null;
       /** Format: int32 */
       routeSequence: number | null;
       status: string;
@@ -5173,6 +6468,77 @@ export interface components {
       addressId?: string;
       couponCode?: string;
     };
+    Claim: {
+      /** Format: date-time */
+      createdAt: string;
+      /** @description Staff lists only: first name and last initial */
+      customer: string;
+      /** @description Where to bring the device while the claim is new */
+      dropOff: components["schemas"]["Store"][] | null;
+      fault: string;
+      /** @description Staff only: earlier claims on this device */
+      history: components["schemas"]["HistoryItem"][] | null;
+      imeiOrSerial: string;
+      number: string;
+      orderNumber: string | null;
+      productName: string | null;
+      provider: string | null;
+      /** Format: date-time */
+      receivedAt: string | null;
+      rejectionReason: string | null;
+      repairs: components["schemas"]["RepairJob"][] | null;
+      /** @enum {string|null} */
+      resolution: "repaired" | "replaced" | "refunded" | "not_covered" | null;
+      resolutionNote: string | null;
+      /** @enum {string} */
+      status:
+        | "new"
+        | "received"
+        | "in_repair"
+        | "ready"
+        | "collected"
+        | "rejected"
+        | "closed";
+      store: string | null;
+      /** Format: date-time */
+      updatedAt: string;
+      variantName: string | null;
+      /** Format: date-time */
+      warrantyEndsOn: string | null;
+    };
+    ClaimInput: {
+      /** @description What's wrong, and when it started */
+      fault: string;
+      /** @description The device's IMEI (dial *#06#) or the serial number on the box */
+      imeiOrSerial: string;
+      orderLineId: string;
+    };
+    ClaimRow: {
+      /** Format: date-time */
+      createdAt: string;
+      /** @description Staff lists only: first name and last initial */
+      customer: string;
+      fault: string;
+      imeiOrSerial: string;
+      number: string;
+      orderNumber: string | null;
+      productName: string | null;
+      /** @enum {string|null} */
+      resolution: "repaired" | "replaced" | "refunded" | "not_covered" | null;
+      /** @enum {string} */
+      status:
+        | "new"
+        | "received"
+        | "in_repair"
+        | "ready"
+        | "collected"
+        | "rejected"
+        | "closed";
+      store: string | null;
+      /** Format: date-time */
+      updatedAt: string;
+      variantName: string | null;
+    };
     CompleteSignupRequest: {
       appVersion?: string;
       /** @enum {string} */
@@ -5197,6 +6563,15 @@ export interface components {
       height?: number;
       /** Format: int32 */
       width?: number;
+    };
+    Cond: {
+      f: string;
+      op: string;
+      /** Format: double */
+      v: number;
+    };
+    Condition: {
+      all: components["schemas"]["Cond"][] | null;
     };
     ConfirmInviteRequest: {
       appVersion?: string;
@@ -5244,6 +6619,35 @@ export interface components {
         | "privacy";
       /** @enum {string} */
       source: "web" | "app";
+    };
+    ContactInput: {
+      email?: string;
+      message: string;
+      name: string;
+      orderNumber?: string;
+      phone?: string;
+      /** @enum {string} */
+      site: "corporate" | "market" | "wholesale" | "seller";
+      subject: string;
+      /** @enum {string} */
+      topic:
+        | "order"
+        | "delivery"
+        | "payment"
+        | "refund"
+        | "return"
+        | "warranty"
+        | "trade_in"
+        | "account"
+        | "selling"
+        | "business"
+        | "other";
+      /** @description Leave empty: a hidden field that only bots fill in */
+      website?: string;
+    };
+    ContactReceipt: {
+      received: boolean;
+      ticketNumber?: string;
     };
     ContentBanner: {
       /** Format: date-time */
@@ -5303,6 +6707,26 @@ export interface components {
       slug: string;
       title: string;
       topic: string;
+    };
+    CoveredItem: {
+      /** Format: date-time */
+      deliveredAt: string;
+      /** Format: date-time */
+      endsOn: string;
+      /** Format: int32 */
+      months: number;
+      /** @description An open claim on this item, if any */
+      openClaim: string | null;
+      orderLineId: string;
+      orderNumber: string;
+      productName: string;
+      /** @enum {string} */
+      provider: "manufacturer" | "techshop" | "seller";
+      /** @description Last 4 characters of the IMEI or serial we sold */
+      serialHint: string | null;
+      /** @description A tracked device: the claim needs its IMEI or serial */
+      serialised: boolean;
+      variantName: string;
     };
     CreateCouponRequest: {
       code?: string;
@@ -5433,6 +6857,16 @@ export interface components {
     };
     DispatchSetRiderZonesRequest: {
       zoneIds: string[] | null;
+    };
+    Dispute: {
+      /** Format: date-time */
+      at: string;
+      /** Format: date-time */
+      decidedAt: string | null;
+      /** @enum {string|null} */
+      decision: "upheld" | "rejected" | null;
+      note: string | null;
+      reason: string;
     };
     Dropoff: {
       /**
@@ -5611,6 +7045,13 @@ export interface components {
       entries: number;
       /** Format: int64 */
       totalKobo: number;
+    };
+    FiredRule: {
+      action: string;
+      key: string;
+      label: string;
+      /** Format: int64 */
+      weight: number;
     };
     FulfilmentCarrier: {
       code: string;
@@ -5797,6 +7238,22 @@ export interface components {
       sellerId: string;
       sellerName: string;
     };
+    HistoryItem: {
+      /** Format: date-time */
+      createdAt: string;
+      fault: string;
+      number: string;
+      resolution: string | null;
+      status: string;
+    };
+    IMEIStatus: {
+      blocked: boolean;
+      imei: string;
+      /** @description The check digit is right (a typo or a fake IMEI fails) */
+      luhnOk: boolean;
+      /** @description Why it's blocked: reported_stolen, fraud or counterfeit */
+      reason: string | null;
+    };
     IdentityAddress: {
       businessId: string;
       city: string;
@@ -5913,12 +7370,16 @@ export interface components {
       unread: number;
     };
     InspectInput: {
-      /** @enum {string} */
+      /**
+       * @description Seller-shipped items: return_to_seller
+       * @enum {string}
+       */
       disposition:
         | "restock_new"
         | "restock_open_box"
         | "repair"
         | "return_to_supplier"
+        | "return_to_seller"
         | "write_off";
       /** @enum {string} */
       grade: "A" | "B" | "C" | "faulty";
@@ -5927,6 +7388,19 @@ export interface components {
       scannedSerial?: string;
       /** @description Where restocked items go */
       warehouseId: string;
+    };
+    InspectTradeInInput: {
+      /** @enum {string} */
+      condition: "like_new" | "good" | "fair" | "faulty";
+      /** @description What was checked: screen, battery, iCloud/Google lock, accessories */
+      notes?: string;
+      /**
+       * Format: int64
+       * @description Kobo. Leave out to price from the catalogue and the grade
+       */
+      offer?: number;
+      /** @description The catalogue model, if the request didn't have one (needed to stock it) */
+      variantId?: string;
     };
     InventoryDeviceUnit: {
       acquiredVia: string;
@@ -6165,6 +7639,8 @@ export interface components {
       proofMethod: string | null;
       recipientName: string;
       riderId: string;
+      /** @description Return pickups: the return being collected. The address is where to collect; pickupName/pickupAddress is where to bring it */
+      rma?: string;
       /** Format: int32 */
       routeSequence?: number;
       stateCode: string;
@@ -6924,6 +8400,28 @@ export interface components {
       inviteUrl?: string;
       userId: string;
     };
+    NewTicket: {
+      message: string;
+      /** @description One of your orders, if it's about one */
+      orderNumber?: string;
+      subject: string;
+      /** @enum {string} */
+      topic:
+        | "order"
+        | "delivery"
+        | "payment"
+        | "refund"
+        | "return"
+        | "warranty"
+        | "trade_in"
+        | "account"
+        | "selling"
+        | "business"
+        | "other";
+    };
+    NoteBody: {
+      note: string;
+    };
     NotificationDTO: {
       body?: string;
       category: string;
@@ -7007,6 +8505,9 @@ export interface components {
       priceHash: string | null;
       quoteId: string;
       refunds?: components["schemas"]["PaymentsRefund"][] | null;
+      reviewCaseId: string;
+      /** Format: date-time */
+      reviewHoldAt: string | null;
       shipTo: unknown;
       status: string;
       /** Format: int64 */
@@ -7136,6 +8637,7 @@ export interface components {
       updatedAt: string;
     };
     PaymentsListRefundsRow: {
+      allocation: unknown;
       /** Format: int64 */
       amountKobo: number;
       approvedBy: string;
@@ -7212,6 +8714,7 @@ export interface components {
       updatedAt: string;
     };
     PaymentsRefund: {
+      allocation: unknown;
       /** Format: int64 */
       amountKobo: number;
       approvedBy: string;
@@ -7290,12 +8793,30 @@ export interface components {
       waveAt: string;
       zone: string | null;
     };
+    Pickup: {
+      assigned: boolean;
+      /** Format: date-time */
+      handedInAt: string | null;
+      /** @enum {string} */
+      status:
+        | "unassigned"
+        | "assigned"
+        | "picked_up"
+        | "en_route"
+        | "delivered"
+        | "failed"
+        | "returned"
+        | "cancelled";
+    };
     PlaceOrderRequest: {
       addressId: string;
       couponCode?: string;
       priceHash: string;
-      /** @enum {string} */
-      provider: "paystack" | "opay" | "moniepoint";
+      /**
+       * @description store_credit pays the whole order from your store credit
+       * @enum {string}
+       */
+      provider: "paystack" | "opay" | "moniepoint" | "store_credit";
     };
     Placed: {
       orderId: string;
@@ -7589,6 +9110,13 @@ export interface components {
     ReasonBody: {
       reason: string;
     };
+    ReceiveInput: {
+      /** @description Required for phones and tablets */
+      imei?: string;
+      /** @description Laptops, consoles, watches */
+      serial?: string;
+      storeId: string;
+    };
     RefreshTokensRequest: {
       refreshToken: string;
     };
@@ -7607,6 +9135,68 @@ export interface components {
       /** @enum {string} */
       platform: "ios" | "android";
       token: string;
+    };
+    RepairInput: {
+      diagnosis?: string;
+      technicianId?: string;
+    };
+    RepairJob: {
+      /** Format: date-time */
+      createdAt: string;
+      diagnosis: string | null;
+      /** Format: date-time */
+      finishedAt: string | null;
+      id: string;
+      notes: string | null;
+      /** Format: date-time */
+      startedAt: string | null;
+      /** @enum {string} */
+      status:
+        | "queued"
+        | "diagnosing"
+        | "awaiting_parts"
+        | "repairing"
+        | "done"
+        | "unrepairable";
+      technician: string | null;
+    };
+    RepairUpdate: {
+      diagnosis?: string;
+      notes?: string;
+      /** @enum {string} */
+      status:
+        "diagnosing" | "awaiting_parts" | "repairing" | "done" | "unrepairable";
+      technicianId?: string;
+    };
+    RepairView: {
+      claimNumber: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      device: string;
+      diagnosis: string | null;
+      /** Format: date-time */
+      finishedAt: string | null;
+      id: string;
+      imeiOrSerial: string | null;
+      notes: string | null;
+      /** @enum {string} */
+      purpose: "warranty" | "refurbish";
+      /** Format: date-time */
+      startedAt: string | null;
+      /** @enum {string} */
+      status:
+        | "queued"
+        | "diagnosing"
+        | "awaiting_parts"
+        | "repairing"
+        | "done"
+        | "unrepairable";
+      technician: string | null;
+      /** @description The trade-in a refurbishment came from */
+      tradeIn: string | null;
+    };
+    ReplyBody: {
+      message: string;
     };
     ReportReviewRequest: {
       /** @enum {string} */
@@ -7628,6 +9218,15 @@ export interface components {
        * @description Seconds before another code may be requested
        */
       resendAfter: number;
+    };
+    ResolveInput: {
+      note?: string;
+      /** @description Replaced, tracked devices: the IMEI or serial of the new unit */
+      replacementSerial?: string;
+      /** @enum {string} */
+      resolution: "replaced" | "refunded";
+      /** @description Replaced, untracked items: where the replacement comes from */
+      warehouseId?: string;
     };
     Result: {
       clientEventId: string;
@@ -7652,9 +9251,13 @@ export interface components {
       /** Format: date-time */
       createdAt: string;
       details: string | null;
+      /** @description A seller's dispute of the inspection, if any */
+      dispute: components["schemas"]["Dispute"];
       items: components["schemas"]["ReturnItem"][] | null;
       method: string | null;
       orderNumber: string;
+      /** @description Rider collection, for pickup returns in a delivery zone */
+      pickup: components["schemas"]["Pickup"];
       reason: string;
       /**
        * Format: int64
@@ -7706,6 +9309,8 @@ export interface components {
        * @description Kobo: the price paid for these units
        */
       refund: number;
+      /** @description Shipped by a marketplace seller: it can only go back to them */
+      sellerShipped: boolean;
       /** @description The inspector must scan the IMEI or serial */
       serialised: boolean;
       variantName: string;
@@ -7756,6 +9361,8 @@ export interface components {
       pickupAddress?: string;
       pickupName?: string;
       recipientName: string;
+      /** @description Return pickups: the return being collected. The address is where to collect; pickupName/pickupAddress is where to bring it */
+      rma?: string;
       /** Format: int32 */
       routeSequence?: number;
       stateCode: string;
@@ -7786,6 +9393,145 @@ export interface components {
     };
     RiderSyncEventsResponse: {
       results: components["schemas"]["Result"][] | null;
+    };
+    RiskCase: {
+      assignee: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      events: components["schemas"]["RiskCaseEvent"][] | null;
+      /** @enum {string} */
+      kind:
+        | "order"
+        | "payment"
+        | "device"
+        | "seller"
+        | "account"
+        | "trade_in"
+        | "return"
+        | "review";
+      label: string | null;
+      /**
+       * Format: int64
+       * @description Kobo
+       */
+      moneyAtRisk: number | null;
+      overdue: boolean;
+      reason: string;
+      reference: string;
+      resolutionNote: string | null;
+      /** Format: date-time */
+      resolvedAt: string | null;
+      /** Format: int32 */
+      score: number | null;
+      /** Format: date-time */
+      slaDueAt: string | null;
+      /** @enum {string} */
+      status: "open" | "in_review" | "cleared" | "blocked" | "escalated";
+      /** @description Order or return number, trade-in reference, shop, or a masked name */
+      subject: string;
+      subjectId: string;
+      subjectType: string;
+      trace: components["schemas"]["RiskTrace"];
+    };
+    RiskCaseEvent: {
+      /** @enum {string} */
+      action:
+        "opened" | "claimed" | "note" | "escalated" | "cleared" | "blocked";
+      actor: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      note: string | null;
+    };
+    RiskCaseRow: {
+      assignee: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** @enum {string} */
+      kind:
+        | "order"
+        | "payment"
+        | "device"
+        | "seller"
+        | "account"
+        | "trade_in"
+        | "return"
+        | "review";
+      label: string | null;
+      /**
+       * Format: int64
+       * @description Kobo
+       */
+      moneyAtRisk: number | null;
+      overdue: boolean;
+      reason: string;
+      reference: string;
+      /** Format: int32 */
+      score: number | null;
+      /** Format: date-time */
+      slaDueAt: string | null;
+      /** @enum {string} */
+      status: "open" | "in_review" | "cleared" | "blocked" | "escalated";
+    };
+    RiskSummary: {
+      /**
+       * Format: int32
+       * @description Open, in review or escalated
+       */
+      active: number;
+      /** Format: int32 */
+      blockedDevices: number;
+      /**
+       * Format: int32
+       * @description Active cases about orders
+       */
+      orders: number;
+      /**
+       * Format: int32
+       * @description Active cases past their review target
+       */
+      overdue: number;
+      /** Format: int32 */
+      resolved7d: number;
+    };
+    RiskTrace: {
+      checkpoint: string;
+      /** Format: date-time */
+      createdAt: string;
+      features: {
+        [key: string]: number;
+      };
+      fired: components["schemas"]["FiredRule"][] | null;
+      outcome: string;
+      /** Format: int32 */
+      ruleSetVersion: number | null;
+      /** Format: int32 */
+      score: number;
+    };
+    RuleSetView: {
+      checkpoint: string;
+      /** Format: date-time */
+      createdAt: string;
+      id: string;
+      notes: string | null;
+      /** Format: date-time */
+      publishedAt: string | null;
+      rules: components["schemas"]["RuleView"][] | null;
+      /** @enum {string} */
+      status: "draft" | "active" | "retired";
+      thresholds: components["schemas"]["Thresholds"];
+      /** Format: int32 */
+      version: number;
+    };
+    RuleView: {
+      /** @enum {string} */
+      action: "score" | "hold" | "block";
+      condition: components["schemas"]["Condition"];
+      enabled: boolean;
+      id: string;
+      key: string;
+      label: string;
+      /** Format: int32 */
+      weight: number;
     };
     Rules: {
       /** @description Bought anything in this category or below */
@@ -7834,6 +9580,9 @@ export interface components {
       posShiftId: string;
       priceHash: string | null;
       quoteId: string;
+      reviewCaseId: string;
+      /** Format: date-time */
+      reviewHoldAt: string | null;
       shipTo: unknown;
       status: string;
       /** Format: int64 */
@@ -7875,6 +9624,9 @@ export interface components {
       variantName: string;
       /** Format: int64 */
       vatKobo: number;
+      /** Format: int32 */
+      warrantyMonths: number | null;
+      warrantyProvider: string | null;
     };
     SalesOrderStatusHistory: {
       actorUserId: string;
@@ -7913,6 +9665,9 @@ export interface components {
       posShiftId: string;
       priceHash: string | null;
       quoteId: string;
+      reviewCaseId: string;
+      /** Format: date-time */
+      reviewHoldAt: string | null;
       shipTo: unknown;
       status: string;
       /** Format: int64 */
@@ -8046,6 +9801,9 @@ export interface components {
       /** @enum {string} */
       reason: "out_of_stock" | "damaged" | "price_error" | "other";
     };
+    SellerDisputeReturnRequest: {
+      reason: string;
+    };
     SellerOrder: {
       /**
        * Format: date-time
@@ -8101,6 +9859,49 @@ export interface components {
     };
     SellerRespondToReviewRequest: {
       text: string;
+    };
+    SellerReturn: {
+      autoApproved: boolean;
+      canDispute: boolean;
+      /**
+       * Format: int64
+       * @description Kobo taken from your payable for these items (after commission is handed back)
+       */
+      charge: number;
+      /** Format: date-time */
+      createdAt: string;
+      details: string | null;
+      /** @description A seller's dispute of the inspection, if any */
+      dispute: components["schemas"]["Dispute"];
+      /**
+       * Format: date-time
+       * @description Last moment to dispute the inspection
+       */
+      disputeUntil: string | null;
+      items: components["schemas"]["ReturnItem"][] | null;
+      method: string | null;
+      orderNumber: string;
+      /** @description Rider collection, for pickup returns in a delivery zone */
+      pickup: components["schemas"]["Pickup"];
+      reason: string;
+      /**
+       * Format: int64
+       * @description Kobo: the items, plus delivery when a whole parcel comes back for an our-fault reason
+       */
+      refund: number;
+      rejectionReason: string | null;
+      rma: string;
+      /** @enum {string} */
+      status:
+        | "requested"
+        | "approved"
+        | "rejected"
+        | "awaiting_pickup"
+        | "received"
+        | "inspected"
+        | "refunded"
+        | "replaced"
+        | "closed";
     };
     SellerReview: {
       body: string | null;
@@ -8204,6 +10005,10 @@ export interface components {
       batch: components["schemas"]["PayoutBatch"];
       /** @description True when the transfers have started; false when a second approver is still needed */
       released: boolean;
+    };
+    StaffAssignTicketRequest: {
+      /** @description Leave out to unassign */
+      agentId?: string;
     };
     StaffBankAccount: {
       /** @description The name the seller typed */
@@ -8320,6 +10125,11 @@ export interface components {
       name: string;
       stateCode: string;
     };
+    StaffDecideReturnDisputeRequest: {
+      /** @enum {string} */
+      decision: "upheld" | "rejected";
+      note: string;
+    };
     StaffDecideReturnRequest: {
       /** @enum {string} */
       decision: "approve" | "reject";
@@ -8336,6 +10146,14 @@ export interface components {
     StaffDecideSuggestionRequest: {
       /** @enum {string} */
       decision: "accepted" | "rejected";
+    };
+    StaffEstimateTradeInRequest: {
+      /**
+       * Format: int64
+       * @description Kobo
+       */
+      estimate: number;
+      variantId?: string;
     };
     StaffExcludePayoutRequest: {
       /** @description Also hold the seller's later payouts until finance releases it */
@@ -8369,10 +10187,18 @@ export interface components {
       note?: string;
       reasons?: string[] | null;
     };
+    StaffPayTradeInRequest: {
+      /** @description The bank transfer reference */
+      reference: string;
+    };
     StaffProviderHealthResponse: {
       available: string[] | null;
       fake: boolean;
       health: components["schemas"]["PaymentsProviderHealth"][] | null;
+    };
+    StaffReceiveClaimRequest: {
+      scannedSerial: string;
+      storeId: string;
     };
     StaffReceiveUnitsRequest: {
       /** @enum {string} */
@@ -8387,8 +10213,21 @@ export interface components {
       /** Format: int64 */
       products: number;
     };
+    StaffRejectClaimRequest: {
+      reason: string;
+    };
     StaffRejectRefundRequest: {
       note: string;
+    };
+    StaffReply: {
+      body: string;
+      /** @description An internal note: never shown to the customer or seller */
+      internal?: boolean;
+      /**
+       * @description Ticket status after a public reply (default: waiting on the customer)
+       * @enum {string}
+       */
+      status?: "open" | "pending_customer" | "resolved" | "";
     };
     StaffRequestRefundRequest: {
       /** Format: int64 */
@@ -8406,11 +10245,32 @@ export interface components {
       /** @enum {string} */
       status: "resolved" | "escalated";
     };
+    StaffResolveRiskCaseRequest: {
+      /** @enum {string} */
+      decision: "clear" | "block";
+      /**
+       * @description For a clear: legit (default) or unclear
+       * @enum {string}
+       */
+      label?: "legit" | "unclear" | "";
+      note: string;
+    };
     StaffRevealKycIdRequest: {
       reason: string;
     };
     StaffRevealKycIdResponse: {
       idNumber: string;
+    };
+    StaffRiskDraftRequest: {
+      /** @enum {string} */
+      checkpoint: "checkout" | "payout" | "trade_in" | "return";
+      /** @description Why the change */
+      notes?: string;
+    };
+    StaffRiskUpdateRuleRequest: {
+      enabled: boolean;
+      /** Format: int32 */
+      weight: number;
     };
     StaffSaveHelpRequest: {
       blocks: unknown;
@@ -8445,6 +10305,71 @@ export interface components {
       name: string;
       permissions: string[] | null;
     };
+    StaffTicket: {
+      assignee: string | null;
+      assigneeId: string;
+      channel: string;
+      /** @description Masked phone or email, for contact-form tickets */
+      contact: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      firstReplyAt: string | null;
+      /** Format: date-time */
+      lastMessageAt: string;
+      messages: components["schemas"]["TicketMessage"][] | null;
+      number: string;
+      orderNumber: string | null;
+      /** @description No first reply yet and past the reply target */
+      overdue: boolean;
+      /** @enum {string} */
+      priority: "low" | "normal" | "high" | "urgent";
+      /** @description Masked name, shop name, or the contact form's name */
+      requester: string;
+      /** @enum {string} */
+      requesterKind: "customer" | "seller" | "visitor";
+      site: string | null;
+      /** Format: date-time */
+      slaDueAt: string | null;
+      /** @enum {string} */
+      status: "open" | "pending_customer" | "resolved" | "closed";
+      subject: string;
+      topic: string;
+    };
+    StaffTicketRow: {
+      assignee: string | null;
+      assigneeId: string;
+      channel: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      firstReplyAt: string | null;
+      /** Format: date-time */
+      lastMessageAt: string;
+      number: string;
+      orderNumber: string | null;
+      /** @description No first reply yet and past the reply target */
+      overdue: boolean;
+      /** @enum {string} */
+      priority: "low" | "normal" | "high" | "urgent";
+      /** @description Masked name, shop name, or the contact form's name */
+      requester: string;
+      /** @enum {string} */
+      requesterKind: "customer" | "seller" | "visitor";
+      site: string | null;
+      /** Format: date-time */
+      slaDueAt: string | null;
+      /** @enum {string} */
+      status: "open" | "pending_customer" | "resolved" | "closed";
+      subject: string;
+      topic: string;
+    };
+    StaffTicketStatusRequest: {
+      /** @enum {string} */
+      priority?: "low" | "normal" | "high" | "urgent" | "";
+      /** @enum {string} */
+      status: "open" | "pending_customer" | "resolved" | "closed";
+    };
     StaffUpdateProductRequest: {
       description?: string;
       name?: string;
@@ -8460,6 +10385,13 @@ export interface components {
     };
     StepUpRequest: {
       code: string;
+    };
+    Store: {
+      address: string;
+      city: string;
+      id: string;
+      name: string;
+      state: string;
     };
     SubmitCampaignRequest: {
       /**
@@ -8482,6 +10414,36 @@ export interface components {
       total: number;
       /** Format: int32 */
       verified: number;
+    };
+    SupportAgent: {
+      id: string;
+      name: string;
+    };
+    SupportSummary: {
+      /**
+       * Format: int32
+       * @description Last 7 days
+       */
+      avgFirstReplyMinutes: number;
+      /** Format: int32 */
+      open: number;
+      /**
+       * Format: int32
+       * @description Open, no first reply, past target
+       */
+      overdue: number;
+      /** Format: int32 */
+      resolvedToday: number;
+      /**
+       * Format: int32
+       * @description Open and high or urgent
+       */
+      urgent: number;
+      /**
+       * Format: int32
+       * @description Waiting on the customer
+       */
+      waiting: number;
     };
     TOTPSetup: {
       otpauthUrl: string;
@@ -8513,6 +10475,55 @@ export interface components {
       /** @enum {string} */
       role: "owner" | "manager" | "staff" | "finance";
       userId: string;
+    };
+    Thresholds: {
+      /** Format: int64 */
+      block: number;
+      /** Format: int64 */
+      hold: number;
+      /** Format: int64 */
+      step: number;
+    };
+    Ticket: {
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      lastMessageAt: string;
+      messages: components["schemas"]["TicketMessage"][] | null;
+      number: string;
+      orderNumber: string | null;
+      /** @enum {string} */
+      status: "open" | "pending_customer" | "resolved" | "closed";
+      subject: string;
+      topic: string;
+      /** @description A reply you haven't opened yet */
+      unread: boolean;
+    };
+    TicketMessage: {
+      /** @description Staff show as 'TechShop support · first name' */
+      author: string;
+      /** @enum {string} */
+      authorKind: "customer" | "seller" | "staff" | "system";
+      body: string;
+      /** Format: date-time */
+      createdAt: string;
+      id: string;
+      /** @description Staff only: internal notes never reach customers */
+      internal: boolean;
+    };
+    TicketRow: {
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      lastMessageAt: string;
+      number: string;
+      orderNumber: string | null;
+      /** @enum {string} */
+      status: "open" | "pending_customer" | "resolved" | "closed";
+      subject: string;
+      topic: string;
+      /** @description A reply you haven't opened yet */
+      unread: boolean;
     };
     ToggleSavedResponse: {
       saved: boolean;
@@ -8553,6 +10564,138 @@ export interface components {
       /** Format: date-time */
       placedAt: string;
       status: string;
+    };
+    TradeIn: {
+      accountLast4: string | null;
+      accountName: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** @description Staff lists only */
+      customer: string;
+      declaredCondition: string;
+      /** @description Brand, model and storage */
+      device: string;
+      deviceType: string;
+      /** @description Where to bring the device while it's estimated */
+      dropOff: components["schemas"]["Store"][] | null;
+      /**
+       * Format: int64
+       * @description Kobo
+       */
+      estimate: number | null;
+      imei: string | null;
+      inspectedCondition: string | null;
+      inspectionNotes: string | null;
+      /**
+       * Format: int64
+       * @description Kobo, after inspection
+       */
+      offer: number | null;
+      /** Format: date-time */
+      offerExpiresAt: string | null;
+      /** Format: date-time */
+      paidAt: string | null;
+      /** @enum {string|null} */
+      payoutMethod: "bank" | "store_credit" | null;
+      payoutReference: string | null;
+      /** Format: date-time */
+      receivedAt: string | null;
+      reference: string;
+      serial: string | null;
+      /** @enum {string} */
+      status:
+        | "submitted"
+        | "estimated"
+        | "awaiting_inspection"
+        | "inspected"
+        | "offer_sent"
+        | "accepted"
+        | "declined"
+        | "paid"
+        | "cancelled"
+        | "blocked";
+      store: string | null;
+    };
+    TradeInDevice: {
+      brand: string;
+      /** @description Kobo per condition: like_new, good, fair, faulty */
+      estimates: {
+        [key: string]: number;
+      };
+      productName: string;
+      variantId: string;
+      variantName: string;
+    };
+    TradeInInput: {
+      /** @description When the model isn't in the list */
+      brand?: string;
+      /** @enum {string} */
+      condition: "like_new" | "good" | "fair" | "faulty";
+      /** @enum {string} */
+      deviceType: "phone" | "laptop" | "tablet" | "console" | "smartwatch";
+      /** @description Phones and tablets: dial *#06# */
+      imei?: string;
+      model?: string;
+      storage?: string;
+      /** @description The matching catalogue model, for an instant estimate */
+      variantId?: string;
+    };
+    TradeInRow: {
+      /** Format: date-time */
+      createdAt: string;
+      /** @description Staff lists only */
+      customer: string;
+      declaredCondition: string;
+      /** @description Brand, model and storage */
+      device: string;
+      deviceType: string;
+      /**
+       * Format: int64
+       * @description Kobo
+       */
+      estimate: number | null;
+      /**
+       * Format: int64
+       * @description Kobo, after inspection
+       */
+      offer: number | null;
+      /** Format: date-time */
+      offerExpiresAt: string | null;
+      /** @enum {string|null} */
+      payoutMethod: "bank" | "store_credit" | null;
+      reference: string;
+      /** @enum {string} */
+      status:
+        | "submitted"
+        | "estimated"
+        | "awaiting_inspection"
+        | "inspected"
+        | "offer_sent"
+        | "accepted"
+        | "declined"
+        | "paid"
+        | "cancelled"
+        | "blocked";
+    };
+    TradeInSummary: {
+      /**
+       * Format: int64
+       * @description Kobo, last 90 days
+       */
+      avgPaid: number;
+      /** Format: int32 */
+      awaitingInspection: number;
+      /** Format: int32 */
+      needsEstimate: number;
+      /** Format: int32 */
+      offersOut: number;
+      /** Format: int32 */
+      paidThisMonth: number;
+      /**
+       * Format: int32
+       * @description Accepted, to be paid by bank transfer
+       */
+      payoutsDue: number;
     };
     TransferAccount: {
       accountNumber: string;
@@ -8718,6 +10861,31 @@ export interface components {
       mfaToken: string;
       /** @enum {string} */
       platform?: "web" | "ios" | "android";
+    };
+    WalkInInput: {
+      fault: string;
+      imeiOrSerial: string;
+      /** @description Needed when the item has no tracked serial (accessories) */
+      orderLineId?: string;
+      /** @description Where the device was handed in */
+      storeId: string;
+    };
+    WarrantySummary: {
+      /**
+       * Format: double
+       * @description Received to ready, last 30 days
+       */
+      avgTurnaroundDays: number;
+      /** Format: int32 */
+      awaitingDropoff: number;
+      /** Format: int32 */
+      inRepair: number;
+      /** Format: int32 */
+      open: number;
+      /** Format: int32 */
+      ready: number;
+      /** Format: int32 */
+      replacedThisMonth: number;
     };
     WmsCreateManifestRequest: {
       carrierId?: string;
@@ -9574,6 +11742,39 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  contactUs: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ContactInput"];
+      };
+    };
+    responses: {
+      /** @description Accepted */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ContactReceipt"];
+        };
       };
       /** @description Error */
       default: {
@@ -10681,6 +12882,35 @@ export interface operations {
       };
     };
   };
+  tradeInBanks: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Bank"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   listConsents: {
     parameters: {
       query?: never;
@@ -11719,6 +13949,446 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["GetMyStoreCreditResponse"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  myTickets: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TicketRow"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  openTicket: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewTicket"];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Ticket"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  myTicket: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Ticket"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  replyToMyTicket: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReplyBody"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Ticket"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  myTradeIns: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TradeInRow"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  startTradeIn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TradeInInput"];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TradeIn"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  myTradeIn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ref: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TradeIn"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  acceptTradeIn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ref: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AcceptInput"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TradeIn"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  cancelTradeIn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ref: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TradeIn"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  declineTradeIn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ref: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TradeIn"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  myWarrantyClaims: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ClaimRow"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  makeWarrantyClaim: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ClaimInput"];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Claim"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  myWarrantyClaim: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Claim"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  myWarrantyItems: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CoveredItem"][] | null;
         };
       };
       /** @description Error */
@@ -13117,6 +15787,105 @@ export interface operations {
       };
     };
   };
+  sellerReturns: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReturnRow"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerReturn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+        rma: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SellerReturn"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerDisputeReturn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+        rma: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SellerDisputeReturnRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SellerReturn"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   sellerListReviews: {
     parameters: {
       query?: {
@@ -13366,6 +16135,140 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ShopTeam"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerTickets: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TicketRow"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerOpenTicket: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewTicket"];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Ticket"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerTicket: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Ticket"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  sellerReplyTicket: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        shopId: string;
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReplyBody"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Ticket"];
         };
       };
       /** @description Error */
@@ -16483,6 +19386,8 @@ export interface operations {
           | "replaced"
           | "closed"
           | "";
+        /** @description Only returns with an open seller dispute */
+        disputed?: boolean;
         cursor?: string;
         limit?: number;
       };
@@ -16555,6 +19460,41 @@ export interface operations {
     requestBody: {
       content: {
         "application/json": components["schemas"]["StaffDecideReturnRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Return"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffDecideReturnDispute: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        rma: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StaffDecideReturnDisputeRequest"];
       };
     };
     responses: {
@@ -16727,6 +19667,602 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["StaffDecideReviewResponse"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffRiskCases: {
+    parameters: {
+      query?: {
+        status?:
+          | "active"
+          | "open"
+          | "in_review"
+          | "escalated"
+          | "cleared"
+          | "blocked"
+          | "";
+        kind?:
+          | "order"
+          | "payment"
+          | "device"
+          | "seller"
+          | "account"
+          | "trade_in"
+          | "return"
+          | "review"
+          | "";
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RiskCaseRow"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffRiskCase: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ref: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RiskCase"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffClaimRiskCase: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ref: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RiskCase"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffEscalateRiskCase: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ref: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NoteBody"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RiskCase"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffNoteRiskCase: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ref: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NoteBody"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RiskCase"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffResolveRiskCase: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ref: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StaffResolveRiskCaseRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RiskCase"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffBlockedDevices: {
+    parameters: {
+      query?: {
+        imei?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BlockedDevice"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffBlockDevice: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["BlockDeviceInput"];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BlockedDevice"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffCheckIMEI: {
+    parameters: {
+      query: {
+        imei: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IMEIStatus"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffUnblockDevice: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        imei: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NoteBody"];
+      };
+    };
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffRiskRuleSets: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RuleSetView"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffRiskDraft: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StaffRiskDraftRequest"];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RuleSetView"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffRiskDiscard: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffRiskPublish: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RuleSetView"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffRiskUpdateRule: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+        ruleId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StaffRiskUpdateRuleRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RuleSetView"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffRiskBench: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BenchResult"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffRiskThresholds: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Thresholds"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RuleSetView"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffRiskSummary: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RiskSummary"];
         };
       };
       /** @description Error */
@@ -16964,6 +20500,512 @@ export interface operations {
       };
     };
   };
+  staffSupportAgents: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SupportAgent"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffSupportSummary: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SupportSummary"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffSupportTickets: {
+    parameters: {
+      query?: {
+        status?:
+          "active" | "open" | "pending_customer" | "resolved" | "closed" | "";
+        priority?: "urgent_high" | "urgent" | "high" | "normal" | "low" | "";
+        mine?: boolean;
+        /** @description Ticket or order number, contact email, or words in the subject */
+        q?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StaffTicketRow"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffSupportTicket: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StaffTicket"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffAssignTicket: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StaffAssignTicketRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StaffTicket"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffClaimTicket: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StaffTicket"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffReplyTicket: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StaffReply"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StaffTicket"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffTicketStatus: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StaffTicketStatusRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StaffTicket"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffTradeIns: {
+    parameters: {
+      query?: {
+        status?:
+          | "active"
+          | "payout_due"
+          | "submitted"
+          | "estimated"
+          | "awaiting_inspection"
+          | "offer_sent"
+          | "accepted"
+          | "declined"
+          | "paid"
+          | "cancelled"
+          | "blocked"
+          | "";
+        /** @description Reference or IMEI */
+        q?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TradeInRow"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffTradeInSummary: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TradeInSummary"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffTradeIn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ref: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TradeIn"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffEstimateTradeIn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ref: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StaffEstimateTradeInRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TradeIn"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffInspectTradeIn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ref: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["InspectTradeInInput"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TradeIn"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffPayTradeIn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ref: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StaffPayTradeInRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TradeIn"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffReceiveTradeIn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ref: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReceiveInput"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TradeIn"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   staffListVendors: {
     parameters: {
       query?: {
@@ -17093,6 +21135,416 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Vendor"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffWarrantyClaims: {
+    parameters: {
+      query?: {
+        status?:
+          | "active"
+          | "new"
+          | "received"
+          | "in_repair"
+          | "ready"
+          | "collected"
+          | "rejected"
+          | "closed"
+          | "";
+        /** @description Claim or order number, or an exact IMEI or serial */
+        q?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ClaimRow"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffWalkInClaim: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["WalkInInput"];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Claim"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffWarrantyClaim: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Claim"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffCollectClaim: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Claim"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffReceiveClaim: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StaffReceiveClaimRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Claim"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffRejectClaim: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StaffRejectClaimRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Claim"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffStartRepair: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RepairInput"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Claim"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffResolveClaim: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        number: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ResolveInput"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Claim"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffRepairQueue: {
+    parameters: {
+      query?: {
+        status?:
+          | "active"
+          | "queued"
+          | "diagnosing"
+          | "awaiting_parts"
+          | "repairing"
+          | "done"
+          | "unrepairable"
+          | "";
+        purpose?: "warranty" | "refurbish" | "";
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RepairView"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffUpdateRepair: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RepairUpdate"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RepairView"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffWarrantyStores: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Store"][] | null;
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  staffWarrantySummary: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WarrantySummary"];
         };
       };
       /** @description Error */
@@ -17610,6 +22062,37 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Tracking"];
+        };
+      };
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  tradeInDevices: {
+    parameters: {
+      query: {
+        type: "phone" | "laptop" | "tablet" | "console" | "smartwatch";
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TradeInDevice"][] | null;
         };
       };
       /** @description Error */

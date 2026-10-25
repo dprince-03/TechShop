@@ -16,8 +16,10 @@ import (
 	"github.com/dprince-03/techshop/backend/internal/modules/payments"
 	"github.com/dprince-03/techshop/backend/internal/modules/payouts"
 	"github.com/dprince-03/techshop/backend/internal/modules/reviews"
+	"github.com/dprince-03/techshop/backend/internal/modules/risk"
 	"github.com/dprince-03/techshop/backend/internal/modules/sales"
 	"github.com/dprince-03/techshop/backend/internal/modules/sellers"
+	"github.com/dprince-03/techshop/backend/internal/modules/support"
 	"github.com/dprince-03/techshop/backend/internal/modules/tracking"
 	"github.com/dprince-03/techshop/backend/internal/modules/wms"
 	"github.com/dprince-03/techshop/backend/internal/platform/kit"
@@ -38,6 +40,7 @@ type Registry struct {
 	WMS       *wms.Service
 	Sellers   *sellers.Service
 	Returns   *aftersales.Service
+	Risk      *risk.Service
 }
 
 // Mods is filled by buildModules (dependencies flow one way).
@@ -55,14 +58,15 @@ func buildModules(d *kit.Deps) []kit.Module {
 		return n.Send(ctx, tx, notify.Msg{UserID: &u, To: m.To, Channel: m.Channel, Category: notify.CatDeals, Template: m.Template, Data: m.Data, Key: m.Key,
 			CampaignID: m.CampaignID, JourneyEnrollmentID: m.JourneyEnrollmentID, TemplateVersionID: m.TemplateVersionID})
 	}
-	sl := sales.New(d, inv, mk, led, n)
-	pay := payments.New(d, sl, led, n) // also plugs itself into sales as its PaymentPort
-	lg := logistics.New(d, sl, n)      // also plugs zone pricing into sales
+	rk := risk.New(d)
+	sl := sales.New(d, inv, mk, led, n, rk) // risk: the checkout checkpoint
+	pay := payments.New(d, sl, led, n)      // also plugs itself into sales as its PaymentPort
+	lg := logistics.New(d, sl, n)           // also plugs zone pricing into sales
 	wh := wms.New(d, sl, lg)
 	rv := reviews.New(d)
-	as := aftersales.New(d, pay, inv) // refunds through payments, restock through inventory
-	po := payouts.New(d, led, pay, n)
-	sel := sellers.New(d, pay, n, cat, sl, wh, po, rv) // payments: bank name enquiries; catalog: listing rules; wms: drop-off labels
-	Mods = Registry{Notify: n, Identity: id, Catalog: cat, Inventory: inv, Ledger: led, Marketing: mk, Sales: sl, Payments: pay, Logistics: lg, WMS: wh, Sellers: sel, Returns: as}
-	return []kit.Module{n, id, files.New(d), cat, inv, content.New(d), tracking.New(d), led, mk, sl, pay, lg, wh, rv, po, sel, as}
+	po := payouts.New(d, led, pay, n, rk)
+	sel := sellers.New(d, pay, n, cat, sl, wh, po, rv)     // payments: bank name enquiries; catalog: listing rules; wms: drop-off labels
+	as := aftersales.New(d, pay, inv, rk, n, led, lg, sel) // refunds through payments, restock through inventory, checks through risk
+	Mods = Registry{Notify: n, Identity: id, Catalog: cat, Inventory: inv, Ledger: led, Marketing: mk, Sales: sl, Payments: pay, Logistics: lg, WMS: wh, Sellers: sel, Returns: as, Risk: rk}
+	return []kit.Module{n, id, files.New(d), cat, inv, content.New(d), tracking.New(d), led, mk, sl, pay, lg, wh, rv, po, sel, as, rk, support.New(d, n, sel)}
 }

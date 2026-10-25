@@ -59,8 +59,8 @@ update payments.payment_events set processed_at = now(), payment_id = coalesce(p
   payout_id = coalesce(payout_id, sqlc.narg('payout_id')) where id = $1;
 
 -- name: PaymentsCreateRefund :one
-insert into payments.refunds (payment_id, order_id, return_request_id, amount_kobo, method, reason, requested_by)
-values ($1, $2, $3, $4, $5, $6, $7)
+insert into payments.refunds (payment_id, order_id, return_request_id, amount_kobo, method, reason, requested_by, allocation)
+values ($1, $2, $3, $4, $5, $6, $7, $8)
 returning *;
 
 -- name: PaymentsGetRefund :one
@@ -145,3 +145,7 @@ select * from payments.refunds
 where status = 'processing' and provider_reference is not null
   and (sqlc.narg('older_than')::timestamptz is null or updated_at < sqlc.narg('older_than'))
 order by updated_at limit 100;
+
+-- name: PaymentsLockAccount :one
+-- Locks a ledger account row so two checkouts can't spend the same store credit.
+select id from finance.ledger_accounts where code = $1 for update;

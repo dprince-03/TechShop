@@ -25,3 +25,4 @@ export { SignInForm, type SignInStep } from "./SignInForm";
 export { Status, humanise, type Tone } from "./Status";
 export { Table, type Column } from "./Table";
 export { ActionForm, Field, type FormResult } from "./ActionForm";
+export { ContactForm, type ContactTopic } from "./ContactForm";

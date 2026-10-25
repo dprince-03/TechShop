@@ -28,6 +28,10 @@ var codeTemplates = map[string]map[string]string{
 		"sms":   "TechShop: order {{.order}} is confirmed. Total {{.total}}.",
 		"email": "Thanks {{.firstName}}! Order {{.order}} is confirmed. Total {{.total}}.",
 	},
+	"order_review": {
+		"push":   "We're confirming order {{.order}}. This usually takes under 2 hours; we'll tell you when it's on its way.",
+		"in_app": "We're confirming order {{.order}}. This usually takes under 2 hours; we'll tell you when it's on its way.",
+	},
 	"order_shipped": {
 		"push": "{{.order}} is on its way.",
 		"sms":  "TechShop: {{.order}} is on its way. Track it in the app.",
@@ -48,7 +52,11 @@ var codeTemplates = map[string]map[string]string{
 	"payout_failed":          {"email": "We couldn't pay {{.amount}} to your bank account: {{.reason}}. Please update your bank details."},
 	"quote_ready":            {"email": "Your quote {{.ref}} is ready. It's valid until {{.validUntil}}."},
 	"invoice_due":            {"email": "Invoice {{.ref}} for {{.amount}} is due on {{.due}}."},
-	"ticket_reply":           {"email": "There's a new reply on your TechShop ticket {{.ref}}.", "push": "New reply on ticket {{.ref}}."},
+	"ticket_reply":           {"email": "There's a new reply on your TechShop ticket {{.ref}}. Read it in your account under Help › My tickets.", "push": "New reply on ticket {{.ref}}.", "in_app": "TechShop support replied on ticket {{.ref}}."},
+	"ticket_received":        {"email": "Hi {{.name}}, we've got your message (ticket {{.ref}}). We reply within 24 hours, sooner for payment problems.", "sms": "TechShop: we've got your message. Ticket {{.ref}}. We reply within 24 hours."},
+	"ticket_reply_contact":   {"email": "{{.body}}\n\nTechShop support, ticket {{.ref}}. To reply, use the contact form and mention {{.ref}}.", "sms": "TechShop support (ticket {{.ref}}): {{.body}}"},
+	"trade_in_update":        {"push": "Trade-in {{.ref}}: {{.status}}.", "in_app": "Trade-in {{.ref}}: {{.status}}."},
+	"warranty_update":        {"push": "Warranty claim {{.ref}}: {{.status}}.", "in_app": "Warranty claim {{.ref}}: {{.status}}."},
 	"return_update":          {"push": "Return {{.ref}}: {{.status}}.", "email": "Your return {{.ref}} is now {{.status}}."},
 	"rider_new_job":          {"push": "New delivery job {{.order}} in {{.zone}}."},
 	"viewing_confirmed":      {"sms": "TechShop: your viewing of {{.car}} is booked for {{.date}} ({{.slot}})."},

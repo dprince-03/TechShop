@@ -82,9 +82,11 @@ values ($1, $2, $3, $4, $5, $6, $7)
 returning *;
 
 -- name: SalesCreateLine :one
+-- Warranty terms are copied from the listing, so later listing edits don't change what was sold.
 insert into sales.order_lines (order_id, fulfilment_id, listing_id, seller_id, variant_id, product_name, variant_name, sku, condition, quantity,
-  unit_price_kobo, discount_kobo, line_total_kobo, vat_kobo, commission_bps)
-values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+  unit_price_kobo, discount_kobo, line_total_kobo, vat_kobo, commission_bps, warranty_provider, warranty_months)
+values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
+  (select l.warranty_provider from catalog.listings l where l.id = $3), (select l.warranty_months from catalog.listings l where l.id = $3))
 returning *;
 
 -- name: SalesInsertHistory :exec
@@ -204,14 +206,14 @@ update sales.fulfilments set method = $2, collection_store_id = $3 where id = $1
 
 -- name: SalesSellerFulfilmentsPage :many
 select f.*, o.order_number, o.ship_to, o.placed_at from sales.fulfilments f join sales.orders o on o.id = f.order_id
-where f.seller_id = @seller_id and f.fulfilled_by = 'seller'
+where f.seller_id = @seller_id and f.fulfilled_by = 'seller' and o.review_hold_at is null
   and (sqlc.narg('status')::text is null or f.status = sqlc.narg('status'))
   and (sqlc.narg('before')::timestamptz is null or f.created_at < sqlc.narg('before'))
 order by f.created_at desc limit @lim;
 
 -- name: SalesGetSellerFulfilment :one
 select f.*, o.order_number, o.ship_to, o.placed_at from sales.fulfilments f join sales.orders o on o.id = f.order_id
-where f.id = $1 and f.seller_id = $2;
+where f.id = $1 and f.seller_id = $2 and o.review_hold_at is null;
 
 -- name: SalesFulfilmentHandlingDays :one
 -- The longest handling time among the fulfilment's listings: the seller's packing deadline.
@@ -247,3 +249,21 @@ where id = @id;
 
 -- name: SalesSetSellerEarning :exec
 update sales.order_lines set seller_earning_kobo = $2 where id = $1;
+
+-- name: SalesCheckoutRiskFeatures :one
+-- What the checkout risk rules look at for a paid order (trust-safety.md §3).
+select (extract(epoch from now() - u.created_at) / 3600)::float8 as account_age_hours,
+  (select count(*) from sales.orders x where x.customer_user_id = u.id and x.status = 'delivered')::int as delivered_orders,
+  (select count(*) from payments.payments p join sales.orders x on x.id = p.order_id
+     where x.customer_user_id = u.id and p.status = 'failed' and p.updated_at > now() - interval '10 minutes')::int as failed_payments_10m,
+  coalesce((select max(ol.quantity) from sales.order_lines ol
+     join catalog.product_variants v on v.id = ol.variant_id join catalog.products pr on pr.id = v.product_id
+     join catalog.categories c on c.id = pr.category_id left join catalog.categories pc on pc.id = c.parent_id
+     where ol.order_id = @order_id and ol.cancelled_at is null and (c.slug = 'phones' or pc.slug = 'phones')), 0)::int as max_phone_units
+from identity.users u where u.id = @user_id;
+
+-- name: SalesSetReviewHold :exec
+update sales.orders set review_hold_at = $2, review_case_id = $3 where id = $1;
+
+-- name: SalesOrderByReviewCase :one
+select * from sales.orders where review_case_id = $1 for update;

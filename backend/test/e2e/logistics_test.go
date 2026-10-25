@@ -5,13 +5,30 @@ package e2e
 import (
 	"fmt"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
 
-// riderLogin signs the seeded rider in with phone OTP on the logistics app, from the
-// pre-approved phone.
+// riderLogin signs the seeded rider in once per run (phone codes are rate limited per number).
 func riderLogin(t *testing.T) string {
+	t.Helper()
+	riderMu.Lock()
+	defer riderMu.Unlock()
+	if riderTok == "" {
+		riderTok = riderSignIn(t)
+	}
+	return riderTok
+}
+
+var (
+	riderMu  sync.Mutex
+	riderTok string
+)
+
+// riderSignIn signs the seeded rider in with phone OTP on the logistics app, from the
+// pre-approved phone.
+func riderSignIn(t *testing.T) string {
 	t.Helper()
 	_, phone, _, _, _ := account(t, "rider")
 	before := peekCode(t, phone)

@@ -77,6 +77,8 @@ type AftersalesRepairJob struct {
 	FinishedAt      *time.Time `json:"finishedAt"`
 	CreatedAt       time.Time  `json:"createdAt"`
 	UpdatedAt       time.Time  `json:"updatedAt"`
+	Notes           *string    `json:"notes"`
+	Purpose         string     `json:"purpose"`
 }
 
 // [aftersales] Inspection of returned items: serial must match the unit sold (swap fraud), grade and disposition.
@@ -103,20 +105,27 @@ type AftersalesReturnItem struct {
 
 // [aftersales] Customer return requests (RMA) and their outcome. Faulty items within 7 days may be auto-approved.
 type AftersalesReturnRequest struct {
-	ID              uuid.UUID  `json:"id"`
-	RmaNumber       string     `json:"rmaNumber"`
-	OrderID         uuid.UUID  `json:"orderId"`
-	RequestedBy     uuid.UUID  `json:"requestedBy"`
-	Reason          string     `json:"reason"`
-	Details         *string    `json:"details"`
-	ReturnMethod    *string    `json:"returnMethod"`
-	Status          string     `json:"status"`
-	AutoApproved    bool       `json:"autoApproved"`
-	Resolution      *string    `json:"resolution"`
-	DecidedBy       *uuid.UUID `json:"decidedBy"`
-	RejectionReason *string    `json:"rejectionReason"`
-	CreatedAt       time.Time  `json:"createdAt"`
-	UpdatedAt       time.Time  `json:"updatedAt"`
+	ID                  uuid.UUID  `json:"id"`
+	RmaNumber           string     `json:"rmaNumber"`
+	OrderID             uuid.UUID  `json:"orderId"`
+	RequestedBy         uuid.UUID  `json:"requestedBy"`
+	Reason              string     `json:"reason"`
+	Details             *string    `json:"details"`
+	ReturnMethod        *string    `json:"returnMethod"`
+	Status              string     `json:"status"`
+	AutoApproved        bool       `json:"autoApproved"`
+	Resolution          *string    `json:"resolution"`
+	DecidedBy           *uuid.UUID `json:"decidedBy"`
+	RejectionReason     *string    `json:"rejectionReason"`
+	CreatedAt           time.Time  `json:"createdAt"`
+	UpdatedAt           time.Time  `json:"updatedAt"`
+	SellerDisputeReason *string    `json:"sellerDisputeReason"`
+	SellerDisputedAt    *time.Time `json:"sellerDisputedAt"`
+	SellerDisputedBy    *uuid.UUID `json:"sellerDisputedBy"`
+	DisputeDecision     *string    `json:"disputeDecision"`
+	DisputeNote         *string    `json:"disputeNote"`
+	DisputeDecidedBy    *uuid.UUID `json:"disputeDecidedBy"`
+	DisputeDecidedAt    *time.Time `json:"disputeDecidedAt"`
 }
 
 // [aftersales] Trade-ins from estimate to inspection, offer and payout (bank or store credit); accepted devices become device units.
@@ -144,6 +153,20 @@ type AftersalesTradeIn struct {
 	PaidAt                 *time.Time `json:"paidAt"`
 	CreatedAt              time.Time  `json:"createdAt"`
 	UpdatedAt              time.Time  `json:"updatedAt"`
+	// The catalogue variant it matches (prices the estimate; needed before it can enter stock).
+	VariantID       *uuid.UUID `json:"variantId"`
+	SerialNumber    *string    `json:"serialNumber"`
+	StoreID         *uuid.UUID `json:"storeId"`
+	ReceivedAt      *time.Time `json:"receivedAt"`
+	ReceivedBy      *uuid.UUID `json:"receivedBy"`
+	InspectedAt     *time.Time `json:"inspectedAt"`
+	InspectionNotes *string    `json:"inspectionNotes"`
+	OfferExpiresAt  *time.Time `json:"offerExpiresAt"`
+	DecidedAt       *time.Time `json:"decidedAt"`
+	AccountName     *string    `json:"accountName"`
+	PayoutReference *string    `json:"payoutReference"`
+	PaidBy          *uuid.UUID `json:"paidBy"`
+	RepairJobID     *uuid.UUID `json:"repairJobId"`
 }
 
 // [aftersales] Warranty claims, identified by IMEI/serial.
@@ -155,10 +178,21 @@ type AftersalesWarrantyClaim struct {
 	DeviceUnitID     *uuid.UUID `json:"deviceUnitId"`
 	ImeiOrSerial     string     `json:"imeiOrSerial"`
 	FaultDescription string     `json:"faultDescription"`
-	Status           string     `json:"status"`
-	Resolution       *string    `json:"resolution"`
-	CreatedAt        time.Time  `json:"createdAt"`
-	UpdatedAt        time.Time  `json:"updatedAt"`
+	// new (waiting for drop-off) → received → in_repair → ready (for collection) → collected; or rejected; closed = refunded, device kept.
+	Status            string     `json:"status"`
+	Resolution        *string    `json:"resolution"`
+	CreatedAt         time.Time  `json:"createdAt"`
+	UpdatedAt         time.Time  `json:"updatedAt"`
+	WarrantyProvider  *string    `json:"warrantyProvider"`
+	WarrantyEndsOn    *time.Time `json:"warrantyEndsOn"`
+	StoreID           *uuid.UUID `json:"storeId"`
+	ReceivedAt        *time.Time `json:"receivedAt"`
+	ReceivedBy        *uuid.UUID `json:"receivedBy"`
+	RejectionReason   *string    `json:"rejectionReason"`
+	ResolutionNote    *string    `json:"resolutionNote"`
+	ReplacementUnitID *uuid.UUID `json:"replacementUnitId"`
+	RefundID          *uuid.UUID `json:"refundId"`
+	ClosedAt          *time.Time `json:"closedAt"`
 }
 
 // [b2b] Business buyers (wholesale site): trade pricing, VAT invoices, credit.
@@ -1821,6 +1855,8 @@ type PaymentsRefund struct {
 	FailureReason     *string    `json:"failureReason"`
 	CreatedAt         time.Time  `json:"createdAt"`
 	UpdatedAt         time.Time  `json:"updatedAt"`
+	// Ledger debits for this refund as [{"code": account, "amount": kobo}], summing to the amount. Null = pro rata over the sale.
+	Allocation json.RawMessage `json:"allocation"`
 }
 
 // [payments] One line per settled transaction; matched to our payments by reference and amount.
@@ -2181,6 +2217,16 @@ type PurchasingSupplier struct {
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
+// [risk] Timeline of a risk case: who claimed, noted, escalated, cleared or blocked it.
+type RiskCaseEvent struct {
+	ID        uuid.UUID  `json:"id"`
+	CaseID    uuid.UUID  `json:"caseId"`
+	ActorID   *uuid.UUID `json:"actorId"`
+	Action    string     `json:"action"`
+	Note      *string    `json:"note"`
+	CreatedAt time.Time  `json:"createdAt"`
+}
+
 // [risk] IMEIs that may not be sold, traded in, returned or repaired (stolen, fraud, counterfeit).
 type RiskDeviceBlocklist struct {
 	ID        uuid.UUID  `json:"id"`
@@ -2263,6 +2309,8 @@ type RiskRiskCase struct {
 	ResolvedAt      *time.Time `json:"resolvedAt"`
 	CreatedAt       time.Time  `json:"createdAt"`
 	UpdatedAt       time.Time  `json:"updatedAt"`
+	Reference       string     `json:"reference"`
+	ResolutionNote  *string    `json:"resolutionNote"`
 }
 
 // [risk] Every risk decision with score, reasons and rule-set version. Partitioned monthly; 24-month retention.
@@ -2343,8 +2391,9 @@ type RiskRiskRuleSet struct {
 	Thresholds  json.RawMessage `json:"thresholds"`
 	PublishedBy *uuid.UUID      `json:"publishedBy"`
 	PublishedAt *time.Time      `json:"publishedAt"`
-	CreatedBy   uuid.UUID       `json:"createdBy"`
+	CreatedBy   *uuid.UUID      `json:"createdBy"`
 	CreatedAt   time.Time       `json:"createdAt"`
+	Notes       *string         `json:"notes"`
 }
 
 // [risk] Per-seller daily counts used for the rolling 60-day performance rates.
@@ -2481,6 +2530,9 @@ type SalesOrder struct {
 	CancelledAt              *time.Time      `json:"cancelledAt"`
 	CreatedAt                time.Time       `json:"createdAt"`
 	UpdatedAt                time.Time       `json:"updatedAt"`
+	// Set while the order waits for a risk review; cleared when the case is cleared.
+	ReviewHoldAt *time.Time `json:"reviewHoldAt"`
+	ReviewCaseID *uuid.UUID `json:"reviewCaseId"`
 }
 
 // [sales] Snapshot of what was bought (name, price, VAT, condition, commission), optionally the exact device unit.
@@ -2505,7 +2557,9 @@ type SalesOrderLine struct {
 	CancelledAt   *time.Time `json:"cancelledAt"`
 	CreatedAt     time.Time  `json:"createdAt"`
 	// Marketplace lines: what the seller is owed before commission (net price plus any TechShop-funded discount), set at payment capture.
-	SellerEarningKobo *int64 `json:"sellerEarningKobo"`
+	SellerEarningKobo *int64  `json:"sellerEarningKobo"`
+	WarrantyProvider  *string `json:"warrantyProvider"`
+	WarrantyMonths    *int16  `json:"warrantyMonths"`
 }
 
 // [sales] Every order and fulfilment status change and who made it (shown on tracking).
@@ -2716,6 +2770,14 @@ type SupportSupportTicket struct {
 	ResolvedAt      *time.Time `json:"resolvedAt"`
 	CreatedAt       time.Time  `json:"createdAt"`
 	UpdatedAt       time.Time  `json:"updatedAt"`
+	Subject         *string    `json:"subject"`
+	// When the first staff reply is due (24 h normal, 4 h high or urgent).
+	SlaDueAt *time.Time `json:"slaDueAt"`
+	// When the ticket started waiting on the customer (auto-resolved after 7 days).
+	PendingSince   *time.Time `json:"pendingSince"`
+	ClosedAt       *time.Time `json:"closedAt"`
+	LastMessageAt  time.Time  `json:"lastMessageAt"`
+	CustomerUnread bool       `json:"customerUnread"`
 }
 
 // [support] Messages in a ticket; internal notes are never returned to customers.

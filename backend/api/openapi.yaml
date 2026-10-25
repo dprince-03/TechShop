@@ -1,5 +1,26 @@
 components:
   schemas:
+    AcceptInput:
+      additionalProperties: false
+      properties:
+        accountName:
+          description: As the bank has it; checked with a name enquiry
+          maxLength: 120
+          type: string
+        accountNumber:
+          pattern: ^[0-9]{10}$
+          type: string
+        bankCode:
+          maxLength: 10
+          type: string
+        payoutMethod:
+          enum:
+            - store_credit
+            - bank
+          type: string
+      required:
+        - payoutMethod
+      type: object
     AcceptInviteRequest:
       additionalProperties: false
       properties:
@@ -306,6 +327,108 @@ components:
         - paidAt
         - failureReason
       type: object
+    BenchResult:
+      additionalProperties: false
+      properties:
+        after:
+          additionalProperties:
+            format: int64
+            type: integer
+          description: Outcomes under the draft
+          type: object
+        before:
+          additionalProperties:
+            format: int64
+            type: integer
+          description: Outcomes as decided
+          type: object
+        changed:
+          description: Decisions whose outcome would differ
+          format: int64
+          type: integer
+        decisions:
+          description: Decisions replayed (last 30 days, up to 5,000)
+          format: int64
+          type: integer
+        fraudCaught:
+          description: Confirmed fraud the draft would hold or block
+          format: int64
+          type: integer
+        fraudMissed:
+          description: Confirmed fraud the draft would let through
+          format: int64
+          type: integer
+        legitStopped:
+          description: Cleared (legitimate) cases the draft would still hold or block
+          format: int64
+          type: integer
+      required:
+        - decisions
+        - changed
+        - before
+        - after
+        - fraudCaught
+        - fraudMissed
+        - legitStopped
+      type: object
+    BlockDeviceInput:
+      additionalProperties: false
+      properties:
+        imei:
+          pattern: ^[0-9]{15}$
+          type: string
+        reason:
+          enum:
+            - reported_stolen
+            - fraud
+            - counterfeit
+          type: string
+        reference:
+          description: Police extract number, case or ticket
+          maxLength: 80
+          type: string
+        source:
+          description: Who reported it, e.g. customer report, police extract, case RK-301
+          maxLength: 80
+          minLength: 2
+          type: string
+      required:
+        - imei
+        - reason
+        - source
+      type: object
+    BlockedDevice:
+      additionalProperties: false
+      properties:
+        addedBy:
+          type:
+            - string
+            - "null"
+        createdAt:
+          format: date-time
+          type: string
+        imei:
+          type: string
+        reason:
+          enum:
+            - reported_stolen
+            - fraud
+            - counterfeit
+          type: string
+        reference:
+          type:
+            - string
+            - "null"
+        source:
+          type: string
+      required:
+        - imei
+        - reason
+        - source
+        - reference
+        - addedBy
+        - createdAt
+      type: object
     BoardJob:
       additionalProperties: false
       properties:
@@ -378,6 +501,10 @@ components:
             - "null"
         riderId:
           type: string
+        rma:
+          type:
+            - string
+            - "null"
         routeSequence:
           format: int32
           type:
@@ -406,6 +533,7 @@ components:
         - zoneName
         - orderNumber
         - riderFirstName
+        - rma
         - id
         - kind
         - fulfilmentId
@@ -1267,6 +1395,210 @@ components:
           maxLength: 40
           type: string
       type: object
+    Claim:
+      additionalProperties: false
+      properties:
+        createdAt:
+          format: date-time
+          type: string
+        customer:
+          description: "Staff lists only: first name and last initial"
+          type: string
+        dropOff:
+          description: Where to bring the device while the claim is new
+          items:
+            $ref: "#/components/schemas/Store"
+          type:
+            - array
+            - "null"
+        fault:
+          type: string
+        history:
+          description: "Staff only: earlier claims on this device"
+          items:
+            $ref: "#/components/schemas/HistoryItem"
+          type:
+            - array
+            - "null"
+        imeiOrSerial:
+          type: string
+        number:
+          type: string
+        orderNumber:
+          type:
+            - string
+            - "null"
+        productName:
+          type:
+            - string
+            - "null"
+        provider:
+          type:
+            - string
+            - "null"
+        receivedAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        rejectionReason:
+          type:
+            - string
+            - "null"
+        repairs:
+          items:
+            $ref: "#/components/schemas/RepairJob"
+          type:
+            - array
+            - "null"
+        resolution:
+          enum:
+            - repaired
+            - replaced
+            - refunded
+            - not_covered
+          type:
+            - string
+            - "null"
+        resolutionNote:
+          type:
+            - string
+            - "null"
+        status:
+          enum:
+            - new
+            - received
+            - in_repair
+            - ready
+            - collected
+            - rejected
+            - closed
+          type: string
+        store:
+          type:
+            - string
+            - "null"
+        updatedAt:
+          format: date-time
+          type: string
+        variantName:
+          type:
+            - string
+            - "null"
+        warrantyEndsOn:
+          format: date-time
+          type:
+            - string
+            - "null"
+      required:
+        - provider
+        - warrantyEndsOn
+        - receivedAt
+        - rejectionReason
+        - resolutionNote
+        - repairs
+        - dropOff
+        - history
+        - number
+        - productName
+        - variantName
+        - orderNumber
+        - imeiOrSerial
+        - fault
+        - status
+        - resolution
+        - store
+        - customer
+        - createdAt
+        - updatedAt
+      type: object
+    ClaimInput:
+      additionalProperties: false
+      properties:
+        fault:
+          description: What's wrong, and when it started
+          maxLength: 1000
+          minLength: 5
+          type: string
+        imeiOrSerial:
+          description: The device's IMEI (dial *#06#) or the serial number on the box
+          maxLength: 40
+          minLength: 3
+          type: string
+        orderLineId:
+          type: string
+      required:
+        - orderLineId
+        - imeiOrSerial
+        - fault
+      type: object
+    ClaimRow:
+      additionalProperties: false
+      properties:
+        createdAt:
+          format: date-time
+          type: string
+        customer:
+          description: "Staff lists only: first name and last initial"
+          type: string
+        fault:
+          type: string
+        imeiOrSerial:
+          type: string
+        number:
+          type: string
+        orderNumber:
+          type:
+            - string
+            - "null"
+        productName:
+          type:
+            - string
+            - "null"
+        resolution:
+          enum:
+            - repaired
+            - replaced
+            - refunded
+            - not_covered
+          type:
+            - string
+            - "null"
+        status:
+          enum:
+            - new
+            - received
+            - in_repair
+            - ready
+            - collected
+            - rejected
+            - closed
+          type: string
+        store:
+          type:
+            - string
+            - "null"
+        updatedAt:
+          format: date-time
+          type: string
+        variantName:
+          type:
+            - string
+            - "null"
+      required:
+        - number
+        - productName
+        - variantName
+        - orderNumber
+        - imeiOrSerial
+        - fault
+        - status
+        - resolution
+        - store
+        - customer
+        - createdAt
+        - updatedAt
+      type: object
     CompleteSignupRequest:
       additionalProperties: false
       properties:
@@ -1321,6 +1653,33 @@ components:
         width:
           format: int32
           type: integer
+      type: object
+    Cond:
+      additionalProperties: false
+      properties:
+        f:
+          type: string
+        op:
+          type: string
+        v:
+          format: double
+          type: number
+      required:
+        - f
+        - op
+        - v
+      type: object
+    Condition:
+      additionalProperties: false
+      properties:
+        all:
+          items:
+            $ref: "#/components/schemas/Cond"
+          type:
+            - array
+            - "null"
+      required:
+        - all
       type: object
     ConfirmInviteRequest:
       additionalProperties: false
@@ -1430,6 +1789,72 @@ components:
         - granted
         - policyVersion
         - source
+      type: object
+    ContactInput:
+      additionalProperties: false
+      properties:
+        email:
+          maxLength: 254
+          type: string
+        message:
+          maxLength: 5000
+          minLength: 1
+          type: string
+        name:
+          maxLength: 80
+          minLength: 2
+          type: string
+        orderNumber:
+          maxLength: 20
+          type: string
+        phone:
+          maxLength: 20
+          type: string
+        site:
+          enum:
+            - corporate
+            - market
+            - wholesale
+            - seller
+          type: string
+        subject:
+          maxLength: 140
+          minLength: 3
+          type: string
+        topic:
+          enum:
+            - order
+            - delivery
+            - payment
+            - refund
+            - return
+            - warranty
+            - trade_in
+            - account
+            - selling
+            - business
+            - other
+          type: string
+        website:
+          description: "Leave empty: a hidden field that only bots fill in"
+          maxLength: 200
+          type: string
+      required:
+        - site
+        - name
+        - topic
+        - subject
+        - message
+      type: object
+    ContactReceipt:
+      additionalProperties: false
+      properties:
+        received:
+          type: boolean
+        ticketNumber:
+          type: string
+      required:
+        - received
       type: object
     ContentBanner:
       additionalProperties: false
@@ -1587,6 +2012,58 @@ components:
         - slug
         - title
         - publishedAt
+      type: object
+    CoveredItem:
+      additionalProperties: false
+      properties:
+        deliveredAt:
+          format: date-time
+          type: string
+        endsOn:
+          format: date-time
+          type: string
+        months:
+          format: int32
+          type: integer
+        openClaim:
+          description: An open claim on this item, if any
+          type:
+            - string
+            - "null"
+        orderLineId:
+          type: string
+        orderNumber:
+          type: string
+        productName:
+          type: string
+        provider:
+          enum:
+            - manufacturer
+            - techshop
+            - seller
+          type: string
+        serialHint:
+          description: Last 4 characters of the IMEI or serial we sold
+          type:
+            - string
+            - "null"
+        serialised:
+          description: "A tracked device: the claim needs its IMEI or serial"
+          type: boolean
+        variantName:
+          type: string
+      required:
+        - orderLineId
+        - orderNumber
+        - productName
+        - variantName
+        - provider
+        - months
+        - deliveredAt
+        - endsOn
+        - serialised
+        - serialHint
+        - openClaim
       type: object
     CreateCouponRequest:
       additionalProperties: false
@@ -1920,6 +2397,37 @@ components:
             - "null"
       required:
         - zoneIds
+      type: object
+    Dispute:
+      additionalProperties: false
+      properties:
+        at:
+          format: date-time
+          type: string
+        decidedAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        decision:
+          enum:
+            - upheld
+            - rejected
+          type:
+            - string
+            - "null"
+        note:
+          type:
+            - string
+            - "null"
+        reason:
+          type: string
+      required:
+        - reason
+        - at
+        - decision
+        - note
+        - decidedAt
       type: object
     Dropoff:
       additionalProperties: false
@@ -2338,6 +2846,24 @@ components:
         - balanced
         - entries
         - accounts
+      type: object
+    FiredRule:
+      additionalProperties: false
+      properties:
+        action:
+          type: string
+        key:
+          type: string
+        label:
+          type: string
+        weight:
+          format: int64
+          type: integer
+      required:
+        - key
+        - label
+        - weight
+        - action
       type: object
     FulfilmentCarrier:
       additionalProperties: false
@@ -2851,6 +3377,50 @@ components:
         - deliveryFeeKobo
         - itemsKobo
       type: object
+    HistoryItem:
+      additionalProperties: false
+      properties:
+        createdAt:
+          format: date-time
+          type: string
+        fault:
+          type: string
+        number:
+          type: string
+        resolution:
+          type:
+            - string
+            - "null"
+        status:
+          type: string
+      required:
+        - number
+        - status
+        - resolution
+        - fault
+        - createdAt
+      type: object
+    IMEIStatus:
+      additionalProperties: false
+      properties:
+        blocked:
+          type: boolean
+        imei:
+          type: string
+        luhnOk:
+          description: The check digit is right (a typo or a fake IMEI fails)
+          type: boolean
+        reason:
+          description: "Why it's blocked: reported_stolen, fraud or counterfeit"
+          type:
+            - string
+            - "null"
+      required:
+        - imei
+        - luhnOk
+        - blocked
+        - reason
+      type: object
     IdentityAddress:
       additionalProperties: false
       properties:
@@ -3195,11 +3765,13 @@ components:
       additionalProperties: false
       properties:
         disposition:
+          description: "Seller-shipped items: return_to_seller"
           enum:
             - restock_new
             - restock_open_box
             - repair
             - return_to_supplier
+            - return_to_seller
             - write_off
           type: string
         grade:
@@ -3223,6 +3795,31 @@ components:
         - warehouseId
         - grade
         - disposition
+      type: object
+    InspectTradeInInput:
+      additionalProperties: false
+      properties:
+        condition:
+          enum:
+            - like_new
+            - good
+            - fair
+            - faulty
+          type: string
+        notes:
+          description: "What was checked: screen, battery, iCloud/Google lock, accessories"
+          maxLength: 1000
+          type: string
+        offer:
+          description: Kobo. Leave out to price from the catalogue and the grade
+          format: int64
+          minimum: 0
+          type: integer
+        variantId:
+          description: The catalogue model, if the request didn't have one (needed to stock it)
+          type: string
+      required:
+        - condition
       type: object
     InventoryDeviceUnit:
       additionalProperties: false
@@ -3845,6 +4442,9 @@ components:
         recipientName:
           type: string
         riderId:
+          type: string
+        rma:
+          description: "Return pickups: the return being collected. The address is where to collect; pickupName/pickupAddress is where to bring it"
           type: string
         routeSequence:
           format: int32
@@ -5883,6 +6483,49 @@ components:
       required:
         - userId
       type: object
+    NewTicket:
+      additionalProperties: false
+      properties:
+        message:
+          maxLength: 5000
+          minLength: 1
+          type: string
+        orderNumber:
+          description: One of your orders, if it's about one
+          maxLength: 20
+          type: string
+        subject:
+          maxLength: 140
+          minLength: 3
+          type: string
+        topic:
+          enum:
+            - order
+            - delivery
+            - payment
+            - refund
+            - return
+            - warranty
+            - trade_in
+            - account
+            - selling
+            - business
+            - other
+          type: string
+      required:
+        - topic
+        - subject
+        - message
+      type: object
+    NoteBody:
+      additionalProperties: false
+      properties:
+        note:
+          maxLength: 1000
+          type: string
+      required:
+        - note
+      type: object
     NotificationDTO:
       additionalProperties: false
       properties:
@@ -6069,6 +6712,13 @@ components:
           type:
             - array
             - "null"
+        reviewCaseId:
+          type: string
+        reviewHoldAt:
+          format: date-time
+          type:
+            - string
+            - "null"
         shipTo: {}
         status:
           type: string
@@ -6111,6 +6761,8 @@ components:
         - cancelledAt
         - createdAt
         - updatedAt
+        - reviewHoldAt
+        - reviewCaseId
       type: object
     OrderLine:
       additionalProperties: false
@@ -6371,6 +7023,7 @@ components:
     PaymentsListRefundsRow:
       additionalProperties: false
       properties:
+        allocation: {}
         amountKobo:
           format: int64
           type: integer
@@ -6426,6 +7079,7 @@ components:
         - failureReason
         - createdAt
         - updatedAt
+        - allocation
         - orderNumber
       type: object
     PaymentsPayment:
@@ -6595,6 +7249,7 @@ components:
     PaymentsRefund:
       additionalProperties: false
       properties:
+        allocation: {}
         amountKobo:
           format: int64
           type: integer
@@ -6648,6 +7303,7 @@ components:
         - failureReason
         - createdAt
         - updatedAt
+        - allocation
       type: object
     PayoutBatch:
       additionalProperties: false
@@ -6787,6 +7443,32 @@ components:
         - createdAt
         - updatedAt
       type: object
+    Pickup:
+      additionalProperties: false
+      properties:
+        assigned:
+          type: boolean
+        handedInAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        status:
+          enum:
+            - unassigned
+            - assigned
+            - picked_up
+            - en_route
+            - delivered
+            - failed
+            - returned
+            - cancelled
+          type: string
+      required:
+        - status
+        - assigned
+        - handedInAt
+      type: object
     PlaceOrderRequest:
       additionalProperties: false
       properties:
@@ -6800,10 +7482,12 @@ components:
           minLength: 8
           type: string
         provider:
+          description: store_credit pays the whole order from your store credit
           enum:
             - paystack
             - opay
             - moniepoint
+            - store_credit
           type: string
       required:
         - addressId
@@ -7566,6 +8250,22 @@ components:
       required:
         - reason
       type: object
+    ReceiveInput:
+      additionalProperties: false
+      properties:
+        imei:
+          description: Required for phones and tablets
+          maxLength: 20
+          type: string
+        serial:
+          description: Laptops, consoles, watches
+          maxLength: 40
+          type: string
+        storeId:
+          type: string
+      required:
+        - storeId
+      type: object
     RefreshTokensRequest:
       additionalProperties: false
       properties:
@@ -7626,6 +8326,170 @@ components:
         - app
         - platform
       type: object
+    RepairInput:
+      additionalProperties: false
+      properties:
+        diagnosis:
+          maxLength: 1000
+          type: string
+        technicianId:
+          type: string
+      type: object
+    RepairJob:
+      additionalProperties: false
+      properties:
+        createdAt:
+          format: date-time
+          type: string
+        diagnosis:
+          type:
+            - string
+            - "null"
+        finishedAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        id:
+          type: string
+        notes:
+          type:
+            - string
+            - "null"
+        startedAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        status:
+          enum:
+            - queued
+            - diagnosing
+            - awaiting_parts
+            - repairing
+            - done
+            - unrepairable
+          type: string
+        technician:
+          type:
+            - string
+            - "null"
+      required:
+        - id
+        - status
+        - diagnosis
+        - notes
+        - technician
+        - startedAt
+        - finishedAt
+        - createdAt
+      type: object
+    RepairUpdate:
+      additionalProperties: false
+      properties:
+        diagnosis:
+          maxLength: 1000
+          type: string
+        notes:
+          maxLength: 1000
+          type: string
+        status:
+          enum:
+            - diagnosing
+            - awaiting_parts
+            - repairing
+            - done
+            - unrepairable
+          type: string
+        technicianId:
+          type: string
+      required:
+        - status
+      type: object
+    RepairView:
+      additionalProperties: false
+      properties:
+        claimNumber:
+          type:
+            - string
+            - "null"
+        createdAt:
+          format: date-time
+          type: string
+        device:
+          type: string
+        diagnosis:
+          type:
+            - string
+            - "null"
+        finishedAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        id:
+          type: string
+        imeiOrSerial:
+          type:
+            - string
+            - "null"
+        notes:
+          type:
+            - string
+            - "null"
+        purpose:
+          enum:
+            - warranty
+            - refurbish
+          type: string
+        startedAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        status:
+          enum:
+            - queued
+            - diagnosing
+            - awaiting_parts
+            - repairing
+            - done
+            - unrepairable
+          type: string
+        technician:
+          type:
+            - string
+            - "null"
+        tradeIn:
+          description: The trade-in a refurbishment came from
+          type:
+            - string
+            - "null"
+      required:
+        - purpose
+        - claimNumber
+        - tradeIn
+        - device
+        - imeiOrSerial
+        - id
+        - status
+        - diagnosis
+        - notes
+        - technician
+        - startedAt
+        - finishedAt
+        - createdAt
+      type: object
+    ReplyBody:
+      additionalProperties: false
+      properties:
+        message:
+          maxLength: 5000
+          minLength: 1
+          type: string
+      required:
+        - message
+      type: object
     ReportReviewRequest:
       additionalProperties: false
       properties:
@@ -7668,6 +8532,27 @@ components:
       required:
         - challengeId
         - resendAfter
+      type: object
+    ResolveInput:
+      additionalProperties: false
+      properties:
+        note:
+          maxLength: 500
+          type: string
+        replacementSerial:
+          description: "Replaced, tracked devices: the IMEI or serial of the new unit"
+          maxLength: 40
+          type: string
+        resolution:
+          enum:
+            - replaced
+            - refunded
+          type: string
+        warehouseId:
+          description: "Replaced, untracked items: where the replacement comes from"
+          type: string
+      required:
+        - resolution
       type: object
     Result:
       additionalProperties: false
@@ -7720,6 +8605,9 @@ components:
           type:
             - string
             - "null"
+        dispute:
+          $ref: "#/components/schemas/Dispute"
+          description: A seller's dispute of the inspection, if any
         items:
           items:
             $ref: "#/components/schemas/ReturnItem"
@@ -7732,6 +8620,9 @@ components:
             - "null"
         orderNumber:
           type: string
+        pickup:
+          $ref: "#/components/schemas/Pickup"
+          description: Rider collection, for pickup returns in a delivery zone
         reason:
           type: string
         refund:
@@ -7767,6 +8658,8 @@ components:
         - rejectionReason
         - items
         - refund
+        - pickup
+        - dispute
         - createdAt
       type: object
     ReturnInput:
@@ -7829,6 +8722,9 @@ components:
           description: "Kobo: the price paid for these units"
           format: int64
           type: integer
+        sellerShipped:
+          description: "Shipped by a marketplace seller: it can only go back to them"
+          type: boolean
         serialised:
           description: The inspector must scan the IMEI or serial
           type: boolean
@@ -7842,6 +8738,7 @@ components:
         - quantity
         - refund
         - serialised
+        - sellerShipped
         - grade
         - disposition
       type: object
@@ -7952,6 +8849,9 @@ components:
           type: string
         recipientName:
           type: string
+        rma:
+          description: "Return pickups: the return being collected. The address is where to collect; pickupName/pickupAddress is where to bring it"
+          type: string
         routeSequence:
           format: int32
           type: integer
@@ -8050,6 +8950,346 @@ components:
             - "null"
       required:
         - results
+      type: object
+    RiskCase:
+      additionalProperties: false
+      properties:
+        assignee:
+          type:
+            - string
+            - "null"
+        createdAt:
+          format: date-time
+          type: string
+        events:
+          items:
+            $ref: "#/components/schemas/RiskCaseEvent"
+          type:
+            - array
+            - "null"
+        kind:
+          enum:
+            - order
+            - payment
+            - device
+            - seller
+            - account
+            - trade_in
+            - return
+            - review
+          type: string
+        label:
+          type:
+            - string
+            - "null"
+        moneyAtRisk:
+          description: Kobo
+          format: int64
+          type:
+            - integer
+            - "null"
+        overdue:
+          type: boolean
+        reason:
+          type: string
+        reference:
+          type: string
+        resolutionNote:
+          type:
+            - string
+            - "null"
+        resolvedAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        score:
+          format: int32
+          type:
+            - integer
+            - "null"
+        slaDueAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        status:
+          enum:
+            - open
+            - in_review
+            - cleared
+            - blocked
+            - escalated
+          type: string
+        subject:
+          description: Order or return number, trade-in reference, shop, or a masked name
+          type: string
+        subjectId:
+          type: string
+        subjectType:
+          type: string
+        trace:
+          $ref: "#/components/schemas/RiskTrace"
+      required:
+        - subjectType
+        - subjectId
+        - subject
+        - resolutionNote
+        - resolvedAt
+        - trace
+        - events
+        - reference
+        - kind
+        - reason
+        - score
+        - moneyAtRisk
+        - status
+        - label
+        - slaDueAt
+        - overdue
+        - assignee
+        - createdAt
+      type: object
+    RiskCaseEvent:
+      additionalProperties: false
+      properties:
+        action:
+          enum:
+            - opened
+            - claimed
+            - note
+            - escalated
+            - cleared
+            - blocked
+          type: string
+        actor:
+          type:
+            - string
+            - "null"
+        createdAt:
+          format: date-time
+          type: string
+        note:
+          type:
+            - string
+            - "null"
+      required:
+        - action
+        - actor
+        - note
+        - createdAt
+      type: object
+    RiskCaseRow:
+      additionalProperties: false
+      properties:
+        assignee:
+          type:
+            - string
+            - "null"
+        createdAt:
+          format: date-time
+          type: string
+        kind:
+          enum:
+            - order
+            - payment
+            - device
+            - seller
+            - account
+            - trade_in
+            - return
+            - review
+          type: string
+        label:
+          type:
+            - string
+            - "null"
+        moneyAtRisk:
+          description: Kobo
+          format: int64
+          type:
+            - integer
+            - "null"
+        overdue:
+          type: boolean
+        reason:
+          type: string
+        reference:
+          type: string
+        score:
+          format: int32
+          type:
+            - integer
+            - "null"
+        slaDueAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        status:
+          enum:
+            - open
+            - in_review
+            - cleared
+            - blocked
+            - escalated
+          type: string
+      required:
+        - reference
+        - kind
+        - reason
+        - score
+        - moneyAtRisk
+        - status
+        - label
+        - slaDueAt
+        - overdue
+        - assignee
+        - createdAt
+      type: object
+    RiskSummary:
+      additionalProperties: false
+      properties:
+        active:
+          description: Open, in review or escalated
+          format: int32
+          type: integer
+        blockedDevices:
+          format: int32
+          type: integer
+        orders:
+          description: Active cases about orders
+          format: int32
+          type: integer
+        overdue:
+          description: Active cases past their review target
+          format: int32
+          type: integer
+        resolved7d:
+          format: int32
+          type: integer
+      required:
+        - active
+        - orders
+        - overdue
+        - resolved7d
+        - blockedDevices
+      type: object
+    RiskTrace:
+      additionalProperties: false
+      properties:
+        checkpoint:
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        features:
+          additionalProperties:
+            format: double
+            type: number
+          type: object
+        fired:
+          items:
+            $ref: "#/components/schemas/FiredRule"
+          type:
+            - array
+            - "null"
+        outcome:
+          type: string
+        ruleSetVersion:
+          format: int32
+          type:
+            - integer
+            - "null"
+        score:
+          format: int32
+          type: integer
+      required:
+        - checkpoint
+        - score
+        - outcome
+        - ruleSetVersion
+        - fired
+        - features
+        - createdAt
+      type: object
+    RuleSetView:
+      additionalProperties: false
+      properties:
+        checkpoint:
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        id:
+          type: string
+        notes:
+          type:
+            - string
+            - "null"
+        publishedAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        rules:
+          items:
+            $ref: "#/components/schemas/RuleView"
+          type:
+            - array
+            - "null"
+        status:
+          enum:
+            - draft
+            - active
+            - retired
+          type: string
+        thresholds:
+          $ref: "#/components/schemas/Thresholds"
+        version:
+          format: int32
+          type: integer
+      required:
+        - id
+        - checkpoint
+        - version
+        - status
+        - thresholds
+        - notes
+        - publishedAt
+        - createdAt
+        - rules
+      type: object
+    RuleView:
+      additionalProperties: false
+      properties:
+        action:
+          enum:
+            - score
+            - hold
+            - block
+          type: string
+        condition:
+          $ref: "#/components/schemas/Condition"
+        enabled:
+          type: boolean
+        id:
+          type: string
+        key:
+          type: string
+        label:
+          type: string
+        weight:
+          format: int32
+          type: integer
+      required:
+        - id
+        - key
+        - label
+        - condition
+        - weight
+        - action
+        - enabled
       type: object
     Rules:
       additionalProperties: false
@@ -8152,6 +9392,13 @@ components:
             - "null"
         quoteId:
           type: string
+        reviewCaseId:
+          type: string
+        reviewHoldAt:
+          format: date-time
+          type:
+            - string
+            - "null"
         shipTo: {}
         status:
           type: string
@@ -8191,6 +9438,8 @@ components:
         - cancelledAt
         - createdAt
         - updatedAt
+        - reviewHoldAt
+        - reviewCaseId
       type: object
     SalesOrderLine:
       additionalProperties: false
@@ -8248,6 +9497,15 @@ components:
         vatKobo:
           format: int64
           type: integer
+        warrantyMonths:
+          format: int32
+          type:
+            - integer
+            - "null"
+        warrantyProvider:
+          type:
+            - string
+            - "null"
       required:
         - id
         - orderId
@@ -8269,6 +9527,8 @@ components:
         - cancelledAt
         - createdAt
         - sellerEarningKobo
+        - warrantyProvider
+        - warrantyMonths
       type: object
     SalesOrderStatusHistory:
       additionalProperties: false
@@ -8363,6 +9623,13 @@ components:
             - "null"
         quoteId:
           type: string
+        reviewCaseId:
+          type: string
+        reviewHoldAt:
+          format: date-time
+          type:
+            - string
+            - "null"
         shipTo: {}
         status:
           type: string
@@ -8402,6 +9669,8 @@ components:
         - cancelledAt
         - createdAt
         - updatedAt
+        - reviewHoldAt
+        - reviewCaseId
         - firstName
         - lastName
       type: object
@@ -8710,6 +9979,15 @@ components:
       required:
         - reason
       type: object
+    SellerDisputeReturnRequest:
+      additionalProperties: false
+      properties:
+        reason:
+          maxLength: 1000
+          type: string
+      required:
+        - reason
+      type: object
     SellerOrder:
       additionalProperties: false
       properties:
@@ -8848,6 +10126,90 @@ components:
           type: string
       required:
         - text
+      type: object
+    SellerReturn:
+      additionalProperties: false
+      properties:
+        autoApproved:
+          type: boolean
+        canDispute:
+          type: boolean
+        charge:
+          description: Kobo taken from your payable for these items (after commission is handed back)
+          format: int64
+          type: integer
+        createdAt:
+          format: date-time
+          type: string
+        details:
+          type:
+            - string
+            - "null"
+        dispute:
+          $ref: "#/components/schemas/Dispute"
+          description: A seller's dispute of the inspection, if any
+        disputeUntil:
+          description: Last moment to dispute the inspection
+          format: date-time
+          type:
+            - string
+            - "null"
+        items:
+          items:
+            $ref: "#/components/schemas/ReturnItem"
+          type:
+            - array
+            - "null"
+        method:
+          type:
+            - string
+            - "null"
+        orderNumber:
+          type: string
+        pickup:
+          $ref: "#/components/schemas/Pickup"
+          description: Rider collection, for pickup returns in a delivery zone
+        reason:
+          type: string
+        refund:
+          description: "Kobo: the items, plus delivery when a whole parcel comes back for an our-fault reason"
+          format: int64
+          type: integer
+        rejectionReason:
+          type:
+            - string
+            - "null"
+        rma:
+          type: string
+        status:
+          enum:
+            - requested
+            - approved
+            - rejected
+            - awaiting_pickup
+            - received
+            - inspected
+            - refunded
+            - replaced
+            - closed
+          type: string
+      required:
+        - charge
+        - disputeUntil
+        - canDispute
+        - rma
+        - orderNumber
+        - reason
+        - details
+        - method
+        - status
+        - autoApproved
+        - rejectionReason
+        - items
+        - refund
+        - pickup
+        - dispute
+        - createdAt
       type: object
     SellerReview:
       additionalProperties: false
@@ -9116,6 +10478,13 @@ components:
       required:
         - batch
         - released
+      type: object
+    StaffAssignTicketRequest:
+      additionalProperties: false
+      properties:
+        agentId:
+          description: Leave out to unassign
+          type: string
       type: object
     StaffBankAccount:
       additionalProperties: false
@@ -9427,6 +10796,21 @@ components:
         - city
         - stateCode
       type: object
+    StaffDecideReturnDisputeRequest:
+      additionalProperties: false
+      properties:
+        decision:
+          enum:
+            - upheld
+            - rejected
+          type: string
+        note:
+          maxLength: 1000
+          type: string
+      required:
+        - decision
+        - note
+      type: object
     StaffDecideReturnRequest:
       additionalProperties: false
       properties:
@@ -9472,6 +10856,19 @@ components:
           type: string
       required:
         - decision
+      type: object
+    StaffEstimateTradeInRequest:
+      additionalProperties: false
+      properties:
+        estimate:
+          description: Kobo
+          format: int64
+          minimum: 0
+          type: integer
+        variantId:
+          type: string
+      required:
+        - estimate
       type: object
     StaffExcludePayoutRequest:
       additionalProperties: false
@@ -9556,6 +10953,16 @@ components:
       required:
         - decision
       type: object
+    StaffPayTradeInRequest:
+      additionalProperties: false
+      properties:
+        reference:
+          description: The bank transfer reference
+          maxLength: 80
+          type: string
+      required:
+        - reference
+      type: object
     StaffProviderHealthResponse:
       additionalProperties: false
       properties:
@@ -9577,6 +10984,19 @@ components:
         - available
         - health
         - fake
+      type: object
+    StaffReceiveClaimRequest:
+      additionalProperties: false
+      properties:
+        scannedSerial:
+          maxLength: 40
+          minLength: 3
+          type: string
+        storeId:
+          type: string
+      required:
+        - storeId
+        - scannedSerial
       type: object
     StaffReceiveUnitsRequest:
       additionalProperties: false
@@ -9618,6 +11038,15 @@ components:
       required:
         - products
       type: object
+    StaffRejectClaimRequest:
+      additionalProperties: false
+      properties:
+        reason:
+          maxLength: 500
+          type: string
+      required:
+        - reason
+      type: object
     StaffRejectRefundRequest:
       additionalProperties: false
       properties:
@@ -9627,6 +11056,27 @@ components:
           type: string
       required:
         - note
+      type: object
+    StaffReply:
+      additionalProperties: false
+      properties:
+        body:
+          maxLength: 5000
+          minLength: 1
+          type: string
+        internal:
+          description: "An internal note: never shown to the customer or seller"
+          type: boolean
+        status:
+          description: "Ticket status after a public reply (default: waiting on the customer)"
+          enum:
+            - open
+            - pending_customer
+            - resolved
+            - ""
+          type: string
+      required:
+        - body
       type: object
     StaffRequestRefundRequest:
       additionalProperties: false
@@ -9670,6 +11120,28 @@ components:
         - status
         - resolution
       type: object
+    StaffResolveRiskCaseRequest:
+      additionalProperties: false
+      properties:
+        decision:
+          enum:
+            - clear
+            - block
+          type: string
+        label:
+          description: "For a clear: legit (default) or unclear"
+          enum:
+            - legit
+            - unclear
+            - ""
+          type: string
+        note:
+          maxLength: 1000
+          type: string
+      required:
+        - decision
+        - note
+      type: object
     StaffRevealKycIdRequest:
       additionalProperties: false
       properties:
@@ -9687,6 +11159,37 @@ components:
           type: string
       required:
         - idNumber
+      type: object
+    StaffRiskDraftRequest:
+      additionalProperties: false
+      properties:
+        checkpoint:
+          enum:
+            - checkout
+            - payout
+            - trade_in
+            - return
+          type: string
+        notes:
+          description: Why the change
+          maxLength: 500
+          type: string
+      required:
+        - checkpoint
+      type: object
+    StaffRiskUpdateRuleRequest:
+      additionalProperties: false
+      properties:
+        enabled:
+          type: boolean
+        weight:
+          format: int32
+          maximum: 100
+          minimum: -100
+          type: integer
+      required:
+        - weight
+        - enabled
       type: object
     StaffSaveHelpRequest:
       additionalProperties: false
@@ -9791,6 +11294,210 @@ components:
         - name
         - permissions
       type: object
+    StaffTicket:
+      additionalProperties: false
+      properties:
+        assignee:
+          type:
+            - string
+            - "null"
+        assigneeId:
+          type: string
+        channel:
+          type: string
+        contact:
+          description: Masked phone or email, for contact-form tickets
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        firstReplyAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        lastMessageAt:
+          format: date-time
+          type: string
+        messages:
+          items:
+            $ref: "#/components/schemas/TicketMessage"
+          type:
+            - array
+            - "null"
+        number:
+          type: string
+        orderNumber:
+          type:
+            - string
+            - "null"
+        overdue:
+          description: No first reply yet and past the reply target
+          type: boolean
+        priority:
+          enum:
+            - low
+            - normal
+            - high
+            - urgent
+          type: string
+        requester:
+          description: Masked name, shop name, or the contact form's name
+          type: string
+        requesterKind:
+          enum:
+            - customer
+            - seller
+            - visitor
+          type: string
+        site:
+          type:
+            - string
+            - "null"
+        slaDueAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        status:
+          enum:
+            - open
+            - pending_customer
+            - resolved
+            - closed
+          type: string
+        subject:
+          type: string
+        topic:
+          type: string
+      required:
+        - contact
+        - messages
+        - number
+        - topic
+        - subject
+        - status
+        - priority
+        - channel
+        - site
+        - requester
+        - requesterKind
+        - orderNumber
+        - assignee
+        - assigneeId
+        - slaDueAt
+        - overdue
+        - firstReplyAt
+        - createdAt
+        - lastMessageAt
+      type: object
+    StaffTicketRow:
+      additionalProperties: false
+      properties:
+        assignee:
+          type:
+            - string
+            - "null"
+        assigneeId:
+          type: string
+        channel:
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        firstReplyAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        lastMessageAt:
+          format: date-time
+          type: string
+        number:
+          type: string
+        orderNumber:
+          type:
+            - string
+            - "null"
+        overdue:
+          description: No first reply yet and past the reply target
+          type: boolean
+        priority:
+          enum:
+            - low
+            - normal
+            - high
+            - urgent
+          type: string
+        requester:
+          description: Masked name, shop name, or the contact form's name
+          type: string
+        requesterKind:
+          enum:
+            - customer
+            - seller
+            - visitor
+          type: string
+        site:
+          type:
+            - string
+            - "null"
+        slaDueAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        status:
+          enum:
+            - open
+            - pending_customer
+            - resolved
+            - closed
+          type: string
+        subject:
+          type: string
+        topic:
+          type: string
+      required:
+        - number
+        - topic
+        - subject
+        - status
+        - priority
+        - channel
+        - site
+        - requester
+        - requesterKind
+        - orderNumber
+        - assignee
+        - assigneeId
+        - slaDueAt
+        - overdue
+        - firstReplyAt
+        - createdAt
+        - lastMessageAt
+      type: object
+    StaffTicketStatusRequest:
+      additionalProperties: false
+      properties:
+        priority:
+          enum:
+            - low
+            - normal
+            - high
+            - urgent
+            - ""
+          type: string
+        status:
+          enum:
+            - open
+            - pending_customer
+            - resolved
+            - closed
+          type: string
+      required:
+        - status
+      type: object
     StaffUpdateProductRequest:
       additionalProperties: false
       properties:
@@ -9834,6 +11541,26 @@ components:
       required:
         - code
       type: object
+    Store:
+      additionalProperties: false
+      properties:
+        address:
+          type: string
+        city:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        state:
+          type: string
+      required:
+        - id
+        - name
+        - address
+        - city
+        - state
+      type: object
     SubmitCampaignRequest:
       additionalProperties: false
       properties:
@@ -9866,6 +11593,50 @@ components:
         - total
         - verified
         - stars
+      type: object
+    SupportAgent:
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      required:
+        - id
+        - name
+      type: object
+    SupportSummary:
+      additionalProperties: false
+      properties:
+        avgFirstReplyMinutes:
+          description: Last 7 days
+          format: int32
+          type: integer
+        open:
+          format: int32
+          type: integer
+        overdue:
+          description: Open, no first reply, past target
+          format: int32
+          type: integer
+        resolvedToday:
+          format: int32
+          type: integer
+        urgent:
+          description: Open and high or urgent
+          format: int32
+          type: integer
+        waiting:
+          description: Waiting on the customer
+          format: int32
+          type: integer
+      required:
+        - open
+        - urgent
+        - overdue
+        - waiting
+        - resolvedToday
+        - avgFirstReplyMinutes
       type: object
     TOTPSetup:
       additionalProperties: false
@@ -9947,6 +11718,139 @@ components:
         - contact
         - hasAuthenticator
         - joinedAt
+      type: object
+    Thresholds:
+      additionalProperties: false
+      properties:
+        block:
+          format: int64
+          type: integer
+        hold:
+          format: int64
+          type: integer
+        step:
+          format: int64
+          type: integer
+      required:
+        - step
+        - hold
+        - block
+      type: object
+    Ticket:
+      additionalProperties: false
+      properties:
+        createdAt:
+          format: date-time
+          type: string
+        lastMessageAt:
+          format: date-time
+          type: string
+        messages:
+          items:
+            $ref: "#/components/schemas/TicketMessage"
+          type:
+            - array
+            - "null"
+        number:
+          type: string
+        orderNumber:
+          type:
+            - string
+            - "null"
+        status:
+          enum:
+            - open
+            - pending_customer
+            - resolved
+            - closed
+          type: string
+        subject:
+          type: string
+        topic:
+          type: string
+        unread:
+          description: A reply you haven't opened yet
+          type: boolean
+      required:
+        - messages
+        - number
+        - topic
+        - subject
+        - status
+        - orderNumber
+        - unread
+        - createdAt
+        - lastMessageAt
+      type: object
+    TicketMessage:
+      additionalProperties: false
+      properties:
+        author:
+          description: Staff show as 'TechShop support · first name'
+          type: string
+        authorKind:
+          enum:
+            - customer
+            - seller
+            - staff
+            - system
+          type: string
+        body:
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        id:
+          type: string
+        internal:
+          description: "Staff only: internal notes never reach customers"
+          type: boolean
+      required:
+        - id
+        - authorKind
+        - author
+        - body
+        - internal
+        - createdAt
+      type: object
+    TicketRow:
+      additionalProperties: false
+      properties:
+        createdAt:
+          format: date-time
+          type: string
+        lastMessageAt:
+          format: date-time
+          type: string
+        number:
+          type: string
+        orderNumber:
+          type:
+            - string
+            - "null"
+        status:
+          enum:
+            - open
+            - pending_customer
+            - resolved
+            - closed
+          type: string
+        subject:
+          type: string
+        topic:
+          type: string
+        unread:
+          description: A reply you haven't opened yet
+          type: boolean
+      required:
+        - number
+        - topic
+        - subject
+        - status
+        - orderNumber
+        - unread
+        - createdAt
+        - lastMessageAt
       type: object
     ToggleSavedResponse:
       additionalProperties: false
@@ -10060,6 +11964,296 @@ components:
         - placedAt
         - parcels
         - history
+      type: object
+    TradeIn:
+      additionalProperties: false
+      properties:
+        accountLast4:
+          type:
+            - string
+            - "null"
+        accountName:
+          type:
+            - string
+            - "null"
+        createdAt:
+          format: date-time
+          type: string
+        customer:
+          description: Staff lists only
+          type: string
+        declaredCondition:
+          type: string
+        device:
+          description: Brand, model and storage
+          type: string
+        deviceType:
+          type: string
+        dropOff:
+          description: Where to bring the device while it's estimated
+          items:
+            $ref: "#/components/schemas/Store"
+          type:
+            - array
+            - "null"
+        estimate:
+          description: Kobo
+          format: int64
+          type:
+            - integer
+            - "null"
+        imei:
+          type:
+            - string
+            - "null"
+        inspectedCondition:
+          type:
+            - string
+            - "null"
+        inspectionNotes:
+          type:
+            - string
+            - "null"
+        offer:
+          description: Kobo, after inspection
+          format: int64
+          type:
+            - integer
+            - "null"
+        offerExpiresAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        paidAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        payoutMethod:
+          enum:
+            - bank
+            - store_credit
+          type:
+            - string
+            - "null"
+        payoutReference:
+          type:
+            - string
+            - "null"
+        receivedAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        reference:
+          type: string
+        serial:
+          type:
+            - string
+            - "null"
+        status:
+          enum:
+            - submitted
+            - estimated
+            - awaiting_inspection
+            - inspected
+            - offer_sent
+            - accepted
+            - declined
+            - paid
+            - cancelled
+            - blocked
+          type: string
+        store:
+          type:
+            - string
+            - "null"
+      required:
+        - inspectedCondition
+        - inspectionNotes
+        - imei
+        - serial
+        - store
+        - receivedAt
+        - accountLast4
+        - accountName
+        - paidAt
+        - payoutReference
+        - dropOff
+        - reference
+        - deviceType
+        - device
+        - declaredCondition
+        - estimate
+        - offer
+        - status
+        - payoutMethod
+        - customer
+        - offerExpiresAt
+        - createdAt
+      type: object
+    TradeInDevice:
+      additionalProperties: false
+      properties:
+        brand:
+          type: string
+        estimates:
+          additionalProperties:
+            format: int64
+            type: integer
+          description: "Kobo per condition: like_new, good, fair, faulty"
+          type: object
+        productName:
+          type: string
+        variantId:
+          type: string
+        variantName:
+          type: string
+      required:
+        - variantId
+        - brand
+        - productName
+        - variantName
+        - estimates
+      type: object
+    TradeInInput:
+      additionalProperties: false
+      properties:
+        brand:
+          description: When the model isn't in the list
+          maxLength: 60
+          type: string
+        condition:
+          enum:
+            - like_new
+            - good
+            - fair
+            - faulty
+          type: string
+        deviceType:
+          enum:
+            - phone
+            - laptop
+            - tablet
+            - console
+            - smartwatch
+          type: string
+        imei:
+          description: "Phones and tablets: dial *#06#"
+          maxLength: 20
+          type: string
+        model:
+          maxLength: 80
+          type: string
+        storage:
+          maxLength: 20
+          type: string
+        variantId:
+          description: The matching catalogue model, for an instant estimate
+          type: string
+      required:
+        - deviceType
+        - condition
+      type: object
+    TradeInRow:
+      additionalProperties: false
+      properties:
+        createdAt:
+          format: date-time
+          type: string
+        customer:
+          description: Staff lists only
+          type: string
+        declaredCondition:
+          type: string
+        device:
+          description: Brand, model and storage
+          type: string
+        deviceType:
+          type: string
+        estimate:
+          description: Kobo
+          format: int64
+          type:
+            - integer
+            - "null"
+        offer:
+          description: Kobo, after inspection
+          format: int64
+          type:
+            - integer
+            - "null"
+        offerExpiresAt:
+          format: date-time
+          type:
+            - string
+            - "null"
+        payoutMethod:
+          enum:
+            - bank
+            - store_credit
+          type:
+            - string
+            - "null"
+        reference:
+          type: string
+        status:
+          enum:
+            - submitted
+            - estimated
+            - awaiting_inspection
+            - inspected
+            - offer_sent
+            - accepted
+            - declined
+            - paid
+            - cancelled
+            - blocked
+          type: string
+      required:
+        - reference
+        - deviceType
+        - device
+        - declaredCondition
+        - estimate
+        - offer
+        - status
+        - payoutMethod
+        - customer
+        - offerExpiresAt
+        - createdAt
+      type: object
+    TradeInSummary:
+      additionalProperties: false
+      properties:
+        avgPaid:
+          description: Kobo, last 90 days
+          format: int64
+          type: integer
+        awaitingInspection:
+          format: int32
+          type: integer
+        needsEstimate:
+          format: int32
+          type: integer
+        offersOut:
+          format: int32
+          type: integer
+        paidThisMonth:
+          format: int32
+          type: integer
+        payoutsDue:
+          description: Accepted, to be paid by bank transfer
+          format: int32
+          type: integer
+      required:
+        - needsEstimate
+        - awaitingInspection
+        - offersOut
+        - payoutsDue
+        - paidThisMonth
+        - avgPaid
       type: object
     TransferAccount:
       additionalProperties: false
@@ -10447,6 +12641,58 @@ components:
         - mfaToken
         - code
         - audience
+      type: object
+    WalkInInput:
+      additionalProperties: false
+      properties:
+        fault:
+          maxLength: 1000
+          minLength: 5
+          type: string
+        imeiOrSerial:
+          maxLength: 40
+          minLength: 3
+          type: string
+        orderLineId:
+          description: Needed when the item has no tracked serial (accessories)
+          type: string
+        storeId:
+          description: Where the device was handed in
+          type: string
+      required:
+        - imeiOrSerial
+        - fault
+        - storeId
+      type: object
+    WarrantySummary:
+      additionalProperties: false
+      properties:
+        avgTurnaroundDays:
+          description: Received to ready, last 30 days
+          format: double
+          type: number
+        awaitingDropoff:
+          format: int32
+          type: integer
+        inRepair:
+          format: int32
+          type: integer
+        open:
+          format: int32
+          type: integer
+        ready:
+          format: int32
+          type: integer
+        replacedThisMonth:
+          format: int32
+          type: integer
+      required:
+        - open
+        - awaitingDropoff
+        - inRepair
+        - ready
+        - replacedThisMonth
+        - avgTurnaroundDays
       type: object
     WmsCreateManifestRequest:
       additionalProperties: false
@@ -11348,6 +13594,31 @@ paths:
       summary: Give or withdraw consent (signed in or anonymous)
       tags:
         - Privacy
+  /api/v1/contact:
+    post:
+      operationId: contactUs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContactInput"
+        required: true
+      responses:
+        "202":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactReceipt"
+          description: Accepted
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      summary: "Public contact form (corporate, market, wholesale, Seller Centre): becomes a support ticket"
+      tags:
+        - Support
   /api/v1/content/banners:
     get:
       operationId: listBanners
@@ -12446,6 +14717,31 @@ paths:
       summary: Replace an address
       tags:
         - Addresses
+  /api/v1/me/banks:
+    get:
+      operationId: tradeInBanks
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/Bank"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Banks a trade-in can be paid to
+      tags:
+        - Trade-ins
   /api/v1/me/consents:
     get:
       operationId: listConsents
@@ -13336,6 +15632,385 @@ paths:
       summary: Store credit balance
       tags:
         - Payments
+  /api/v1/me/tickets:
+    get:
+      operationId: myTickets
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/TicketRow"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Your support tickets, latest activity first
+      tags:
+        - Support
+    post:
+      operationId: openTicket
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewTicket"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ticket"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Ask support a question
+      tags:
+        - Support
+  /api/v1/me/tickets/{number}:
+    get:
+      operationId: myTicket
+      parameters:
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ticket"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: One of your tickets with its messages
+      tags:
+        - Support
+  /api/v1/me/tickets/{number}/messages:
+    post:
+      operationId: replyToMyTicket
+      parameters:
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReplyBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ticket"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Reply on your ticket (reopens a resolved one)
+      tags:
+        - Support
+  /api/v1/me/trade-ins:
+    get:
+      operationId: myTradeIns
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/TradeInRow"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Your trade-ins, newest first
+      tags:
+        - Trade-ins
+    post:
+      operationId: startTradeIn
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TradeInInput"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeIn"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Get an estimate, then bring the device to a store
+      tags:
+        - Trade-ins
+  /api/v1/me/trade-ins/{ref}:
+    get:
+      operationId: myTradeIn
+      parameters:
+        - in: path
+          name: ref
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeIn"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: One of your trade-ins
+      tags:
+        - Trade-ins
+  /api/v1/me/trade-ins/{ref}/accept:
+    post:
+      operationId: acceptTradeIn
+      parameters:
+        - in: path
+          name: ref
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcceptInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeIn"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: "Take the offer: store credit at once, or a bank transfer"
+      tags:
+        - Trade-ins
+  /api/v1/me/trade-ins/{ref}/cancel:
+    post:
+      operationId: cancelTradeIn
+      parameters:
+        - in: path
+          name: ref
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeIn"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Withdraw before handing the device in
+      tags:
+        - Trade-ins
+  /api/v1/me/trade-ins/{ref}/decline:
+    post:
+      operationId: declineTradeIn
+      parameters:
+        - in: path
+          name: ref
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeIn"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Turn the offer down and collect the device
+      tags:
+        - Trade-ins
+  /api/v1/me/warranty-claims:
+    get:
+      operationId: myWarrantyClaims
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/ClaimRow"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Your warranty claims, newest first
+      tags:
+        - Warranty
+    post:
+      operationId: makeWarrantyClaim
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaimInput"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Claim under warranty, then bring the device to a store
+      tags:
+        - Warranty
+  /api/v1/me/warranty-claims/{number}:
+    get:
+      operationId: myWarrantyClaim
+      parameters:
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: One of your warranty claims
+      tags:
+        - Warranty
+  /api/v1/me/warranty/items:
+    get:
+      operationId: myWarrantyItems
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/CoveredItem"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Your delivered items still under warranty
+      tags:
+        - Warranty
   /api/v1/orders:
     post:
       operationId: placeOrder
@@ -14713,6 +17388,107 @@ paths:
       summary: "A payout statement: the orders it covers"
       tags:
         - Seller Centre · Payouts
+  /api/v1/seller/shops/{shopId}/returns:
+    get:
+      operationId: sellerReturns
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/ReturnRow"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Returns of your items, newest first
+      tags:
+        - Seller Centre
+  /api/v1/seller/shops/{shopId}/returns/{rma}:
+    get:
+      operationId: sellerReturn
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: rma
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SellerReturn"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: A return of your items, with your charge
+      tags:
+        - Seller Centre
+  /api/v1/seller/shops/{shopId}/returns/{rma}/dispute:
+    post:
+      operationId: sellerDisputeReturn
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: rma
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SellerDisputeReturnRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SellerReturn"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Dispute our inspection (within 3 days)
+      tags:
+        - Seller Centre
   /api/v1/seller/shops/{shopId}/reviews:
     get:
       operationId: sellerListReviews
@@ -14971,6 +17747,139 @@ paths:
       summary: Change a member's role
       tags:
         - Seller Centre · Team
+  /api/v1/seller/shops/{shopId}/tickets:
+    get:
+      operationId: sellerTickets
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/TicketRow"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: The shop's support tickets
+      tags:
+        - Seller Centre
+    post:
+      operationId: sellerOpenTicket
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewTicket"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ticket"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Ask TechShop seller support
+      tags:
+        - Seller Centre
+  /api/v1/seller/shops/{shopId}/tickets/{number}:
+    get:
+      operationId: sellerTicket
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ticket"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: One of the shop's tickets
+      tags:
+        - Seller Centre
+  /api/v1/seller/shops/{shopId}/tickets/{number}/messages:
+    post:
+      operationId: sellerReplyTicket
+      parameters:
+        - in: path
+          name: shopId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReplyBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ticket"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Reply on a shop ticket
+      tags:
+        - Seller Centre
   /api/v1/staff/admin/audit-log:
     get:
       description: Requires permission `admin.audit_view`.
@@ -17933,6 +20842,13 @@ paths:
               - closed
               - ""
             type: string
+        - description: Only returns with an open seller dispute
+          explode: false
+          in: query
+          name: disputed
+          schema:
+            description: Only returns with an open seller dispute
+            type: boolean
         - explode: false
           in: query
           name: cursor
@@ -18022,6 +20938,40 @@ paths:
       security:
         - bearer: []
       summary: Approve or reject a return waiting for support
+      tags:
+        - Staff · Returns
+  /api/v1/staff/returns/{rma}/dispute-decision:
+    post:
+      description: Requires permission `returns.manage`.
+      operationId: staffDecideReturnDispute
+      parameters:
+        - in: path
+          name: rma
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffDecideReturnDisputeRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Return"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: "Settle a seller's dispute (upheld: the seller is credited, TechShop bears it)"
       tags:
         - Staff · Returns
   /api/v1/staff/returns/{rma}/items/{itemId}/inspection:
@@ -18179,6 +21129,567 @@ paths:
       summary: Publish, hide or reject a review (settles its reports)
       tags:
         - Staff · Reviews
+  /api/v1/staff/risk/cases:
+    get:
+      description: Requires permission `risk.view`.
+      operationId: staffRiskCases
+      parameters:
+        - explode: false
+          in: query
+          name: status
+          schema:
+            enum:
+              - active
+              - open
+              - in_review
+              - escalated
+              - cleared
+              - blocked
+              - ""
+            type: string
+        - explode: false
+          in: query
+          name: kind
+          schema:
+            enum:
+              - order
+              - payment
+              - device
+              - seller
+              - account
+              - trade_in
+              - return
+              - review
+              - ""
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/RiskCaseRow"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: "The case queue: open work first, by score × money at risk"
+      tags:
+        - Staff · Risk
+  /api/v1/staff/risk/cases/{ref}:
+    get:
+      description: Requires permission `risk.view`.
+      operationId: staffRiskCase
+      parameters:
+        - in: path
+          name: ref
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RiskCase"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: A case with its decision trace and timeline
+      tags:
+        - Staff · Risk
+  /api/v1/staff/risk/cases/{ref}/claim:
+    post:
+      description: Requires permission `risk.resolve`.
+      operationId: staffClaimRiskCase
+      parameters:
+        - in: path
+          name: ref
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RiskCase"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Take a case for review
+      tags:
+        - Staff · Risk
+  /api/v1/staff/risk/cases/{ref}/escalate:
+    post:
+      description: Requires permission `risk.resolve`.
+      operationId: staffEscalateRiskCase
+      parameters:
+        - in: path
+          name: ref
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NoteBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RiskCase"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Send a case to a manager
+      tags:
+        - Staff · Risk
+  /api/v1/staff/risk/cases/{ref}/notes:
+    post:
+      description: Requires permission `risk.resolve`.
+      operationId: staffNoteRiskCase
+      parameters:
+        - in: path
+          name: ref
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NoteBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RiskCase"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Add a note to a case
+      tags:
+        - Staff · Risk
+  /api/v1/staff/risk/cases/{ref}/resolution:
+    post:
+      description: Requires permission `risk.resolve`.
+      operationId: staffResolveRiskCase
+      parameters:
+        - in: path
+          name: ref
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffResolveRiskCaseRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RiskCase"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: "Clear (legitimate: holds are released) or block (fraud: what was held is stopped)"
+      tags:
+        - Staff · Risk
+  /api/v1/staff/risk/devices:
+    get:
+      description: Requires permission `risk.view`.
+      operationId: staffBlockedDevices
+      parameters:
+        - explode: false
+          in: query
+          name: imei
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/BlockedDevice"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: The stolen-device blocklist, newest first
+      tags:
+        - Staff · Risk
+    post:
+      description: Requires permission `devices.block`.
+      operationId: staffBlockDevice
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BlockDeviceInput"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BlockedDevice"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Add an IMEI to the blocklist
+      tags:
+        - Staff · Risk
+  /api/v1/staff/risk/devices/check:
+    get:
+      description: Requires permission `risk.view`.
+      operationId: staffCheckIMEI
+      parameters:
+        - explode: false
+          in: query
+          name: imei
+          required: true
+          schema:
+            maxLength: 20
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IMEIStatus"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: "Check an IMEI: check digit and blocklist"
+      tags:
+        - Staff · Risk
+  /api/v1/staff/risk/devices/{imei}/unblock:
+    post:
+      description: Requires permission `devices.block`.
+      operationId: staffUnblockDevice
+      parameters:
+        - in: path
+          name: imei
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NoteBody"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Remove an IMEI from the blocklist
+      tags:
+        - Staff · Risk
+  /api/v1/staff/risk/rule-sets:
+    get:
+      description: Requires permission `risk.view`.
+      operationId: staffRiskRuleSets
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/RuleSetView"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Active rule sets and drafts per checkpoint
+      tags:
+        - Staff · Risk
+  /api/v1/staff/risk/rule-sets/drafts:
+    post:
+      description: Requires permission `risk.rules`.
+      operationId: staffRiskDraft
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffRiskDraftRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RuleSetView"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Start a draft from a checkpoint's active rules
+      tags:
+        - Staff · Risk
+  /api/v1/staff/risk/rule-sets/{id}/discard:
+    post:
+      description: Requires permission `risk.rules`.
+      operationId: staffRiskDiscard
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Delete a draft
+      tags:
+        - Staff · Risk
+  /api/v1/staff/risk/rule-sets/{id}/publish:
+    post:
+      description: Requires permission `risk.rules`.
+      operationId: staffRiskPublish
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RuleSetView"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Make a draft live (fresh MFA)
+      tags:
+        - Staff · Risk
+  /api/v1/staff/risk/rule-sets/{id}/rules/{ruleId}:
+    post:
+      description: Requires permission `risk.rules`.
+      operationId: staffRiskUpdateRule
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: ruleId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffRiskUpdateRuleRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RuleSetView"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Change a draft rule's weight or switch it
+      tags:
+        - Staff · Risk
+  /api/v1/staff/risk/rule-sets/{id}/test:
+    post:
+      description: Requires permission `risk.rules`.
+      operationId: staffRiskBench
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BenchResult"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Replay the last 30 days of decisions against this rule set
+      tags:
+        - Staff · Risk
+  /api/v1/staff/risk/rule-sets/{id}/thresholds:
+    post:
+      description: Requires permission `risk.rules`.
+      operationId: staffRiskThresholds
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Thresholds"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RuleSetView"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Change a draft's score bands
+      tags:
+        - Staff · Risk
+  /api/v1/staff/risk/summary:
+    get:
+      description: Requires permission `risk.view`.
+      operationId: staffRiskSummary
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RiskSummary"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Case and blocklist counts
+      tags:
+        - Staff · Risk
   /api/v1/staff/search/gaps/{query}:
     put:
       description: Requires permission `search.manage`.
@@ -18374,6 +21885,515 @@ paths:
       summary: Deactivate a synonym
       tags:
         - Staff · Search
+  /api/v1/staff/support/agents:
+    get:
+      description: Requires permission `support.assign`.
+      operationId: staffSupportAgents
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/SupportAgent"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: People who can answer tickets
+      tags:
+        - Staff · Support
+  /api/v1/staff/support/summary:
+    get:
+      description: Requires permission `support.view`.
+      operationId: staffSupportSummary
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupportSummary"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Queue counts and the average first reply
+      tags:
+        - Staff · Support
+  /api/v1/staff/support/tickets:
+    get:
+      description: Requires permission `support.view`.
+      operationId: staffSupportTickets
+      parameters:
+        - explode: false
+          in: query
+          name: status
+          schema:
+            enum:
+              - active
+              - open
+              - pending_customer
+              - resolved
+              - closed
+              - ""
+            type: string
+        - explode: false
+          in: query
+          name: priority
+          schema:
+            enum:
+              - urgent_high
+              - urgent
+              - high
+              - normal
+              - low
+              - ""
+            type: string
+        - explode: false
+          in: query
+          name: mine
+          schema:
+            type: boolean
+        - description: Ticket or order number, contact email, or words in the subject
+          explode: false
+          in: query
+          name: q
+          schema:
+            description: Ticket or order number, contact email, or words in the subject
+            maxLength: 80
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/StaffTicketRow"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: The ticket queue
+      tags:
+        - Staff · Support
+  /api/v1/staff/support/tickets/{number}:
+    get:
+      description: Requires permission `support.view`.
+      operationId: staffSupportTicket
+      parameters:
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffTicket"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: A ticket with every message, internal notes included
+      tags:
+        - Staff · Support
+  /api/v1/staff/support/tickets/{number}/assign:
+    post:
+      description: Requires permission `support.assign`.
+      operationId: staffAssignTicket
+      parameters:
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffAssignTicketRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffTicket"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Assign a ticket to an agent (or nobody)
+      tags:
+        - Staff · Support
+  /api/v1/staff/support/tickets/{number}/claim:
+    post:
+      description: Requires permission `support.reply`.
+      operationId: staffClaimTicket
+      parameters:
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffTicket"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Assign a ticket to yourself
+      tags:
+        - Staff · Support
+  /api/v1/staff/support/tickets/{number}/messages:
+    post:
+      description: Requires permission `support.reply`.
+      operationId: staffReplyTicket
+      parameters:
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffReply"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffTicket"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Reply to the requester, or add an internal note
+      tags:
+        - Staff · Support
+  /api/v1/staff/support/tickets/{number}/status:
+    post:
+      description: Requires permission `support.reply`.
+      operationId: staffTicketStatus
+      parameters:
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffTicketStatusRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffTicket"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Change a ticket's status or priority
+      tags:
+        - Staff · Support
+  /api/v1/staff/trade-ins:
+    get:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffTradeIns
+      parameters:
+        - explode: false
+          in: query
+          name: status
+          schema:
+            enum:
+              - active
+              - payout_due
+              - submitted
+              - estimated
+              - awaiting_inspection
+              - offer_sent
+              - accepted
+              - declined
+              - paid
+              - cancelled
+              - blocked
+              - ""
+            type: string
+        - description: Reference or IMEI
+          explode: false
+          in: query
+          name: q
+          schema:
+            description: Reference or IMEI
+            maxLength: 40
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/TradeInRow"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: "Trade-ins: work waiting first"
+      tags:
+        - Staff · Trade-ins
+  /api/v1/staff/trade-ins/summary:
+    get:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffTradeInSummary
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeInSummary"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Trade-in counts
+      tags:
+        - Staff · Trade-ins
+  /api/v1/staff/trade-ins/{ref}:
+    get:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffTradeIn
+      parameters:
+        - in: path
+          name: ref
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeIn"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: One trade-in
+      tags:
+        - Staff · Trade-ins
+  /api/v1/staff/trade-ins/{ref}/estimate:
+    post:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffEstimateTradeIn
+      parameters:
+        - in: path
+          name: ref
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffEstimateTradeInRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeIn"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Price a device we couldn't price automatically
+      tags:
+        - Staff · Trade-ins
+  /api/v1/staff/trade-ins/{ref}/inspection:
+    post:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffInspectTradeIn
+      parameters:
+        - in: path
+          name: ref
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InspectTradeInInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeIn"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Grade the device and send the offer (valid 7 days)
+      tags:
+        - Staff · Trade-ins
+  /api/v1/staff/trade-ins/{ref}/paid:
+    post:
+      description: Requires permission `refunds.approve`.
+      operationId: staffPayTradeIn
+      parameters:
+        - in: path
+          name: ref
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffPayTradeInRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeIn"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Record the bank transfer for an accepted trade-in (finance; not whoever priced it)
+      tags:
+        - Staff · Trade-ins
+  /api/v1/staff/trade-ins/{ref}/receive:
+    post:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffReceiveTradeIn
+      parameters:
+        - in: path
+          name: ref
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReceiveInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeIn"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Take the device at a store (IMEI and risk check)
+      tags:
+        - Staff · Trade-ins
   /api/v1/staff/vendors:
     get:
       description: Requires permission `vendors.view`.
@@ -18533,6 +22553,407 @@ paths:
       summary: A seller with KYC, bank accounts and duplicate signals
       tags:
         - Staff · Vendors
+  /api/v1/staff/warranty/claims:
+    get:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffWarrantyClaims
+      parameters:
+        - explode: false
+          in: query
+          name: status
+          schema:
+            enum:
+              - active
+              - new
+              - received
+              - in_repair
+              - ready
+              - collected
+              - rejected
+              - closed
+              - ""
+            type: string
+        - description: Claim or order number, or an exact IMEI or serial
+          explode: false
+          in: query
+          name: q
+          schema:
+            description: Claim or order number, or an exact IMEI or serial
+            maxLength: 40
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/ClaimRow"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: "Warranty claims: open ones first, oldest first"
+      tags:
+        - Staff · Warranty
+    post:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffWalkInClaim
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WalkInInput"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Take a claim at the counter (checked in at once)
+      tags:
+        - Staff · Warranty
+  /api/v1/staff/warranty/claims/{number}:
+    get:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffWarrantyClaim
+      parameters:
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: A claim with its repairs and the device's history
+      tags:
+        - Staff · Warranty
+  /api/v1/staff/warranty/claims/{number}/collect:
+    post:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffCollectClaim
+      parameters:
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: The customer collected the device
+      tags:
+        - Staff · Warranty
+  /api/v1/staff/warranty/claims/{number}/receive:
+    post:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffReceiveClaim
+      parameters:
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffReceiveClaimRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Check the device in (IMEI must match; stolen devices are refused)
+      tags:
+        - Staff · Warranty
+  /api/v1/staff/warranty/claims/{number}/reject:
+    post:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffRejectClaim
+      parameters:
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffRejectClaimRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Not covered (the customer sees the reason)
+      tags:
+        - Staff · Warranty
+  /api/v1/staff/warranty/claims/{number}/repairs:
+    post:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffStartRepair
+      parameters:
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RepairInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Send the device to the workshop
+      tags:
+        - Staff · Warranty
+  /api/v1/staff/warranty/claims/{number}/resolution:
+    post:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffResolveClaim
+      parameters:
+        - in: path
+          name: number
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResolveInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Replace from stock, or refund one unit (finance approves)
+      tags:
+        - Staff · Warranty
+  /api/v1/staff/warranty/repairs:
+    get:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffRepairQueue
+      parameters:
+        - explode: false
+          in: query
+          name: status
+          schema:
+            enum:
+              - active
+              - queued
+              - diagnosing
+              - awaiting_parts
+              - repairing
+              - done
+              - unrepairable
+              - ""
+            type: string
+        - explode: false
+          in: query
+          name: purpose
+          schema:
+            enum:
+              - warranty
+              - refurbish
+              - ""
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/RepairView"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: "The workshop: warranty repairs and refurbishments"
+      tags:
+        - Staff · Warranty
+  /api/v1/staff/warranty/repairs/{id}:
+    post:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffUpdateRepair
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RepairUpdate"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepairView"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: "Record workshop progress (done: a claim is ready to collect, a refurbished device goes into stock)"
+      tags:
+        - Staff · Warranty
+  /api/v1/staff/warranty/stores:
+    get:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffWarrantyStores
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/Store"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Stores and warehouses that take devices in
+      tags:
+        - Staff · Warranty
+  /api/v1/staff/warranty/summary:
+    get:
+      description: Requires permission `aftersales.manage`.
+      operationId: staffWarrantySummary
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WarrantySummary"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      security:
+        - bearer: []
+      summary: Claim counts and turnaround
+      tags:
+        - Staff · Warranty
   /api/v1/staff/wms/carriers:
     get:
       description: Requires permission `fulfilment.pick`.
@@ -19009,6 +23430,42 @@ paths:
       summary: Track an order with its number and phone
       tags:
         - Orders
+  /api/v1/trade-ins/devices:
+    get:
+      operationId: tradeInDevices
+      parameters:
+        - explode: false
+          in: query
+          name: type
+          required: true
+          schema:
+            enum:
+              - phone
+              - laptop
+              - tablet
+              - console
+              - smartwatch
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/TradeInDevice"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      summary: Models we can price instantly, with an estimate per condition (final value after inspection)
+      tags:
+        - Trade-ins
   /api/v1/unsubscribe:
     get:
       operationId: checkUnsubscribe

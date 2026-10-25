@@ -1018,6 +1018,7 @@ join sales.fulfilments f on f.id = ol.fulfilment_id
 join sales.orders o on o.id = f.order_id
 join inventory.stock_reservations r on r.order_line_id = ol.id and r.status = 'committed'
 where f.status = 'pending' and f.fulfilled_by = 'techshop' and o.status in ('paid', 'processing', 'partially_shipped')
+  and o.review_hold_at is null -- held for a risk review: not released yet
   and r.warehouse_id = $1 and ol.cancelled_at is null
   and not exists (select 1 from fulfilment.pick_list_items pi where pi.order_line_id = ol.id)
 order by o.placed_at, ol.id

@@ -2,13 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import {
-  FaqList,
-  PageHeader,
-  PreviewForm,
-  Prose,
-} from "@techshop/ui/components";
+import { FaqList, PageHeader, Prose } from "@techshop/ui/components";
 
+import { ContactForm } from "@/features/aftersales/components/SupportForms";
 import { getHelpTopic, helpTopics } from "@/features/help/content";
 
 import styles from "../help.module.css";
@@ -92,67 +88,15 @@ export default async function HelpTopicPage(props: PageProps<"/help/[topic]">) {
                 </p>
               </>
             ) : (
-              <div className="card card--roomy">
-                <PreviewForm
-                  id="contact"
-                  groups={[
-                    {
-                      fields: [
-                        {
-                          name: "name",
-                          label: "Full name",
-                          required: true,
-                          autoComplete: "name",
-                          half: true,
-                        },
-                        {
-                          name: "email",
-                          label: "Email address",
-                          type: "email",
-                          required: true,
-                          autoComplete: "email",
-                          half: true,
-                        },
-                        {
-                          name: "phone",
-                          label: "Phone number",
-                          type: "tel",
-                          autoComplete: "tel",
-                          half: true,
-                        },
-                        {
-                          name: "order",
-                          label: "Order number",
-                          placeholder: "TS-10482",
-                          half: true,
-                        },
-                        {
-                          name: "topic",
-                          label: "Topic",
-                          type: "select",
-                          required: true,
-                          options: [
-                            "Delivery",
-                            "Returns & refunds",
-                            "Warranty",
-                            "Payments",
-                            "My account",
-                            "Something else",
-                          ],
-                        },
-                        {
-                          name: "message",
-                          label: "How can we help?",
-                          type: "textarea",
-                          required: true,
-                        },
-                      ],
-                    },
-                  ]}
-                  submitLabel="Send message"
-                  successTitle="Message ready"
-                  successMessage="In the live store this would open a support ticket and you’d get a reference by email."
-                />
+              <div className="card card--roomy stack">
+                <p className="text-sm">
+                  Have an account?{" "}
+                  <Link href="/account/support/new" className="link">
+                    Sign in and ask from your account
+                  </Link>{" "}
+                  to follow the conversation there.
+                </p>
+                <ContactForm />
               </div>
             )}
           </div>

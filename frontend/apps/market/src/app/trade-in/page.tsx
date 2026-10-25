@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { connection } from "next/server";
 
-import { PageHeader, PreviewForm } from "@techshop/ui/components";
+import { deviceType, formatKobo } from "@techshop/api-client";
+import { PageHeader } from "@techshop/ui/components";
+
+import { TradeInForm } from "@/features/aftersales/components/TradeInForms";
+import { tradeInDevices } from "@/features/aftersales/server";
+import { bff } from "@/lib/bff";
 
 import styles from "./trade-in.module.css";
 
@@ -17,128 +24,91 @@ const steps = [
   },
   {
     title: "Get an estimate",
-    text: "We’ll send a provisional value based on what you tell us.",
+    text: "Listed models are priced at once from today's prices; others within a working day.",
   },
   {
-    title: "Inspection",
-    text: "Drop it off or have it picked up. We check the condition, IMEI/serial and ownership.",
+    title: "Bring it to a store",
+    text: "We check the condition, the IMEI or serial, and that it isn't reported stolen. Bring an ID.",
   },
   {
-    title: "Get paid or upgrade",
-    text: "Take the confirmed value to your bank account, or put it towards a new device.",
+    title: "Accept the offer",
+    text: "Take it as store credit straight away, or by bank transfer within 2 working days. You have 7 days to decide.",
   },
 ];
 
-export default function TradeInPage() {
+const TYPES = ["phone", "laptop", "tablet", "console", "smartwatch"] as const;
+type DeviceType = (typeof TYPES)[number];
+
+export default async function TradeInPage(props: PageProps<"/trade-in">) {
+  await connection();
+  const raw = (await props.searchParams).type;
+  const type = TYPES.find((t) => t === raw) as DeviceType | undefined;
+  const session = await bff.getSession();
+  const models = type
+    ? ((await tradeInDevices(type).catch(() => [])) ?? [])
+    : [];
+
   return (
     <main id="main" className="section section--page">
       <div className="container">
         <PageHeader
           eyebrow="Trade-in"
           title="Turn your old device into credit"
-          lead="Phones, laptops, tablets and consoles. Final value is confirmed after inspection."
+          lead="Phones, laptops, tablets, consoles and smartwatches. The final value is confirmed at inspection."
           breadcrumbs={[{ label: "Home", href: "/" }, { label: "Trade-in" }]}
         />
         <div className={styles.layout}>
-          <div className="card card--roomy">
-            <PreviewForm
-              id="tradein"
-              groups={[
-                {
-                  legend: "Your device",
-                  fields: [
-                    {
-                      name: "type",
-                      label: "Device type",
-                      type: "select",
-                      required: true,
-                      options: [
-                        "Phone",
-                        "Laptop",
-                        "Tablet",
-                        "Games console",
-                        "Smartwatch",
-                      ],
-                      half: true,
-                    },
-                    {
-                      name: "brand",
-                      label: "Brand",
-                      required: true,
-                      half: true,
-                    },
-                    {
-                      name: "model",
-                      label: "Model",
-                      required: true,
-                      placeholder: "e.g. Nova X5 Pro",
-                      half: true,
-                    },
-                    {
-                      name: "storage",
-                      label: "Storage",
-                      type: "select",
-                      options: [
-                        "64GB",
-                        "128GB",
-                        "256GB",
-                        "512GB",
-                        "1TB or more",
-                      ],
-                      half: true,
-                    },
-                    {
-                      name: "condition",
-                      label: "Condition",
-                      type: "select",
-                      required: true,
-                      options: [
-                        "Like new — no marks",
-                        "Good — light scratches",
-                        "Fair — visible wear",
-                        "Faulty — screen, battery or other issue",
-                      ],
-                    },
-                    {
-                      name: "imei",
-                      label: "IMEI or serial number",
-                      hint: "Dial *#06# on a phone to see its IMEI. We check it isn’t reported stolen.",
-                      inputMode: "numeric",
-                    },
-                  ],
-                },
-                {
-                  legend: "Your details",
-                  fields: [
-                    {
-                      name: "name",
-                      label: "Full name",
-                      required: true,
-                      autoComplete: "name",
-                      half: true,
-                    },
-                    {
-                      name: "phone",
-                      label: "Phone number",
-                      type: "tel",
-                      required: true,
-                      autoComplete: "tel",
-                      half: true,
-                    },
-                    {
-                      name: "owner",
-                      label:
-                        "I own this device and can show proof of purchase or ownership",
-                      type: "checkbox",
-                      required: true,
-                    },
-                  ],
-                },
-              ]}
-              submitLabel="Get my estimate"
-              successTitle="Trade-in details ready"
-              successMessage="In the live store you’d receive a provisional estimate by SMS and email."
-            />
+          <div className="card card--roomy stack">
+            <form method="get" className="cluster" aria-label="Device type">
+              <div className="field">
+                <label htmlFor="type" className="field__label">
+                  What are you trading in?
+                </label>
+                <select
+                  id="type"
+                  name="type"
+                  className="input"
+                  defaultValue={type ?? ""}
+                >
+                  <option value="" disabled>
+                    Choose a device type
+                  </option>
+                  {TYPES.map((t) => (
+                    <option key={t} value={t}>
+                      {deviceType[t]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button className="btn btn--secondary">Continue</button>
+            </form>
+            {type ? (
+              session ? (
+                <TradeInForm
+                  key={type}
+                  deviceType={type}
+                  models={models.map((m) => ({
+                    value: m.variantId,
+                    label: `${m.brand} ${m.productName} ${m.variantName} · up to ${formatKobo(m.estimates.like_new ?? 0)}`,
+                  }))}
+                />
+              ) : (
+                <p className="text-sm">
+                  <Link
+                    href={`/sign-in?next=${encodeURIComponent(`/trade-in?type=${type}`)}`}
+                    className="btn btn--primary"
+                  >
+                    Sign in to get your estimate
+                  </Link>
+                </p>
+              )
+            ) : null}
+            {type && models.length ? (
+              <p className="text-xs text-muted">
+                “Up to” is for a device in like-new condition. Good, fair and
+                faulty devices get less.
+              </p>
+            ) : null}
           </div>
           <aside aria-labelledby="how-title" className="stack">
             <h2 id="how-title" className="text-xl">
@@ -157,6 +127,11 @@ export default function TradeInPage() {
                 </li>
               ))}
             </ol>
+            {session ? (
+              <Link href="/account/trade-ins" className="link link--arrow">
+                Your trade-ins
+              </Link>
+            ) : null}
           </aside>
         </div>
       </div>

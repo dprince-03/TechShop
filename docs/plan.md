@@ -784,3 +784,49 @@ Built from the providers' public material (decision 5). Live keys are the owner'
   - A 10-minute sweep completes or fails pending refunds, and any refund webhook triggers it at once.
 - **Hub drop-off:** the shop owner is now told (push and in-app) when the hub scans their parcel in.
 - **Still to do before go-live:** confirm both adapters against the providers' sandboxes; Paystack has the same open item.
+
+## 2026-10-23 — M5 completed in full: slices and decisions (branch feat/m5-after-sales)
+
+Owner: "do m5 complete". M5 = returns → refunds (done in part), warranty, repairs, trade-ins, support tickets, contact, risk rules (backend.md §9), plus every screen they unlock. Undecided rules were researched and decided here (standing instruction: research, pick, log).
+
+**Slices** (each tested and committed):
+1. **Risk core** (trust-safety.md §3–5, T2 + blocklist): `internal/modules/risk` with `Evaluate(checkpoint, features)`, versioned rule sets seeded per checkpoint from §3's launch table, decision log, case queue (claim, clear, block, escalate), device blocklist with IMEI Luhn check. Staff API under `/staff/risk/*`.
+2. **Support and contact**: customer and seller tickets, a public contact form, staff queue (assign, reply, internal note, status), auto-close job.
+3. **Warranty and repairs**: claims by customers, intake with IMEI check, repair jobs, resolutions.
+4. **Trade-ins and store credit at checkout**: estimate, store drop-off, inspection, offer, accept/decline, payout (store credit or bank), device becomes stock; store credit spendable at checkout.
+5. **Returns gaps**: seller-shipped returns (back through the hub, seller debited, seller can dispute within 3 days) and rider return pickups.
+6. **Risk at checkout and payout, and the rules editor**: holds wired into orders and payouts; draft → test bench → publish.
+7. **Screens**: staff (returns, support, risk, warranty and repairs, trade-ins), market (returns, warranty, trade-in, support, contact, store credit at checkout), Seller Centre (returns and disputes, support), corporate and wholesale contact forms, customer app (returns, warranty, trade-in, support, store credit).
+
+**Decisions:**
+- **Risk outcomes and thresholds:** as trust-safety.md §3 (allow < 40, step up 40–69, hold 70–89, block ≥ 90), stored per rule set. Engine errors fall back to `fallback_allow` below ₦200,000 and `fallback_hold` above (§3 "configurable"; the line is ours). Each decision stores the features it saw, so the test bench can replay the last 30 days against a draft.
+- **Checkout hold:** a held order is paid but its fulfilments aren't released (no picking, no seller acceptance) until a risk analyst clears the case; blocking cancels and refunds it. The customer sees "We're confirming your order". Step-up at checkout is shown as a hold for now (OTP step-up needs checkout UI work; logged as later).
+- **Not in M5 (trust-safety T3–T5):** link graph, ban lists, KYC provider, seller metrics and enforcement ladder, A-to-Z disputes, learned model. M5 is T2 plus the blocklist and the rules editor.
+- **Support SLA:** first reply within 24 hours for normal tickets, 4 hours for high or urgent (ecommerce email benchmarks: 12–24 h averages, hardware 1.6 h; ringly.io and gorgias.com benchmarks). Payment and refund topics start as high priority. **Auto-close:** "waiting on customer" tickets are resolved after 7 days without a reply; resolved tickets close after 4 days (Zendesk's default solved→closed automation is 4 days). A customer reply reopens a resolved ticket. Internal notes never reach customers.
+- **Public contact form:** name, email or phone, topic, message; per-IP rate limit and a honeypot field (no CAPTCHA vendor yet; that needs owner approval as a third-party service).
+- **Warranty:** TechShop is the single point for every claim on items bought here, including seller and manufacturer warranties. Nigerian practice routes brand warranty claims through the retailer (Innjoo via Jumia), and the FCCPC has held a marketplace to a 12-month warranty (fccpc.gov.ng testimonial). Coverage = the listing's `warranty_months` from delivery. Devices come in by store drop-off. Intake checks the IMEI against the unit sold and the blocklist. Not covered (physical or liquid damage, tampering) is rejected with a reason. Resolutions: repaired, replaced (unit swapped at the counter), refunded (through the normal refund approval), not covered. Paid out-of-warranty repairs are recorded but charged at the till (POS is M7).
+- **Trade-ins:** online estimate, then in-person appraisal at a store (Airtel Smart Trade-In and Slot work this way). The estimate is the variant's current TechShop new price times a condition factor: like new 55 %, good 45 %, fair 35 %, faulty 10 % (Swappa trade-in quotes run 43–68 % of used resale value; used Good resells at 86–96 % of Mint). Without a catalogue match, staff estimate by hand. After inspection the offer follows the inspected grade; the customer accepts or declines within 7 days (declined devices are handed back). IMEI must pass Luhn and the blocklist, otherwise blocked with a risk case. Payout: store credit at once, or bank transfer through finance's existing refund-by-transfer path. The accepted device becomes a device unit in stock (condition from the grade).
+- **Store credit at checkout:** spendable as a payment (`provider = store_credit`), in full or alongside a card payment for the rest.
+- **Seller returns:** the customer brings the item back the same way as TechShop items (store or pickup). TechShop inspects; vendor items are sent back to the seller (`return_to_seller`), and the refund is debited from the seller's payable through the existing refund ledger. The seller sees the return and can dispute the inspection within 3 days (orders-fulfilment.md §7); a support lead decides the dispute.
+- **Return pickups:** an approved pickup return creates a `return_pickup` job from the customer's address to the order's warehouse. The rider confirms collection with a photo and the item's IMEI; handing it in at the hub marks the return received.
+
+## 2026-10-23 — M5 trade-ins: build decisions (supersede parts of the entry above)
+
+- **Store credit at checkout pays the whole order, or isn't offered.** Supersedes "in full or alongside a card payment". Refunds, cancellations and expiry all assume one payment per order, so a split payment would need that rework first (logged as later). The credit is locked while the order is placed, so two checkouts can't spend it twice. Refunds of a credit-paid order go back to store credit.
+- **Accepted trade-ins are refurbished before sale.** The device becomes a unit "in repair" with a refurbishment job. When the workshop finishes, it enters sellable stock as `refurbished`; if it can't be fixed, it's written off. This is how Apple and Samsung trade-in programmes resell devices, and it uses stock conditions we already have (stock has no "Nigerian used" condition).
+- **Accounting:** the ledger doesn't value stock, so a trade-in is booked as `expense:trade_in_purchases`. It's credited to `liability:store_credit:<user>` (paid at once) or `liability:trade_in_payable` (bank). When finance records the transfer, the payable moves to `bank:operating`. New journal kind `trade_in`. These are additions to the payments-finance.md §4.1 chart.
+- **Bank payouts:** the account is checked with a name enquiry and the number is sealed (encrypted). Finance (`refunds.approve`, fresh MFA) records the transfer reference. Whoever priced the device can't also pay it out.
+- **Devices without a catalogue match** (tablets, smartwatches): staff estimate them by hand, and must match them to a catalogue model at inspection so they can be stocked.
+
+## 2026-10-25 — M5 complete; later items logged
+
+M5 (after-sales, support, risk) is complete: backend, web, Seller Centre and both mobile apps.
+
+**Deliberately left for later:**
+- Split payments: store credit alongside a card.
+- Step-up at checkout (OTP or transfer-only) instead of a hold.
+- Trust-safety T3–T5: link graph, ban lists, KYC provider, seller metrics and enforcement, A-to-Z disputes, learned model.
+- Customer stolen-phone reports.
+- Paid out-of-warranty repairs (charged at the till; POS is M7).
+- Tracking when a seller collects a returned item at the hub.
+- A pending-customer reminder before auto-resolve.

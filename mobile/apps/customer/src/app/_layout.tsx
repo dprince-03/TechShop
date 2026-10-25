@@ -23,6 +23,18 @@ export default function RootLayout() {
         <Stack.Screen name="orders/[number]" options={{ title: "Order" }} />
         <Stack.Screen name="track" options={{ title: "Track an order" }} />
         <Stack.Screen name="checkout" options={{ title: "Checkout" }} />
+        <Stack.Screen name="returns/index" options={{ title: "Returns" }} />
+        <Stack.Screen name="returns/new" options={{ title: "Return items" }} />
+        <Stack.Screen name="returns/[rma]" options={{ title: "Return" }} />
+        <Stack.Screen name="warranty/index" options={{ title: "Warranty" }} />
+        <Stack.Screen name="warranty/new" options={{ title: "Warranty claim" }} />
+        <Stack.Screen name="warranty/[number]" options={{ title: "Claim" }} />
+        <Stack.Screen name="trade-in/index" options={{ title: "Trade-ins" }} />
+        <Stack.Screen name="trade-in/new" options={{ title: "Trade in" }} />
+        <Stack.Screen name="trade-in/[ref]" options={{ title: "Trade-in" }} />
+        <Stack.Screen name="support/index" options={{ title: "Support" }} />
+        <Stack.Screen name="support/new" options={{ title: "Ask support" }} />
+        <Stack.Screen name="support/[number]" options={{ title: "Ticket" }} />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

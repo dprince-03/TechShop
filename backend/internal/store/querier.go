@@ -16,16 +16,22 @@ type Querier interface {
 	AftersalesAddItem(ctx context.Context, arg AftersalesAddItemParams) error
 	AftersalesCreateReturn(ctx context.Context, arg AftersalesCreateReturnParams) (AftersalesReturnRequest, error)
 	AftersalesDecide(ctx context.Context, arg AftersalesDecideParams) (AftersalesReturnRequest, error)
+	AftersalesDecideDispute(ctx context.Context, arg AftersalesDecideDisputeParams) (AftersalesReturnRequest, error)
 	AftersalesGetReturn(ctx context.Context, rmaNumber string) (AftersalesGetReturnRow, error)
 	AftersalesGetReturnForUpdate(ctx context.Context, rmaNumber string) (AftersalesReturnRequest, error)
 	AftersalesInsertInspection(ctx context.Context, arg AftersalesInsertInspectionParams) (AftersalesReturnInspection, error)
 	AftersalesItems(ctx context.Context, returnRequestID uuid.UUID) ([]AftersalesItemsRow, error)
-	AftersalesOpenRiskCase(ctx context.Context, arg AftersalesOpenRiskCaseParams) (uuid.UUID, error)
+	AftersalesPickupJob(ctx context.Context, returnRequestID *uuid.UUID) (AftersalesPickupJobRow, error)
+	AftersalesReturnByID(ctx context.Context, id uuid.UUID) (AftersalesReturnRequest, error)
+	AftersalesReturnRefundRow(ctx context.Context, returnRequestID *uuid.UUID) (AftersalesReturnRefundRowRow, error)
 	// After-sales: returns (RMA). Plan: orders-fulfilment.md §7.
 	// The order's lines with what a return needs: delivery state, who shipped it, the unit sold and
 	// how many are already in an open (not rejected) return.
 	AftersalesReturnableLines(ctx context.Context, orderID uuid.UUID) ([]AftersalesReturnableLinesRow, error)
 	AftersalesReturnsForUser(ctx context.Context, requestedBy uuid.UUID) ([]AftersalesReturnsForUserRow, error)
+	// Returns that include items a shop shipped or owns, newest first.
+	AftersalesSellerReturns(ctx context.Context, sellerID uuid.UUID) ([]AftersalesSellerReturnsRow, error)
+	AftersalesSetDispute(ctx context.Context, arg AftersalesSetDisputeParams) (AftersalesReturnRequest, error)
 	AftersalesSetStatus(ctx context.Context, arg AftersalesSetStatusParams) (AftersalesReturnRequest, error)
 	AftersalesSetUnitCondition(ctx context.Context, arg AftersalesSetUnitConditionParams) error
 	AftersalesStaffList(ctx context.Context, arg AftersalesStaffListParams) ([]AftersalesStaffListRow, error)
@@ -329,6 +335,7 @@ type Querier interface {
 	LogisticsInsertPing(ctx context.Context, arg LogisticsInsertPingParams) error
 	LogisticsJobEvents(ctx context.Context, deliveryJobID uuid.UUID) ([]LogisticsDeliveryEvent, error)
 	LogisticsJobForFulfilment(ctx context.Context, fulfilmentID *uuid.UUID) (LogisticsDeliveryJob, error)
+	LogisticsJobForReturn(ctx context.Context, returnRequestID *uuid.UUID) (LogisticsDeliveryJob, error)
 	LogisticsJobView(ctx context.Context, id uuid.UUID) (LogisticsJobViewRow, error)
 	LogisticsListDevices(ctx context.Context, pending *bool) ([]LogisticsListDevicesRow, error)
 	// Riders with their latest position, open shift and active job count (for the assign sheet and map).
@@ -345,6 +352,9 @@ type Querier interface {
 	LogisticsRegisterDevice(ctx context.Context, arg LogisticsRegisterDeviceParams) (LogisticsRiderDevice, error)
 	// The zone for a state and LGA: an LGA-specific zone first, then the state-wide zone (no LGAs listed).
 	LogisticsResolveZone(ctx context.Context, arg LogisticsResolveZoneParams) (LogisticsDeliveryZone, error)
+	// Where a return pickup starts (the order's delivery address) and where it ends: the warehouse
+	// that shipped it, else a hub or warehouse in the customer's state, else any warehouse.
+	LogisticsReturnPickupInfo(ctx context.Context, id uuid.UUID) (LogisticsReturnPickupInfoRow, error)
 	LogisticsRevokeDevice(ctx context.Context, id uuid.UUID) (LogisticsRiderDevice, error)
 	// A rider's work: active jobs plus today's finished ones, with what the job screen needs.
 	LogisticsRiderJobs(ctx context.Context, riderID *uuid.UUID) ([]LogisticsRiderJobsRow, error)
@@ -495,6 +505,8 @@ type Querier interface {
 	PaymentsLatestForOrder(ctx context.Context, orderID *uuid.UUID) (PaymentsPayment, error)
 	PaymentsListExceptions(ctx context.Context, arg PaymentsListExceptionsParams) ([]PaymentsReconciliationException, error)
 	PaymentsListRefunds(ctx context.Context, arg PaymentsListRefundsParams) ([]PaymentsListRefundsRow, error)
+	// Locks a ledger account row so two checkouts can't spend the same store credit.
+	PaymentsLockAccount(ctx context.Context, code string) (uuid.UUID, error)
 	PaymentsMarkEventProcessed(ctx context.Context, arg PaymentsMarkEventProcessedParams) error
 	PaymentsOrderRefunds(ctx context.Context, orderID uuid.UUID) ([]PaymentsRefund, error)
 	PaymentsOrderWithCustomer(ctx context.Context, id uuid.UUID) (PaymentsOrderWithCustomerRow, error)
@@ -558,6 +570,9 @@ type Querier interface {
 	PayoutsReleaseHold(ctx context.Context, id uuid.UUID) (FinancePayoutHold, error)
 	// A failed payout gives its fulfilments back, so the next batch can pay them.
 	PayoutsReleaseItems(ctx context.Context, payoutID uuid.UUID) error
+	// What the payout risk rules look at: the 30-day average paid out, and the share of the shop's
+	// paid orders in 90 days that drew a chargeback.
+	PayoutsRiskFeatures(ctx context.Context, sellerID uuid.UUID) (PayoutsRiskFeaturesRow, error)
 	PayoutsSecondApprove(ctx context.Context, arg PayoutsSecondApproveParams) (FinancePayoutBatch, error)
 	PayoutsSetBatchStatus(ctx context.Context, arg PayoutsSetBatchStatusParams) (FinancePayoutBatch, error)
 	PayoutsSetProcessing(ctx context.Context, arg PayoutsSetProcessingParams) (FinancePayout, error)
@@ -622,11 +637,53 @@ type Querier interface {
 	ReviewsSetStatus(ctx context.Context, arg ReviewsSetStatusParams) (CatalogProductReview, error)
 	// Star counts and the weighted average (verified reviews count 1, unverified 0.5).
 	ReviewsSummary(ctx context.Context, productID uuid.UUID) (ReviewsSummaryRow, error)
+	// Risk engine, cases and the device blocklist. Plan: trust-safety.md §3–5.
+	RiskActiveRuleSet(ctx context.Context, checkpoint string) (RiskRiskRuleSet, error)
+	RiskBlockDevice(ctx context.Context, arg RiskBlockDeviceParams) (RiskDeviceBlocklist, error)
+	RiskBlocklist(ctx context.Context, imei *string) ([]RiskBlocklistRow, error)
+	RiskBlocklistCount(ctx context.Context) (int32, error)
+	RiskCaseByRef(ctx context.Context, reference string) (RiskCaseByRefRow, error)
+	RiskCaseCounts(ctx context.Context) (RiskCaseCountsRow, error)
+	RiskCaseEvent(ctx context.Context, arg RiskCaseEventParams) error
+	RiskCaseEvents(ctx context.Context, caseID uuid.UUID) ([]RiskCaseEventsRow, error)
+	RiskCaseForUpdate(ctx context.Context, reference string) (RiskRiskCase, error)
+	// The queue: open work first by score × money at risk, then everything else newest first.
+	RiskCases(ctx context.Context, arg RiskCasesParams) ([]RiskCasesRow, error)
+	RiskClaimCase(ctx context.Context, arg RiskClaimCaseParams) (RiskRiskCase, error)
+	RiskCopyRules(ctx context.Context, arg RiskCopyRulesParams) error
+	RiskCreateRuleSet(ctx context.Context, arg RiskCreateRuleSetParams) (RiskRiskRuleSet, error)
+	RiskDecision(ctx context.Context, id int64) (RiskRiskDecision, error)
+	RiskDeleteDraft(ctx context.Context, id uuid.UUID) error
+	RiskDeviceBlocked(ctx context.Context, imei string) (string, error)
+	RiskDraftFor(ctx context.Context, checkpoint string) (int32, error)
+	RiskEscalateCase(ctx context.Context, id uuid.UUID) (RiskRiskCase, error)
+	RiskInsertDecision(ctx context.Context, arg RiskInsertDecisionParams) (int64, error)
+	RiskNextVersion(ctx context.Context, checkpoint string) (int32, error)
+	RiskOpenCase(ctx context.Context, arg RiskOpenCaseParams) (RiskRiskCase, error)
+	RiskOpenCasesForSubject(ctx context.Context, arg RiskOpenCasesForSubjectParams) (int32, error)
+	RiskPublish(ctx context.Context, arg RiskPublishParams) error
+	// Decisions of one checkpoint in the window, with the label of any case they opened (test bench).
+	RiskRecentDecisions(ctx context.Context, arg RiskRecentDecisionsParams) ([]RiskRecentDecisionsRow, error)
+	RiskResolveCase(ctx context.Context, arg RiskResolveCaseParams) (RiskRiskCase, error)
+	RiskRetireActive(ctx context.Context, checkpoint string) error
+	RiskRuleSet(ctx context.Context, id uuid.UUID) (RiskRiskRuleSet, error)
+	RiskRuleSetForUpdate(ctx context.Context, id uuid.UUID) (RiskRiskRuleSet, error)
+	// The active rule set and any drafts per checkpoint, plus the last few retired ones.
+	RiskRuleSets(ctx context.Context) ([]RiskRiskRuleSet, error)
+	RiskRules(ctx context.Context, ruleSetID uuid.UUID) ([]RiskRiskRule, error)
+	RiskSetThresholds(ctx context.Context, arg RiskSetThresholdsParams) error
+	// A readable name for a case's subject: order or return number, trade-in reference, shop, or a
+	// masked person (first name and last initial).
+	RiskSubjectLabel(ctx context.Context, id uuid.UUID) (string, error)
+	RiskUnblockDevice(ctx context.Context, imei string) (RiskDeviceBlocklist, error)
+	RiskUpdateRule(ctx context.Context, arg RiskUpdateRuleParams) (RiskRiskRule, error)
 	// The exact device sold (IMEI/serial), bound when the unit is picked.
 	SalesBindDeviceUnit(ctx context.Context, arg SalesBindDeviceUnitParams) (SalesOrderLine, error)
 	SalesCancelLine(ctx context.Context, arg SalesCancelLineParams) (SalesOrderLine, error)
 	// Cart lines with live prices and everything pricing and checkout need.
 	SalesCartLines(ctx context.Context, cartID uuid.UUID) ([]SalesCartLinesRow, error)
+	// What the checkout risk rules look at for a paid order (trust-safety.md §3).
+	SalesCheckoutRiskFeatures(ctx context.Context, arg SalesCheckoutRiskFeaturesParams) (SalesCheckoutRiskFeaturesRow, error)
 	SalesClearCart(ctx context.Context, cartID uuid.UUID) error
 	// Seller-specific rule, then category rule, then the seller override, then the configured default.
 	SalesCommissionBps(ctx context.Context, arg SalesCommissionBpsParams) (int32, error)
@@ -634,6 +691,7 @@ type Querier interface {
 	SalesCommissionForFulfilment(ctx context.Context, fulfilmentID uuid.UUID) (int64, error)
 	SalesCreateCart(ctx context.Context, arg SalesCreateCartParams) (SalesCart, error)
 	SalesCreateFulfilment(ctx context.Context, arg SalesCreateFulfilmentParams) (SalesFulfilment, error)
+	// Warranty terms are copied from the listing, so later listing edits don't change what was sold.
 	SalesCreateLine(ctx context.Context, arg SalesCreateLineParams) (SalesOrderLine, error)
 	SalesCreateOrder(ctx context.Context, arg SalesCreateOrderParams) (SalesOrder, error)
 	SalesCustomerOrderByNumber(ctx context.Context, arg SalesCustomerOrderByNumberParams) (SalesOrder, error)
@@ -661,6 +719,7 @@ type Querier interface {
 	SalesListingAvailable(ctx context.Context, id uuid.UUID) (int32, error)
 	SalesLiveFlashPrice(ctx context.Context, listingID uuid.UUID) (SalesLiveFlashPriceRow, error)
 	SalesMergeCartItems(ctx context.Context, arg SalesMergeCartItemsParams) error
+	SalesOrderByReviewCase(ctx context.Context, reviewCaseID *uuid.UUID) (SalesOrder, error)
 	SalesOrderFulfilments(ctx context.Context, orderID uuid.UUID) ([]SalesOrderFulfilmentsRow, error)
 	SalesOrderHistory(ctx context.Context, orderID uuid.UUID) ([]SalesOrderStatusHistory, error)
 	SalesOrderLines(ctx context.Context, orderID uuid.UUID) ([]SalesOrderLine, error)
@@ -683,6 +742,7 @@ type Querier interface {
 	SalesSetHandoverBy(ctx context.Context, arg SalesSetHandoverByParams) error
 	SalesSetOrderStatus(ctx context.Context, arg SalesSetOrderStatusParams) (SalesOrder, error)
 	SalesSetPackBy(ctx context.Context, arg SalesSetPackByParams) error
+	SalesSetReviewHold(ctx context.Context, arg SalesSetReviewHoldParams) error
 	SalesSetSellerEarning(ctx context.Context, arg SalesSetSellerEarningParams) error
 	SalesStaffListOrders(ctx context.Context, arg SalesStaffListOrdersParams) ([]SalesStaffListOrdersRow, error)
 	// Best wholesale tier unit price for a quantity (null when no tier applies).
@@ -751,6 +811,101 @@ type Querier interface {
 	SellersStaffList(ctx context.Context, arg SellersStaffListParams) ([]SellersStaffListRow, error)
 	// ---- Team: members and invites (identity-access.md §7.3)
 	SellersTeam(ctx context.Context, sellerID uuid.UUID) ([]SellersTeamRow, error)
+	SupportAddMessage(ctx context.Context, arg SupportAddMessageParams) (SupportTicketMessage, error)
+	// Active staff who can reply to tickets (for assignment).
+	SupportAgents(ctx context.Context) ([]SupportAgentsRow, error)
+	SupportAssign(ctx context.Context, arg SupportAssignParams) (SupportSupportTicket, error)
+	// Resolved for 4 days: closed (a new message then starts a new ticket).
+	SupportAutoClose(ctx context.Context) error
+	// Waiting on the customer for 7 days with no reply: resolved.
+	SupportAutoResolve(ctx context.Context) ([]SupportAutoResolveRow, error)
+	// Support tickets: customers, sellers and public contact forms; staff queue. Internal notes are
+	// never returned to customers or sellers.
+	SupportCreateTicket(ctx context.Context, arg SupportCreateTicketParams) (SupportSupportTicket, error)
+	SupportCustomerOrder(ctx context.Context, arg SupportCustomerOrderParams) (uuid.UUID, error)
+	// The customer (or seller) wrote: reopen if resolved, stop waiting, flag for staff.
+	SupportCustomerReplied(ctx context.Context, id uuid.UUID) (SupportSupportTicket, error)
+	SupportIsAgent(ctx context.Context, userID uuid.UUID) (bool, error)
+	SupportMarkRead(ctx context.Context, id uuid.UUID) error
+	// Every message, internal notes included (staff only), oldest first.
+	SupportMessages(ctx context.Context, ticketID uuid.UUID) ([]SupportMessagesRow, error)
+	// What the customer or seller may see: no internal notes.
+	SupportPublicMessages(ctx context.Context, ticketID uuid.UUID) ([]SupportPublicMessagesRow, error)
+	// Staff queue. "active" = open or waiting on the customer; urgent and high first, then oldest
+	// reply due; everything else newest first.
+	SupportQueue(ctx context.Context, arg SupportQueueParams) ([]SupportQueueRow, error)
+	SupportSellerOrder(ctx context.Context, arg SupportSellerOrderParams) (uuid.UUID, error)
+	SupportSetStatus(ctx context.Context, arg SupportSetStatusParams) (SupportSupportTicket, error)
+	// A public staff reply: the first one stops the SLA clock; the ticket waits on the customer
+	// unless staff resolve it or keep it open.
+	SupportStaffReplied(ctx context.Context, arg SupportStaffRepliedParams) (SupportSupportTicket, error)
+	SupportSummary(ctx context.Context) (SupportSummaryRow, error)
+	SupportTicket(ctx context.Context, ticketNumber string) (SupportTicketRow, error)
+	SupportTicketForUpdate(ctx context.Context, ticketNumber string) (SupportSupportTicket, error)
+	SupportTicketsForCustomer(ctx context.Context, customerUserID *uuid.UUID) ([]SupportTicketsForCustomerRow, error)
+	SupportTicketsForSeller(ctx context.Context, sellerID *uuid.UUID) ([]SupportTicketsForSellerRow, error)
+	SupportUserContact(ctx context.Context, id uuid.UUID) (SupportUserContactRow, error)
+	TradeIn(ctx context.Context, reference string) (TradeInRow, error)
+	TradeInAccountAgeDays(ctx context.Context, id uuid.UUID) (float64, error)
+	TradeInBlock(ctx context.Context, arg TradeInBlockParams) (AftersalesTradeIn, error)
+	TradeInCreate(ctx context.Context, arg TradeInCreateParams) (AftersalesTradeIn, error)
+	TradeInCreateRefurb(ctx context.Context, arg TradeInCreateRefurbParams) (AftersalesRepairJob, error)
+	TradeInCreateUnit(ctx context.Context, arg TradeInCreateUnitParams) (InventoryDeviceUnit, error)
+	TradeInDecide(ctx context.Context, arg TradeInDecideParams) (AftersalesTradeIn, error)
+	// Trade-ins: catalogue estimate, drop-off, inspection, offer, payout. Plan: docs/plan.md 2026-10-23.
+	// Catalogue variants we can price, with today's lowest new price on a live listing.
+	TradeInDevices(ctx context.Context, slugs []string) ([]TradeInDevicesRow, error)
+	// Offers not answered within 7 days lapse: the device waits at the store for collection.
+	TradeInExpireOffers(ctx context.Context) ([]TradeInExpireOffersRow, error)
+	TradeInFirstPartySeller(ctx context.Context) (uuid.UUID, error)
+	TradeInForUpdate(ctx context.Context, reference string) (AftersalesTradeIn, error)
+	TradeInLinkUnit(ctx context.Context, arg TradeInLinkUnitParams) error
+	TradeInOffer(ctx context.Context, arg TradeInOfferParams) (AftersalesTradeIn, error)
+	TradeInPaid(ctx context.Context, arg TradeInPaidParams) (AftersalesTradeIn, error)
+	TradeInReceive(ctx context.Context, arg TradeInReceiveParams) (AftersalesTradeIn, error)
+	// Trade-ins by the same person in the last 7 days (a velocity feature).
+	TradeInRecent(ctx context.Context, userID uuid.UUID) (int32, error)
+	TradeInSetEstimate(ctx context.Context, arg TradeInSetEstimateParams) (AftersalesTradeIn, error)
+	TradeInSetStatus(ctx context.Context, arg TradeInSetStatusParams) (AftersalesTradeIn, error)
+	TradeInStaffList(ctx context.Context, arg TradeInStaffListParams) ([]TradeInStaffListRow, error)
+	TradeInSummary(ctx context.Context) (TradeInSummaryRow, error)
+	// One variant's lowest new price (for the estimate) and its category.
+	TradeInVariantPrice(ctx context.Context, id uuid.UUID) (TradeInVariantPriceRow, error)
+	TradeInsForUser(ctx context.Context, userID uuid.UUID) ([]AftersalesTradeIn, error)
+	WarrantyClaim(ctx context.Context, claimNumber string) (WarrantyClaimRow, error)
+	WarrantyClaimForUpdate(ctx context.Context, claimNumber string) (AftersalesWarrantyClaim, error)
+	WarrantyClaimsForUser(ctx context.Context, customerUserID uuid.UUID) ([]WarrantyClaimsForUserRow, error)
+	WarrantyClose(ctx context.Context, arg WarrantyCloseParams) (AftersalesWarrantyClaim, error)
+	WarrantyCollected(ctx context.Context, id uuid.UUID) (AftersalesWarrantyClaim, error)
+	// Warranty claims and repair jobs. Plan: orders-fulfilment.md §7, docs/plan.md 2026-10-23.
+	// The caller's delivered items still under warranty, with any open claim.
+	WarrantyCoveredLines(ctx context.Context, customerUserID *uuid.UUID) ([]WarrantyCoveredLinesRow, error)
+	WarrantyCreateClaim(ctx context.Context, arg WarrantyCreateClaimParams) (AftersalesWarrantyClaim, error)
+	WarrantyCreateRepair(ctx context.Context, arg WarrantyCreateRepairParams) (AftersalesRepairJob, error)
+	// Earlier claims on the same device (staff see a device's repair history).
+	WarrantyHistory(ctx context.Context, arg WarrantyHistoryParams) ([]WarrantyHistoryRow, error)
+	// One order line with what a claim needs.
+	WarrantyLine(ctx context.Context, id uuid.UUID) (WarrantyLineRow, error)
+	WarrantyOpenRepairs(ctx context.Context, warrantyClaimID *uuid.UUID) (int32, error)
+	WarrantyReady(ctx context.Context, arg WarrantyReadyParams) (AftersalesWarrantyClaim, error)
+	WarrantyReceive(ctx context.Context, arg WarrantyReceiveParams) (AftersalesWarrantyClaim, error)
+	WarrantyReject(ctx context.Context, arg WarrantyRejectParams) (AftersalesWarrantyClaim, error)
+	WarrantyRepairForUpdate(ctx context.Context, id uuid.UUID) (WarrantyRepairForUpdateRow, error)
+	// The workshop: warranty repairs and refurbishments, unfinished first.
+	WarrantyRepairQueue(ctx context.Context, arg WarrantyRepairQueueParams) ([]WarrantyRepairQueueRow, error)
+	WarrantyRepairs(ctx context.Context, warrantyClaimID *uuid.UUID) ([]WarrantyRepairsRow, error)
+	// An in-stock unit of the same variant to swap in, found by its IMEI or serial.
+	WarrantyReplacementUnit(ctx context.Context, arg WarrantyReplacementUnitParams) (InventoryDeviceUnit, error)
+	WarrantySetStatus(ctx context.Context, arg WarrantySetStatusParams) (AftersalesWarrantyClaim, error)
+	WarrantySetUnit(ctx context.Context, arg WarrantySetUnitParams) error
+	// The order line that sold a device, found by its IMEI or serial (walk-in claims).
+	WarrantySoldUnit(ctx context.Context, serial string) (uuid.UUID, error)
+	WarrantyStaffList(ctx context.Context, arg WarrantyStaffListParams) ([]WarrantyStaffListRow, error)
+	// Where customers can bring a device: TechShop stores and warehouses (not hubs).
+	WarrantyStores(ctx context.Context) ([]WarrantyStoresRow, error)
+	WarrantySummary(ctx context.Context) (WarrantySummaryRow, error)
+	WarrantyUnit(ctx context.Context, id uuid.UUID) (InventoryDeviceUnit, error)
+	WarrantyUpdateRepair(ctx context.Context, arg WarrantyUpdateRepairParams) (AftersalesRepairJob, error)
 }
 
 var _ Querier = (*Queries)(nil)

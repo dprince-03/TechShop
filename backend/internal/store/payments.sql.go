@@ -116,19 +116,20 @@ func (q *Queries) PaymentsCreateException(ctx context.Context, arg PaymentsCreat
 }
 
 const paymentsCreateRefund = `-- name: PaymentsCreateRefund :one
-insert into payments.refunds (payment_id, order_id, return_request_id, amount_kobo, method, reason, requested_by)
-values ($1, $2, $3, $4, $5, $6, $7)
-returning id, payment_id, order_id, return_request_id, amount_kobo, currency, method, reason, status, requested_by, approved_by, provider_reference, failure_reason, created_at, updated_at
+insert into payments.refunds (payment_id, order_id, return_request_id, amount_kobo, method, reason, requested_by, allocation)
+values ($1, $2, $3, $4, $5, $6, $7, $8)
+returning id, payment_id, order_id, return_request_id, amount_kobo, currency, method, reason, status, requested_by, approved_by, provider_reference, failure_reason, created_at, updated_at, allocation
 `
 
 type PaymentsCreateRefundParams struct {
-	PaymentID       uuid.UUID  `json:"paymentId"`
-	OrderID         uuid.UUID  `json:"orderId"`
-	ReturnRequestID *uuid.UUID `json:"returnRequestId"`
-	AmountKobo      int64      `json:"amountKobo"`
-	Method          string     `json:"method"`
-	Reason          string     `json:"reason"`
-	RequestedBy     *uuid.UUID `json:"requestedBy"`
+	PaymentID       uuid.UUID       `json:"paymentId"`
+	OrderID         uuid.UUID       `json:"orderId"`
+	ReturnRequestID *uuid.UUID      `json:"returnRequestId"`
+	AmountKobo      int64           `json:"amountKobo"`
+	Method          string          `json:"method"`
+	Reason          string          `json:"reason"`
+	RequestedBy     *uuid.UUID      `json:"requestedBy"`
+	Allocation      json.RawMessage `json:"allocation"`
 }
 
 func (q *Queries) PaymentsCreateRefund(ctx context.Context, arg PaymentsCreateRefundParams) (PaymentsRefund, error) {
@@ -140,6 +141,7 @@ func (q *Queries) PaymentsCreateRefund(ctx context.Context, arg PaymentsCreateRe
 		arg.Method,
 		arg.Reason,
 		arg.RequestedBy,
+		arg.Allocation,
 	)
 	var i PaymentsRefund
 	err := row.Scan(
@@ -158,6 +160,7 @@ func (q *Queries) PaymentsCreateRefund(ctx context.Context, arg PaymentsCreateRe
 		&i.FailureReason,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Allocation,
 	)
 	return i, err
 }
@@ -495,7 +498,7 @@ func (q *Queries) PaymentsGetHealth(ctx context.Context) ([]PaymentsProviderHeal
 }
 
 const paymentsGetRefund = `-- name: PaymentsGetRefund :one
-select id, payment_id, order_id, return_request_id, amount_kobo, currency, method, reason, status, requested_by, approved_by, provider_reference, failure_reason, created_at, updated_at from payments.refunds where id = $1
+select id, payment_id, order_id, return_request_id, amount_kobo, currency, method, reason, status, requested_by, approved_by, provider_reference, failure_reason, created_at, updated_at, allocation from payments.refunds where id = $1
 `
 
 func (q *Queries) PaymentsGetRefund(ctx context.Context, id uuid.UUID) (PaymentsRefund, error) {
@@ -517,12 +520,13 @@ func (q *Queries) PaymentsGetRefund(ctx context.Context, id uuid.UUID) (Payments
 		&i.FailureReason,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Allocation,
 	)
 	return i, err
 }
 
 const paymentsGetRefundForUpdate = `-- name: PaymentsGetRefundForUpdate :one
-select id, payment_id, order_id, return_request_id, amount_kobo, currency, method, reason, status, requested_by, approved_by, provider_reference, failure_reason, created_at, updated_at from payments.refunds where id = $1 for update
+select id, payment_id, order_id, return_request_id, amount_kobo, currency, method, reason, status, requested_by, approved_by, provider_reference, failure_reason, created_at, updated_at, allocation from payments.refunds where id = $1 for update
 `
 
 func (q *Queries) PaymentsGetRefundForUpdate(ctx context.Context, id uuid.UUID) (PaymentsRefund, error) {
@@ -544,6 +548,7 @@ func (q *Queries) PaymentsGetRefundForUpdate(ctx context.Context, id uuid.UUID) 
 		&i.FailureReason,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Allocation,
 	)
 	return i, err
 }
@@ -652,7 +657,7 @@ func (q *Queries) PaymentsListExceptions(ctx context.Context, arg PaymentsListEx
 }
 
 const paymentsListRefunds = `-- name: PaymentsListRefunds :many
-select r.id, r.payment_id, r.order_id, r.return_request_id, r.amount_kobo, r.currency, r.method, r.reason, r.status, r.requested_by, r.approved_by, r.provider_reference, r.failure_reason, r.created_at, r.updated_at, o.order_number from payments.refunds r join sales.orders o on o.id = r.order_id
+select r.id, r.payment_id, r.order_id, r.return_request_id, r.amount_kobo, r.currency, r.method, r.reason, r.status, r.requested_by, r.approved_by, r.provider_reference, r.failure_reason, r.created_at, r.updated_at, r.allocation, o.order_number from payments.refunds r join sales.orders o on o.id = r.order_id
 where ($2::text is null or r.status = $2)
 order by r.created_at desc limit $1
 `
@@ -663,22 +668,23 @@ type PaymentsListRefundsParams struct {
 }
 
 type PaymentsListRefundsRow struct {
-	ID                uuid.UUID  `json:"id"`
-	PaymentID         uuid.UUID  `json:"paymentId"`
-	OrderID           uuid.UUID  `json:"orderId"`
-	ReturnRequestID   *uuid.UUID `json:"returnRequestId"`
-	AmountKobo        int64      `json:"amountKobo"`
-	Currency          string     `json:"currency"`
-	Method            string     `json:"method"`
-	Reason            string     `json:"reason"`
-	Status            string     `json:"status"`
-	RequestedBy       *uuid.UUID `json:"requestedBy"`
-	ApprovedBy        *uuid.UUID `json:"approvedBy"`
-	ProviderReference *string    `json:"providerReference"`
-	FailureReason     *string    `json:"failureReason"`
-	CreatedAt         time.Time  `json:"createdAt"`
-	UpdatedAt         time.Time  `json:"updatedAt"`
-	OrderNumber       string     `json:"orderNumber"`
+	ID                uuid.UUID       `json:"id"`
+	PaymentID         uuid.UUID       `json:"paymentId"`
+	OrderID           uuid.UUID       `json:"orderId"`
+	ReturnRequestID   *uuid.UUID      `json:"returnRequestId"`
+	AmountKobo        int64           `json:"amountKobo"`
+	Currency          string          `json:"currency"`
+	Method            string          `json:"method"`
+	Reason            string          `json:"reason"`
+	Status            string          `json:"status"`
+	RequestedBy       *uuid.UUID      `json:"requestedBy"`
+	ApprovedBy        *uuid.UUID      `json:"approvedBy"`
+	ProviderReference *string         `json:"providerReference"`
+	FailureReason     *string         `json:"failureReason"`
+	CreatedAt         time.Time       `json:"createdAt"`
+	UpdatedAt         time.Time       `json:"updatedAt"`
+	Allocation        json.RawMessage `json:"allocation"`
+	OrderNumber       string          `json:"orderNumber"`
 }
 
 func (q *Queries) PaymentsListRefunds(ctx context.Context, arg PaymentsListRefundsParams) ([]PaymentsListRefundsRow, error) {
@@ -706,6 +712,7 @@ func (q *Queries) PaymentsListRefunds(ctx context.Context, arg PaymentsListRefun
 			&i.FailureReason,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Allocation,
 			&i.OrderNumber,
 		); err != nil {
 			return nil, err
@@ -716,6 +723,18 @@ func (q *Queries) PaymentsListRefunds(ctx context.Context, arg PaymentsListRefun
 		return nil, err
 	}
 	return items, nil
+}
+
+const paymentsLockAccount = `-- name: PaymentsLockAccount :one
+select id from finance.ledger_accounts where code = $1 for update
+`
+
+// Locks a ledger account row so two checkouts can't spend the same store credit.
+func (q *Queries) PaymentsLockAccount(ctx context.Context, code string) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, paymentsLockAccount, code)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
 }
 
 const paymentsMarkEventProcessed = `-- name: PaymentsMarkEventProcessed :exec
@@ -735,7 +754,7 @@ func (q *Queries) PaymentsMarkEventProcessed(ctx context.Context, arg PaymentsMa
 }
 
 const paymentsOrderRefunds = `-- name: PaymentsOrderRefunds :many
-select id, payment_id, order_id, return_request_id, amount_kobo, currency, method, reason, status, requested_by, approved_by, provider_reference, failure_reason, created_at, updated_at from payments.refunds where order_id = $1 order by created_at
+select id, payment_id, order_id, return_request_id, amount_kobo, currency, method, reason, status, requested_by, approved_by, provider_reference, failure_reason, created_at, updated_at, allocation from payments.refunds where order_id = $1 order by created_at
 `
 
 func (q *Queries) PaymentsOrderRefunds(ctx context.Context, orderID uuid.UUID) ([]PaymentsRefund, error) {
@@ -763,6 +782,7 @@ func (q *Queries) PaymentsOrderRefunds(ctx context.Context, orderID uuid.UUID) (
 			&i.FailureReason,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Allocation,
 		); err != nil {
 			return nil, err
 		}
@@ -775,7 +795,7 @@ func (q *Queries) PaymentsOrderRefunds(ctx context.Context, orderID uuid.UUID) (
 }
 
 const paymentsOrderWithCustomer = `-- name: PaymentsOrderWithCustomer :one
-select o.id, o.order_number, o.channel, o.customer_user_id, o.business_id, o.quote_id, o.pos_shift_id, o.status, o.subtotal_kobo, o.delivery_fee_kobo, o.discount_kobo, o.vat_kobo, o.total_kobo, o.currency, o.ship_to, o.contact_phone, o.price_hash, o.payment_due_at, o.attributed_notification_id, o.placed_at, o.cancelled_at, o.created_at, o.updated_at, u.email as customer_email, u.phone as customer_phone, u.first_name as customer_first_name
+select o.id, o.order_number, o.channel, o.customer_user_id, o.business_id, o.quote_id, o.pos_shift_id, o.status, o.subtotal_kobo, o.delivery_fee_kobo, o.discount_kobo, o.vat_kobo, o.total_kobo, o.currency, o.ship_to, o.contact_phone, o.price_hash, o.payment_due_at, o.attributed_notification_id, o.placed_at, o.cancelled_at, o.created_at, o.updated_at, o.review_hold_at, o.review_case_id, u.email as customer_email, u.phone as customer_phone, u.first_name as customer_first_name
 from sales.orders o left join identity.users u on u.id = o.customer_user_id where o.id = $1
 `
 
@@ -803,6 +823,8 @@ type PaymentsOrderWithCustomerRow struct {
 	CancelledAt              *time.Time      `json:"cancelledAt"`
 	CreatedAt                time.Time       `json:"createdAt"`
 	UpdatedAt                time.Time       `json:"updatedAt"`
+	ReviewHoldAt             *time.Time      `json:"reviewHoldAt"`
+	ReviewCaseID             *uuid.UUID      `json:"reviewCaseId"`
 	CustomerEmail            *string         `json:"customerEmail"`
 	CustomerPhone            *string         `json:"customerPhone"`
 	CustomerFirstName        *string         `json:"customerFirstName"`
@@ -835,6 +857,8 @@ func (q *Queries) PaymentsOrderWithCustomer(ctx context.Context, id uuid.UUID) (
 		&i.CancelledAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ReviewHoldAt,
+		&i.ReviewCaseID,
 		&i.CustomerEmail,
 		&i.CustomerPhone,
 		&i.CustomerFirstName,
@@ -843,7 +867,7 @@ func (q *Queries) PaymentsOrderWithCustomer(ctx context.Context, id uuid.UUID) (
 }
 
 const paymentsPendingRefunds = `-- name: PaymentsPendingRefunds :many
-select id, payment_id, order_id, return_request_id, amount_kobo, currency, method, reason, status, requested_by, approved_by, provider_reference, failure_reason, created_at, updated_at from payments.refunds
+select id, payment_id, order_id, return_request_id, amount_kobo, currency, method, reason, status, requested_by, approved_by, provider_reference, failure_reason, created_at, updated_at, allocation from payments.refunds
 where status = 'processing' and provider_reference is not null
   and ($1::timestamptz is null or updated_at < $1)
 order by updated_at limit 100
@@ -875,6 +899,7 @@ func (q *Queries) PaymentsPendingRefunds(ctx context.Context, olderThan *time.Ti
 			&i.FailureReason,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Allocation,
 		); err != nil {
 			return nil, err
 		}
@@ -1017,7 +1042,7 @@ update payments.refunds
 set status = $2, approved_by = coalesce($3, approved_by),
     provider_reference = coalesce($4, provider_reference),
     failure_reason = coalesce($5, failure_reason), updated_at = now()
-where id = $1 returning id, payment_id, order_id, return_request_id, amount_kobo, currency, method, reason, status, requested_by, approved_by, provider_reference, failure_reason, created_at, updated_at
+where id = $1 returning id, payment_id, order_id, return_request_id, amount_kobo, currency, method, reason, status, requested_by, approved_by, provider_reference, failure_reason, created_at, updated_at, allocation
 `
 
 type PaymentsSetRefundStatusParams struct {
@@ -1053,6 +1078,7 @@ func (q *Queries) PaymentsSetRefundStatus(ctx context.Context, arg PaymentsSetRe
 		&i.FailureReason,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Allocation,
 	)
 	return i, err
 }

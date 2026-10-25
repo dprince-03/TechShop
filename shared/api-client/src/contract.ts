@@ -6,3 +6,8 @@ export type { components, operations, paths };
 /** A schema from the contract, e.g. `Schema<"ProductDetail">`. */
 export type Schema<K extends keyof components["schemas"]> =
   components["schemas"][K];
+
+/** An operation's query parameters, e.g. `Query<"staffRiskCases">["status"]`. */
+export type Query<K extends keyof operations> = NonNullable<
+  operations[K]["parameters"]["query"]
+>;

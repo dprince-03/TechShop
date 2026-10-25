@@ -17,6 +17,9 @@ var shoppers = []string{auth.AudMarket, auth.AudCustomerApp}
 
 // Routes implements kit.Module.
 func (s *Service) Routes(r *kit.Routes) {
+	s.warrantyRoutes(r)
+	s.tradeInRoutes(r)
+	s.sellerReturnRoutes(r)
 	g := r.Public
 	me := func(o httpx.Op) httpx.Op { o.Tag = "Returns"; o.Auth = shoppers; return o }
 
@@ -57,16 +60,17 @@ func (s *Service) Routes(r *kit.Routes) {
 	}
 	httpx.Register(g, st(httpx.Op{ID: "staffListReturns", Method: http.MethodGet, Path: "/api/v1/staff/returns", Summary: "Returns, newest first"}),
 		func(ctx context.Context, in *struct {
-			Status string `query:"status" enum:"requested,approved,rejected,awaiting_pickup,received,inspected,refunded,replaced,closed,"`
-			Cursor string `query:"cursor"`
-			Limit  int    `query:"limit"`
+			Status   string `query:"status" enum:"requested,approved,rejected,awaiting_pickup,received,inspected,refunded,replaced,closed,"`
+			Disputed bool   `query:"disputed" doc:"Only returns with an open seller dispute"`
+			Cursor   string `query:"cursor"`
+			Limit    int    `query:"limit"`
 		}) (*struct{ Body httpx.List[ReturnRow] }, error) {
 			before, err := s.d.Cursors.Before(in.Cursor)
 			if err != nil {
 				return nil, httpx.BadCursor()
 			}
 			lim := httpx.Limit(in.Limit)
-			rows, err := s.d.Q.AftersalesStaffList(ctx, store.AftersalesStaffListParams{Status: optional(in.Status), Before: before, Lim: int32(lim + 1)})
+			rows, err := s.d.Q.AftersalesStaffList(ctx, store.AftersalesStaffListParams{Status: optional(in.Status), Disputed: in.Disputed, Before: before, Lim: int32(lim + 1)})
 			if err != nil {
 				return nil, err
 			}
@@ -108,6 +112,18 @@ func (s *Service) Routes(r *kit.Routes) {
 			Body   InspectInput
 		}) (*struct{ Body Return }, error) {
 			out, err := s.Inspect(ctx, in.RMA, in.ItemID, in.Body)
+			return &struct{ Body Return }{out}, err
+		})
+	httpx.Register(g, st(httpx.Op{ID: "staffDecideReturnDispute", Method: http.MethodPost, Path: "/api/v1/staff/returns/{rma}/dispute-decision",
+		Summary: "Settle a seller's dispute (upheld: the seller is credited, TechShop bears it)"}),
+		func(ctx context.Context, in *struct {
+			RMA  string `path:"rma"`
+			Body struct {
+				Decision string `json:"decision" enum:"upheld,rejected"`
+				Note     string `json:"note" maxLength:"1000"`
+			}
+		}) (*struct{ Body Return }, error) {
+			out, err := s.DecideDispute(ctx, in.RMA, in.Body.Decision, in.Body.Note)
 			return &struct{ Body Return }{out}, err
 		})
 	httpx.Register(g, st(httpx.Op{ID: "staffRefundReturn", Method: http.MethodPost, Path: "/api/v1/staff/returns/{rma}/refund", Summary: "Raise the refund for an inspected return (finance approves it)"}),

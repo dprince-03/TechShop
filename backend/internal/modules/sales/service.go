@@ -19,6 +19,7 @@ import (
 	"github.com/dprince-03/techshop/backend/internal/modules/ledger"
 	"github.com/dprince-03/techshop/backend/internal/modules/marketing"
 	"github.com/dprince-03/techshop/backend/internal/modules/notify"
+	"github.com/dprince-03/techshop/backend/internal/modules/risk"
 	"github.com/dprince-03/techshop/backend/internal/platform/httpx"
 	"github.com/dprince-03/techshop/backend/internal/platform/jobs"
 	"github.com/dprince-03/techshop/backend/internal/platform/kit"
@@ -75,14 +76,15 @@ type Service struct {
 	mk     *marketing.Service
 	ledger *ledger.Service
 	notify *notify.Service
+	risk   *risk.Service
 	Pay    PaymentPort
 	// Delivery prices delivery from zones (set by logistics; nil = flat fees).
 	Delivery DeliveryQuoter
 }
 
 // New creates the sales service.
-func New(d *kit.Deps, inv *inventory.Service, mk *marketing.Service, led *ledger.Service, n *notify.Service) *Service {
-	return &Service{d: d, inv: inv, mk: mk, ledger: led, notify: n}
+func New(d *kit.Deps, inv *inventory.Service, mk *marketing.Service, led *ledger.Service, n *notify.Service, rk *risk.Service) *Service {
+	return &Service{d: d, inv: inv, mk: mk, ledger: led, notify: n, risk: rk}
 }
 
 // Name implements kit.Module.
@@ -285,7 +287,7 @@ func (s *Service) PlaceOrder(ctx context.Context, in CheckoutInput) (*Placed, er
 	if ok, err := s.d.Limiter.Allow(ctx, checkoutLimit, in.UserID.String()); err == nil && !ok {
 		return nil, httpx.E(429, "rate_limited", "Too many checkout attempts. Please wait a few minutes.")
 	}
-	if !contains(s.Pay.Providers(ctx), in.Provider) {
+	if in.Provider != "store_credit" && !contains(s.Pay.Providers(ctx), in.Provider) {
 		return nil, httpx.Invalid("provider_unavailable", "That payment method isn't available right now; please choose another.")
 	}
 	var out Placed
@@ -383,6 +385,11 @@ func (s *Service) PlaceOrder(ctx context.Context, in CheckoutInput) (*Placed, er
 			return err
 		}
 		tx.Emit("order", order.ID, "order.placed", map[string]any{"orderId": order.ID, "orderNumber": order.OrderNumber, "userId": in.UserID, "totalKobo": order.TotalKobo})
+		if pay.Status == "succeeded" { // store credit settles at once
+			if _, err := s.MarkPaid(ctx, tx, order.ID, pay, order.TotalKobo); err != nil {
+				return err
+			}
+		}
 		out = Placed{OrderID: order.ID, OrderNumber: order.OrderNumber, TotalKobo: order.TotalKobo, PaymentDueAt: due}
 		return nil
 	})
@@ -429,21 +436,18 @@ func (s *Service) MarkPaid(ctx context.Context, tx *uow.Tx, orderID uuid.UUID, p
 
 // afterPaid does what every newly paid order needs (also used when a late payment reinstates one).
 func (s *Service) afterPaid(ctx context.Context, tx *uow.Tx, o store.SalesOrder, pay store.PaymentsPayment, paid int64) error {
-	fs, err := tx.Q.SalesOrderFulfilments(ctx, o.ID)
+	held, err := s.checkoutRisk(ctx, tx, o)
 	if err != nil {
 		return err
 	}
-	now := time.Now()
-	for _, f := range fs {
-		if f.FulfilledBy == "seller" {
-			accept, pack := now.Add(sellerAcceptWindow), now.Add(sellerPackWindow)
-			if _, err := tx.Q.SalesSetFulfilmentStatus(ctx, store.SalesSetFulfilmentStatusParams{ID: f.ID, Status: "pending", AcceptBy: &accept, PackBy: &pack}); err != nil {
-				return err
-			}
-			if err := s.tellSellerNewOrder(ctx, tx, f.ID, f.SellerID, o.OrderNumber); err != nil {
-				return err
-			}
+	if !held { // a held order reaches its sellers when the case is cleared
+		if err := s.releaseToSellers(ctx, tx, o); err != nil {
+			return err
 		}
+	}
+	fs, err := tx.Q.SalesOrderFulfilments(ctx, o.ID)
+	if err != nil {
+		return err
 	}
 	lines, err := tx.Q.SalesOrderLines(ctx, o.ID)
 	if err != nil {
@@ -475,7 +479,11 @@ func (s *Service) afterPaid(ctx context.Context, tx *uow.Tx, o store.SalesOrder,
 		}
 		sl = append(sl, x)
 	}
-	if err := s.ledger.Sale(ctx, tx, pay.ID, o.ID, pay.Provider, paid, o.DeliveryFeeKobo, paid-o.TotalKobo, sl); err != nil {
+	from := ledger.Clearing(pay.Provider)
+	if pay.Provider == "store_credit" && o.CustomerUserID != nil {
+		from = ledger.StoreCredit(*o.CustomerUserID)
+	}
+	if err := s.ledger.Sale(ctx, tx, pay.ID, o.ID, from, paid, o.DeliveryFeeKobo, paid-o.TotalKobo, sl); err != nil {
 		return err
 	}
 	tx.Emit("order", o.ID, "order.paid", map[string]any{"orderId": o.ID, "orderNumber": o.OrderNumber, "userId": o.CustomerUserID, "totalKobo": o.TotalKobo})
@@ -827,4 +835,104 @@ func join(xs []string) string {
 func (s *Service) Jobs(reg *jobs.Registry) { s.registerSellerJobs(reg) }
 
 // Events implements kit.Module.
-func (s *Service) Events(*outbox.Relay) {}
+func (s *Service) Events(r *outbox.Relay) {
+	// A risk analyst cleared or blocked an order held at checkout.
+	r.On("risk.case_resolved", func(ctx context.Context, tx *uow.Tx, ev outbox.Event) error {
+		var p struct {
+			CaseID      uuid.UUID `json:"caseId"`
+			SubjectType string    `json:"subjectType"`
+			Outcome     string    `json:"outcome"`
+		}
+		if err := json.Unmarshal(ev.Payload, &p); err != nil {
+			return err
+		}
+		if p.SubjectType != "order" {
+			return nil
+		}
+		return s.resolveReview(ctx, tx, p.CaseID, p.Outcome)
+	})
+}
+
+// checkoutRisk runs the checkout checkpoint on a newly paid order. A hold (or a step-up, which
+// checkout can't ask for yet) keeps the order away from the warehouse and sellers until a risk
+// analyst clears it; the customer is told we're confirming it.
+func (s *Service) checkoutRisk(ctx context.Context, tx *uow.Tx, o store.SalesOrder) (bool, error) {
+	if o.CustomerUserID == nil || o.Channel == "pos" {
+		return false, nil
+	}
+	f, err := tx.Q.SalesCheckoutRiskFeatures(ctx, store.SalesCheckoutRiskFeaturesParams{OrderID: o.ID, UserID: *o.CustomerUserID})
+	if err != nil {
+		return false, err
+	}
+	open, err := s.risk.OpenCases(ctx, tx.Q, "user", *o.CustomerUserID)
+	if err != nil {
+		return false, err
+	}
+	dec, err := s.risk.Evaluate(ctx, tx, risk.Check{Checkpoint: "checkout", SubjectType: "order", SubjectID: o.ID, UserID: o.CustomerUserID, MoneyKobo: o.TotalKobo,
+		CaseKind: "order", CaseTitle: "Order " + o.OrderNumber, StepUpHolds: true, Features: risk.Features{
+			"account_age_hours": f.AccountAgeHours, "order_total_kobo": float64(o.TotalKobo), "delivered_orders": float64(f.DeliveredOrders),
+			"failed_payments_10m": float64(f.FailedPayments10m), "max_phone_units": float64(f.MaxPhoneUnits), "open_cases": float64(open)}})
+	if err != nil || !dec.Held() {
+		return false, err
+	}
+	now := time.Now()
+	if err := tx.Q.SalesSetReviewHold(ctx, store.SalesSetReviewHoldParams{ID: o.ID, ReviewHoldAt: &now, ReviewCaseID: dec.CaseID}); err != nil {
+		return false, err
+	}
+	if err := tx.Q.SalesInsertHistory(ctx, store.SalesInsertHistoryParams{OrderID: o.ID, FromStatus: ptr("paid"), ToStatus: "paid", Note: ptr("Held for a quick check")}); err != nil {
+		return false, err
+	}
+	for _, ch := range []string{"push", "in_app"} {
+		if err := s.notify.Send(ctx, tx, notify.Msg{UserID: o.CustomerUserID, Channel: ch, Category: notify.CatOrders, Template: "order_review",
+			Data: map[string]any{"order": o.OrderNumber}, Key: "order:" + o.OrderNumber + ":review:" + ch}); err != nil {
+			return false, err
+		}
+	}
+	return true, nil
+}
+
+// releaseToSellers starts each seller's clock and tells them about their part of the order.
+func (s *Service) releaseToSellers(ctx context.Context, tx *uow.Tx, o store.SalesOrder) error {
+	fs, err := tx.Q.SalesOrderFulfilments(ctx, o.ID)
+	if err != nil {
+		return err
+	}
+	now := time.Now()
+	for _, f := range fs {
+		if f.FulfilledBy != "seller" || f.Status != "pending" {
+			continue
+		}
+		accept, pack := now.Add(sellerAcceptWindow), now.Add(sellerPackWindow)
+		if _, err := tx.Q.SalesSetFulfilmentStatus(ctx, store.SalesSetFulfilmentStatusParams{ID: f.ID, Status: "pending", AcceptBy: &accept, PackBy: &pack}); err != nil {
+			return err
+		}
+		if err := s.tellSellerNewOrder(ctx, tx, f.ID, f.SellerID, o.OrderNumber); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// resolveReview releases a held order (cleared) or cancels and refunds it (blocked).
+func (s *Service) resolveReview(ctx context.Context, tx *uow.Tx, caseID uuid.UUID, outcome string) error {
+	o, err := tx.Q.SalesOrderByReviewCase(ctx, &caseID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil
+	}
+	if err != nil || o.ReviewHoldAt == nil {
+		return err
+	}
+	if err := tx.Q.SalesSetReviewHold(ctx, store.SalesSetReviewHoldParams{ID: o.ID, ReviewCaseID: &caseID}); err != nil {
+		return err
+	}
+	if outcome == "blocked" {
+		if o.Status != "paid" {
+			return nil
+		}
+		return s.cancelWhole(ctx, tx, o, "We couldn't verify this order, so it was cancelled and refunded. Contact support if this is a mistake.", nil, true)
+	}
+	if err := tx.Q.SalesInsertHistory(ctx, store.SalesInsertHistoryParams{OrderID: o.ID, FromStatus: ptr("paid"), ToStatus: "paid", Note: ptr("Check complete")}); err != nil {
+		return err
+	}
+	return s.releaseToSellers(ctx, tx, o)
+}

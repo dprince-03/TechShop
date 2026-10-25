@@ -10,7 +10,8 @@ const now = () => new Date().toISOString();
 
 describe("rider app", () => {
   test("shift → assigned job → pickup by label → offline batch → location → delivery code → shift end", async () => {
-    const number = await placePaidOrder("customer_b", seed().extra.listing_p2);
+    // Under ₦1m: a brand-new account's first order over ₦1m is held for a risk review.
+    const number = await placePaidOrder("customer_b", seed().extra.listing_p1);
     const packed = await pickAndPack(number);
     assert.equal(packed.handoff, "rider");
     const jobId = packed.jobId!;

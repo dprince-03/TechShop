@@ -122,6 +122,11 @@ func (s *Service) Providers(ctx context.Context) []string {
 
 // Intent implements sales.PaymentPort: a payment row in the checkout transaction.
 func (s *Service) Intent(ctx context.Context, tx *uow.Tx, o store.SalesOrder, provider string) (store.PaymentsPayment, error) {
+	if provider == StoreCredit {
+		if err := s.holdStoreCredit(ctx, tx, o); err != nil {
+			return store.PaymentsPayment{}, err
+		}
+	}
 	n, err := tx.Q.PaymentsCountForOrder(ctx, &o.ID)
 	if err != nil {
 		return store.PaymentsPayment{}, err
@@ -131,7 +136,37 @@ func (s *Service) Intent(ctx context.Context, tx *uow.Tx, o store.SalesOrder, pr
 	if err != nil {
 		return p, httpx.DB(err, "payment")
 	}
+	if provider == StoreCredit { // settled at once; the order is marked paid in the same transaction
+		ref := "store-credit"
+		return tx.Q.PaymentsSetStatus(ctx, store.PaymentsSetStatusParams{ID: p.ID, Status: "succeeded", ProviderStatus: &ref})
+	}
 	return p, nil
+}
+
+// StoreCredit is the "provider" for orders paid from the customer's store credit. For now it
+// pays the whole order or nothing (docs/plan.md 2026-10-23: split payments come later).
+const StoreCredit = "store_credit"
+
+// holdStoreCredit locks the customer's credit account and checks it covers the order, so two
+// checkouts can't spend the same credit.
+func (s *Service) holdStoreCredit(ctx context.Context, tx *uow.Tx, o store.SalesOrder) error {
+	if o.CustomerUserID == nil {
+		return httpx.Invalid("store_credit_unavailable", "Sign in to pay with store credit.")
+	}
+	code := ledger.StoreCredit(*o.CustomerUserID)
+	if _, err := tx.Q.PaymentsLockAccount(ctx, code); errors.Is(err, pgx.ErrNoRows) {
+		return httpx.Invalid("store_credit_insufficient", "You don't have store credit yet.")
+	} else if err != nil {
+		return err
+	}
+	bal, err := tx.Q.FinanceAccountBalance(ctx, code)
+	if err != nil {
+		return err
+	}
+	if -bal < o.TotalKobo { // a liability: credit balances are negative
+		return httpx.Invalid("store_credit_insufficient", "Your store credit ("+money.Format(-bal)+") doesn't cover this order ("+money.Format(o.TotalKobo)+"). Choose another way to pay.")
+	}
+	return nil
 }
 
 // reference is the merchant reference sent to providers (unique per payment).
@@ -144,6 +179,9 @@ func (s *Service) Open(ctx context.Context, paymentID uuid.UUID) (sales.PaymentA
 	p, err := s.d.Q.PaymentsGet(ctx, paymentID)
 	if err != nil {
 		return sales.PaymentAction{}, err
+	}
+	if p.Provider == StoreCredit {
+		return sales.PaymentAction{PaymentID: p.ID, Provider: p.Provider, Status: p.Status, Message: "Paid with your store credit."}, nil
 	}
 	prov, err := s.provider(p.Provider)
 	if err != nil {
@@ -436,7 +474,7 @@ func (s *Service) latePayment(ctx context.Context, tx *uow.Tx, p store.PaymentsP
 		}
 	}
 	// Not reinstated: book the money as owed back to the customer, then ask for the refund.
-	if err := s.ledger.Sale(ctx, tx, p.ID, *p.OrderID, p.Provider, paid, 0, paid, nil); err != nil {
+	if err := s.ledger.Sale(ctx, tx, p.ID, *p.OrderID, ledger.Clearing(p.Provider), paid, 0, paid, nil); err != nil {
 		return err
 	}
 	return s.requestExcessRefund(ctx, tx, p, paid, "late payment for a cancelled order")
@@ -505,7 +543,7 @@ func (s *Service) ExpireOrders(ctx context.Context) (int, error) {
 					// Partial transfer then expiry: the partial amount goes back (§4.3).
 					for _, p := range pays {
 						if derefStr(p.Channel) == "bank_transfer" {
-							if err := s.ledger.Sale(ctx, tx, p.ID, o.ID, p.Provider, va.ReceivedKobo, 0, va.ReceivedKobo, nil); err != nil {
+							if err := s.ledger.Sale(ctx, tx, p.ID, o.ID, ledger.Clearing(p.Provider), va.ReceivedKobo, 0, va.ReceivedKobo, nil); err != nil {
 								return err
 							}
 							if err := s.requestExcessRefund(ctx, tx, p, va.ReceivedKobo, "partial transfer before the order expired"); err != nil {
@@ -544,16 +582,40 @@ func (s *Service) Sweep(ctx context.Context) error {
 
 // RequestRefund opens a refund for an order. requestedBy nil = an automatic (system) request.
 func (s *Service) RequestRefund(ctx context.Context, tx *uow.Tx, orderID uuid.UUID, amount int64, reason, method string, requestedBy *uuid.UUID) (store.PaymentsRefund, error) {
-	return s.requestRefund(ctx, tx, orderID, nil, amount, reason, method, requestedBy)
+	return s.requestRefund(ctx, tx, orderID, nil, amount, reason, method, requestedBy, nil)
 }
 
 // RequestReturnRefund raises the refund for an inspected return (linked to it, so finance sees
-// why). It goes through the same approval as every other refund.
-func (s *Service) RequestReturnRefund(ctx context.Context, tx *uow.Tx, orderID, returnID uuid.UUID, amount int64, reason string, requestedBy *uuid.UUID) (store.PaymentsRefund, error) {
-	return s.requestRefund(ctx, tx, orderID, &returnID, amount, reason, "original", requestedBy)
+// why), charged item by item (alloc). It goes through the same approval as every other refund.
+func (s *Service) RequestReturnRefund(ctx context.Context, tx *uow.Tx, orderID, returnID uuid.UUID, amount int64, reason string, alloc []ledger.Line, requestedBy *uuid.UUID) (store.PaymentsRefund, error) {
+	return s.requestRefund(ctx, tx, orderID, &returnID, amount, reason, "original", requestedBy, alloc)
 }
 
-func (s *Service) requestRefund(ctx context.Context, tx *uow.Tx, orderID uuid.UUID, returnID *uuid.UUID, amount int64, reason, method string, requestedBy *uuid.UUID) (store.PaymentsRefund, error) {
+// RequestItemRefund raises a refund whose cost is known item by item (a warranty refund).
+func (s *Service) RequestItemRefund(ctx context.Context, tx *uow.Tx, orderID uuid.UUID, amount int64, reason string, alloc []ledger.Line, requestedBy *uuid.UUID) (store.PaymentsRefund, error) {
+	return s.requestRefund(ctx, tx, orderID, nil, amount, reason, "original", requestedBy, alloc)
+}
+
+// allocLine is a stored refund allocation entry.
+type allocLine struct {
+	Code   string `json:"code"`
+	Amount int64  `json:"amount"`
+}
+
+func (s *Service) requestRefund(ctx context.Context, tx *uow.Tx, orderID uuid.UUID, returnID *uuid.UUID, amount int64, reason, method string, requestedBy *uuid.UUID, alloc []ledger.Line) (store.PaymentsRefund, error) {
+	var allocJSON []byte
+	if len(alloc) > 0 {
+		var sum int64
+		stored := make([]allocLine, len(alloc))
+		for i, l := range alloc {
+			sum += l.Amount
+			stored[i] = allocLine{Code: l.Code, Amount: l.Amount}
+		}
+		if sum != amount {
+			return store.PaymentsRefund{}, fmt.Errorf("refund allocation sums to %d, not %d", sum, amount)
+		}
+		allocJSON, _ = json.Marshal(stored)
+	}
 	pay, err := tx.Q.PaymentsSucceededForOrder(ctx, &orderID)
 	if err != nil {
 		return store.PaymentsRefund{}, httpx.Conflict("not_paid", "This order has no captured payment to refund.")
@@ -565,7 +627,7 @@ func (s *Service) requestRefund(ctx context.Context, tx *uow.Tx, orderID uuid.UU
 	if amount <= 0 || amount > pay.AmountKobo-already {
 		return store.PaymentsRefund{}, httpx.Invalid("refund_too_large", "The refund can be at most "+money.Format(pay.AmountKobo-already)+" (captured minus already refunded).")
 	}
-	r, err := tx.Q.PaymentsCreateRefund(ctx, store.PaymentsCreateRefundParams{PaymentID: pay.ID, OrderID: orderID, ReturnRequestID: returnID, AmountKobo: amount, Method: method, Reason: reason, RequestedBy: requestedBy})
+	r, err := tx.Q.PaymentsCreateRefund(ctx, store.PaymentsCreateRefundParams{PaymentID: pay.ID, OrderID: orderID, ReturnRequestID: returnID, AmountKobo: amount, Method: method, Reason: reason, RequestedBy: requestedBy, Allocation: allocJSON})
 	if err != nil {
 		return r, httpx.DB(err, "refund")
 	}
@@ -600,7 +662,21 @@ func (s *Service) Approve(ctx context.Context, refundID, approver uuid.UUID) (st
 		if err != nil {
 			return httpx.DB(err, "refund")
 		}
-		if !strings.HasPrefix(r.Reason, ExcessPrefix) {
+		switch {
+		case strings.HasPrefix(r.Reason, ExcessPrefix):
+		case len(r.Allocation) > 0:
+			var stored []allocLine
+			if err := json.Unmarshal(r.Allocation, &stored); err != nil {
+				return err
+			}
+			debits := make([]ledger.Line, len(stored))
+			for i, l := range stored {
+				debits[i] = ledger.Line{Code: l.Code, Amount: l.Amount}
+			}
+			if err := s.ledger.RefundApproveLines(ctx, tx, r.ID, r.OrderID, r.AmountKobo, debits, &approver); err != nil {
+				return err
+			}
+		default:
 			if err := s.ledger.RefundApprove(ctx, tx, r.ID, r.OrderID, r.PaymentID, r.AmountKobo, &approver); err != nil {
 				return err
 			}
@@ -651,7 +727,8 @@ func (s *Service) Execute(ctx context.Context, refundID uuid.UUID) error {
 	var res RefundResult
 	var storeCreditFor *uuid.UUID
 	switch {
-	case r.Method == "store_credit" && o.CustomerUserID != nil:
+	case (r.Method == "store_credit" || pay.Provider == StoreCredit) && o.CustomerUserID != nil:
+		// Asked for store credit, or the order was paid with it: the money goes back there.
 		storeCreditFor = o.CustomerUserID
 		res = RefundResult{Status: "processed", Reference: "store-credit"}
 	default:

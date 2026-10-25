@@ -18,6 +18,7 @@ import (
 	"github.com/dprince-03/techshop/backend/internal/modules/ledger"
 	"github.com/dprince-03/techshop/backend/internal/modules/notify"
 	"github.com/dprince-03/techshop/backend/internal/modules/payments"
+	"github.com/dprince-03/techshop/backend/internal/modules/risk"
 	"github.com/dprince-03/techshop/backend/internal/platform/httpx"
 	"github.com/dprince-03/techshop/backend/internal/platform/kit"
 	"github.com/dprince-03/techshop/backend/internal/platform/uow"
@@ -31,11 +32,12 @@ type Service struct {
 	ledger   *ledger.Service
 	payments *payments.Service
 	notify   *notify.Service
+	risk     *risk.Service
 }
 
 // New creates the payouts service.
-func New(d *kit.Deps, led *ledger.Service, pay *payments.Service, n *notify.Service) *Service {
-	return &Service{d: d, ledger: led, payments: pay, notify: n}
+func New(d *kit.Deps, led *ledger.Service, pay *payments.Service, n *notify.Service, rk *risk.Service) *Service {
+	return &Service{d: d, ledger: led, payments: pay, notify: n, risk: rk}
 }
 
 // Name implements kit.Module.
@@ -159,6 +161,14 @@ func (s *Service) Prepare(ctx context.Context, actor uuid.UUID) (store.FinancePa
 				}
 				continue
 			}
+			held, err := s.payoutRisk(ctx, tx, sl.ID, sl.DisplayName, p.Amount)
+			if err != nil {
+				return err
+			}
+			if held {
+				skipped = append(skipped, SkippedSeller{SellerID: sl.ID, Name: sl.DisplayName, Reasons: []string{"risk_review"}, Amount: p.Amount})
+				continue
+			}
 			po, err := tx.Q.PayoutsCreatePayout(ctx, store.PayoutsCreatePayoutParams{BatchID: &batch.ID, SellerID: sl.ID, BankAccountID: *p.BankID,
 				AmountKobo: p.Amount, ScheduledFor: day})
 			if err != nil {
@@ -179,6 +189,25 @@ func (s *Service) Prepare(ctx context.Context, actor uuid.UUID) (store.FinancePa
 		return tx.Audit("payout.batch_prepared", "payout_batch", batch.ID.String(), map[string]any{"payouts": batch.PayoutCount, "totalKobo": batch.TotalKobo, "skipped": len(skipped)})
 	})
 	return batch, skipped, err
+}
+
+// payoutRisk runs the payout checkpoint for one seller's payout. A hold opens a seller case,
+// and the open case keeps them out of later batches until an analyst clears it.
+func (s *Service) payoutRisk(ctx context.Context, tx *uow.Tx, sellerID uuid.UUID, name string, amount int64) (bool, error) {
+	f, err := tx.Q.PayoutsRiskFeatures(ctx, sellerID)
+	if err != nil {
+		return false, err
+	}
+	vsAvg, cbRate := 0.0, 0.0
+	if f.AvgPaid30d > 0 {
+		vsAvg = float64(amount) / f.AvgPaid30d
+	}
+	if f.Orders90d > 0 {
+		cbRate = 100 * float64(f.Chargebacks90d) / float64(f.Orders90d)
+	}
+	dec, err := s.risk.Evaluate(ctx, tx, risk.Check{Checkpoint: "payout", SubjectType: "seller", SubjectID: sellerID, MoneyKobo: amount, CaseKind: "seller",
+		CaseTitle: "Payout to " + name, Features: risk.Features{"payout_vs_avg": vsAvg, "chargeback_rate_pct": cbRate, "open_cases": 0}})
+	return dec.Held(), err
 }
 
 // Exclude takes one seller out of a draft batch; with hold, they stay out of later batches

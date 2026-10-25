@@ -170,3 +170,13 @@ with d as (
   where f.seller_id = @seller_id::uuid and f.status = 'delivered'
 )
 update sellers.seller_bank_accounts b set created_at = now() - interval '2 days' where b.seller_id = @seller_id::uuid;
+
+-- name: PayoutsRiskFeatures :one
+-- What the payout risk rules look at: the 30-day average paid out, and the share of the shop's
+-- paid orders in 90 days that drew a chargeback.
+select coalesce((select avg(po.amount_kobo) from finance.payouts po where po.seller_id = @seller_id::uuid and po.status = 'paid'
+                   and po.paid_at > now() - interval '30 days'), 0)::float8 as avg_paid_30d,
+  coalesce((select count(distinct d.id) from payments.disputes d join payments.payments p on p.id = d.payment_id
+     join sales.fulfilments f on f.order_id = p.order_id where f.seller_id = @seller_id::uuid and d.created_at > now() - interval '90 days'), 0)::int as chargebacks_90d,
+  coalesce((select count(*) from sales.fulfilments f join sales.orders o on o.id = f.order_id
+     where f.seller_id = @seller_id::uuid and o.placed_at > now() - interval '90 days' and o.status not in ('pending_payment', 'cancelled')), 0)::int as orders_90d;

@@ -160,6 +160,60 @@ export function StarPicker({ label, value, onChange }: { label: string; value: n
   );
 }
 
+/** Pick one of a few options: large rows announced as a radio group ("Good, selected"). */
+export function Choice<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: { value: T; label: string; hint?: string }[];
+  value: T | null;
+  onChange: (v: T) => void;
+}) {
+  const c = useColors();
+  return (
+    <View style={styles.field}>
+      <Text style={{ color: c.text, fontSize: tokens.fontSize.sm, fontWeight: "600" }}>{label}</Text>
+      <View accessibilityRole="radiogroup" accessibilityLabel={label} style={styles.choices}>
+        {options.map((o) => {
+          const on = value === o.value;
+          return (
+            <Pressable
+              key={o.value}
+              accessibilityRole="radio"
+              accessibilityLabel={o.label}
+              accessibilityHint={o.hint}
+              accessibilityState={{ checked: on }}
+              onPress={() => onChange(o.value)}
+              style={[styles.choice, { borderColor: on ? c.accent : c.borderStrong, backgroundColor: on ? c.accentSubtle : c.bg }]}
+            >
+              <View style={[styles.dot, { borderColor: on ? c.accent : c.borderStrong, backgroundColor: on ? c.accent : "transparent" }]} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: c.text, fontSize: tokens.fontSize.base }}>{o.label}</Text>
+                {o.hint ? <Text style={{ color: c.textMuted, fontSize: tokens.fontSize.xs }}>{o.hint}</Text> : null}
+              </View>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+/** Status as a coloured dot plus words (never colour alone). */
+export function StatusLine({ label, tone = "neutral" }: { label: string; tone?: "success" | "warning" | "info" | "danger" | "neutral" }) {
+  const c = useColors();
+  const color = tone === "success" ? c.success : tone === "warning" ? c.warning : tone === "danger" ? c.danger : tone === "info" ? c.accent : c.textMuted;
+  return (
+    <View style={styles.status}>
+      <View style={[styles.statusDot, { backgroundColor: color }]} />
+      <Text style={{ color: c.text, fontSize: tokens.fontSize.sm }}>{label}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   stars: { flexDirection: "row", gap: tokens.space[2] },
   star: { width: tokens.control.md, height: tokens.control.md, borderWidth: 1, borderRadius: tokens.radius.sm, alignItems: "center", justifyContent: "center" },
@@ -172,4 +226,9 @@ const styles = StyleSheet.create({
   input: { minHeight: RIDER_TARGET, borderWidth: 1, borderRadius: tokens.radius.sm, paddingHorizontal: tokens.space[3], fontSize: tokens.fontSize.lg },
   notice: { borderWidth: 1, borderRadius: tokens.radius.md, padding: tokens.space[3] },
   card: { borderWidth: 1, borderRadius: tokens.radius.lg, padding: tokens.space[4], gap: tokens.space[2] },
+  choices: { gap: tokens.space[2] },
+  choice: { minHeight: RIDER_TARGET, flexDirection: "row", alignItems: "center", gap: tokens.space[3], borderWidth: 1, borderRadius: tokens.radius.md, paddingHorizontal: tokens.space[3], paddingVertical: tokens.space[2] },
+  dot: { width: tokens.space[5], height: tokens.space[5], borderRadius: tokens.radius.pill, borderWidth: 2 },
+  status: { flexDirection: "row", alignItems: "center", gap: tokens.space[2] },
+  statusDot: { width: tokens.space[2], height: tokens.space[2], borderRadius: tokens.radius.pill },
 });

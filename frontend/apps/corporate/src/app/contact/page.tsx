@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 
-import { Icon, PageHeader, PreviewForm } from "@techshop/ui/components";
+import { Icon, PageHeader, ContactForm } from "@techshop/ui/components";
 import { sites } from "@techshop/ui/sites";
+
+import { contact } from "@/features/contact/actions";
 
 import styles from "../inner.module.css";
 
@@ -68,57 +70,14 @@ export default function ContactPage() {
             </p>
           </div>
           <div className="card card--roomy">
-            <PreviewForm
-              id="general"
-              groups={[
-                {
-                  fields: [
-                    {
-                      name: "name",
-                      label: "Full name",
-                      required: true,
-                      autoComplete: "name",
-                      half: true,
-                    },
-                    {
-                      name: "email",
-                      label: "Email address",
-                      type: "email",
-                      required: true,
-                      autoComplete: "email",
-                      half: true,
-                    },
-                    {
-                      name: "org",
-                      label: "Organisation",
-                      autoComplete: "organization",
-                      half: true,
-                    },
-                    {
-                      name: "topic",
-                      label: "Topic",
-                      type: "select",
-                      required: true,
-                      options: [
-                        "Press & media",
-                        "Partnerships",
-                        "Investors",
-                        "Something else",
-                      ],
-                      half: true,
-                    },
-                    {
-                      name: "message",
-                      label: "Message",
-                      type: "textarea",
-                      required: true,
-                    },
-                  ],
-                },
+            <ContactForm
+              action={contact}
+              topics={[
+                { value: "business", label: "Partnerships or business buying" },
+                { value: "selling", label: "Selling on TechShop" },
+                { value: "other", label: "Press, investors or something else" },
               ]}
-              submitLabel="Send message"
-              successTitle="Message ready"
-              successMessage="In the live site this would reach the right TechShop team."
+              askOrder={false}
             />
           </div>
         </section>

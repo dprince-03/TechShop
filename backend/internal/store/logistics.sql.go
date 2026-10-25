@@ -105,11 +105,12 @@ func (q *Queries) LogisticsAssignJob(ctx context.Context, arg LogisticsAssignJob
 }
 
 const logisticsBoard = `-- name: LogisticsBoard :many
-select j.id, j.kind, j.fulfilment_id, j.return_request_id, j.rider_id, j.zone_id, j.status, j.pickup_warehouse_id, j.pickup_address, j.dropoff_latitude, j.dropoff_longitude, j.route_sequence, j.window_start, j.window_end, j.attempts, j.assigned_by, j.assigned_at, j.delivered_at, j.recipient_name, j.otp_hash, j.otp_expires_at, j.otp_attempts, j.otp_verified_at, j.proof_method, j.proof_file_id, j.created_at, j.updated_at, z.name as zone_name, o.order_number, u.first_name as rider_first_name
+select j.id, j.kind, j.fulfilment_id, j.return_request_id, j.rider_id, j.zone_id, j.status, j.pickup_warehouse_id, j.pickup_address, j.dropoff_latitude, j.dropoff_longitude, j.route_sequence, j.window_start, j.window_end, j.attempts, j.assigned_by, j.assigned_at, j.delivered_at, j.recipient_name, j.otp_hash, j.otp_expires_at, j.otp_attempts, j.otp_verified_at, j.proof_method, j.proof_file_id, j.created_at, j.updated_at, z.name as zone_name, o.order_number, u.first_name as rider_first_name, rr.rma_number
 from logistics.delivery_jobs j
 join logistics.delivery_zones z on z.id = j.zone_id
 left join sales.fulfilments f on f.id = j.fulfilment_id
-left join sales.orders o on o.id = f.order_id
+left join aftersales.return_requests rr on rr.id = j.return_request_id
+left join sales.orders o on o.id = coalesce(f.order_id, rr.order_id)
 left join identity.users u on u.id = j.rider_id
 where ($1::text is null or j.status = $1)
   and ($2::uuid is null or j.zone_id = $2)
@@ -153,6 +154,7 @@ type LogisticsBoardRow struct {
 	ZoneName          string          `json:"zoneName"`
 	OrderNumber       *string         `json:"orderNumber"`
 	RiderFirstName    *string         `json:"riderFirstName"`
+	RmaNumber         *string         `json:"rmaNumber"`
 }
 
 func (q *Queries) LogisticsBoard(ctx context.Context, arg LogisticsBoardParams) ([]LogisticsBoardRow, error) {
@@ -195,6 +197,7 @@ func (q *Queries) LogisticsBoard(ctx context.Context, arg LogisticsBoardParams) 
 			&i.ZoneName,
 			&i.OrderNumber,
 			&i.RiderFirstName,
+			&i.RmaNumber,
 		); err != nil {
 			return nil, err
 		}
@@ -763,11 +766,52 @@ func (q *Queries) LogisticsJobForFulfilment(ctx context.Context, fulfilmentID *u
 	return i, err
 }
 
+const logisticsJobForReturn = `-- name: LogisticsJobForReturn :one
+select id, kind, fulfilment_id, return_request_id, rider_id, zone_id, status, pickup_warehouse_id, pickup_address, dropoff_latitude, dropoff_longitude, route_sequence, window_start, window_end, attempts, assigned_by, assigned_at, delivered_at, recipient_name, otp_hash, otp_expires_at, otp_attempts, otp_verified_at, proof_method, proof_file_id, created_at, updated_at from logistics.delivery_jobs where return_request_id = $1 and status <> 'cancelled' order by created_at desc limit 1
+`
+
+func (q *Queries) LogisticsJobForReturn(ctx context.Context, returnRequestID *uuid.UUID) (LogisticsDeliveryJob, error) {
+	row := q.db.QueryRow(ctx, logisticsJobForReturn, returnRequestID)
+	var i LogisticsDeliveryJob
+	err := row.Scan(
+		&i.ID,
+		&i.Kind,
+		&i.FulfilmentID,
+		&i.ReturnRequestID,
+		&i.RiderID,
+		&i.ZoneID,
+		&i.Status,
+		&i.PickupWarehouseID,
+		&i.PickupAddress,
+		&i.DropoffLatitude,
+		&i.DropoffLongitude,
+		&i.RouteSequence,
+		&i.WindowStart,
+		&i.WindowEnd,
+		&i.Attempts,
+		&i.AssignedBy,
+		&i.AssignedAt,
+		&i.DeliveredAt,
+		&i.RecipientName,
+		&i.OtpHash,
+		&i.OtpExpiresAt,
+		&i.OtpAttempts,
+		&i.OtpVerifiedAt,
+		&i.ProofMethod,
+		&i.ProofFileID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const logisticsJobView = `-- name: LogisticsJobView :one
-select j.id, j.kind, j.fulfilment_id, j.return_request_id, j.rider_id, j.zone_id, j.status, j.pickup_warehouse_id, j.pickup_address, j.dropoff_latitude, j.dropoff_longitude, j.route_sequence, j.window_start, j.window_end, j.attempts, j.assigned_by, j.assigned_at, j.delivered_at, j.recipient_name, j.otp_hash, j.otp_expires_at, j.otp_attempts, j.otp_verified_at, j.proof_method, j.proof_file_id, j.created_at, j.updated_at, f.order_id, o.order_number, o.ship_to, o.contact_phone, o.customer_user_id, w.name as pickup_warehouse_name, w.address as pickup_warehouse_address
+select j.id, j.kind, j.fulfilment_id, j.return_request_id, j.rider_id, j.zone_id, j.status, j.pickup_warehouse_id, j.pickup_address, j.dropoff_latitude, j.dropoff_longitude, j.route_sequence, j.window_start, j.window_end, j.attempts, j.assigned_by, j.assigned_at, j.delivered_at, j.recipient_name, j.otp_hash, j.otp_expires_at, j.otp_attempts, j.otp_verified_at, j.proof_method, j.proof_file_id, j.created_at, j.updated_at, coalesce(f.order_id, rr.order_id) as order_id, o.order_number, o.ship_to, o.contact_phone, o.customer_user_id,
+       w.name as pickup_warehouse_name, w.address as pickup_warehouse_address, rr.rma_number
 from logistics.delivery_jobs j
 left join sales.fulfilments f on f.id = j.fulfilment_id
-left join sales.orders o on o.id = f.order_id
+left join aftersales.return_requests rr on rr.id = j.return_request_id
+left join sales.orders o on o.id = coalesce(f.order_id, rr.order_id)
 left join inventory.warehouses w on w.id = j.pickup_warehouse_id
 where j.id = $1
 `
@@ -800,13 +844,14 @@ type LogisticsJobViewRow struct {
 	ProofFileID            *uuid.UUID      `json:"proofFileId"`
 	CreatedAt              time.Time       `json:"createdAt"`
 	UpdatedAt              time.Time       `json:"updatedAt"`
-	OrderID                *uuid.UUID      `json:"orderId"`
+	OrderID                uuid.UUID       `json:"orderId"`
 	OrderNumber            *string         `json:"orderNumber"`
 	ShipTo                 json.RawMessage `json:"shipTo"`
 	ContactPhone           *string         `json:"contactPhone"`
 	CustomerUserID         *uuid.UUID      `json:"customerUserId"`
 	PickupWarehouseName    *string         `json:"pickupWarehouseName"`
 	PickupWarehouseAddress *string         `json:"pickupWarehouseAddress"`
+	RmaNumber              *string         `json:"rmaNumber"`
 }
 
 func (q *Queries) LogisticsJobView(ctx context.Context, id uuid.UUID) (LogisticsJobViewRow, error) {
@@ -847,6 +892,7 @@ func (q *Queries) LogisticsJobView(ctx context.Context, id uuid.UUID) (Logistics
 		&i.CustomerUserID,
 		&i.PickupWarehouseName,
 		&i.PickupWarehouseAddress,
+		&i.RmaNumber,
 	)
 	return i, err
 }
@@ -1134,6 +1180,31 @@ func (q *Queries) LogisticsResolveZone(ctx context.Context, arg LogisticsResolve
 	return i, err
 }
 
+const logisticsReturnPickupInfo = `-- name: LogisticsReturnPickupInfo :one
+select o.ship_to, coalesce(
+  (select f.warehouse_id from aftersales.return_items ri join sales.order_lines ol on ol.id = ri.order_line_id
+     join sales.fulfilments f on f.id = ol.fulfilment_id where ri.return_request_id = rr.id and f.warehouse_id is not null limit 1),
+  (select w.id from inventory.warehouses w where w.kind in ('hub', 'warehouse') and w.is_active and w.state_code = o.ship_to->>'stateCode'
+     order by w.kind = 'warehouse' desc limit 1),
+  (select w.id from inventory.warehouses w where w.kind = 'warehouse' and w.is_active order by w.created_at limit 1))::uuid as warehouse_id
+from aftersales.return_requests rr join sales.orders o on o.id = rr.order_id
+where rr.id = $1
+`
+
+type LogisticsReturnPickupInfoRow struct {
+	ShipTo      json.RawMessage `json:"shipTo"`
+	WarehouseID uuid.UUID       `json:"warehouseId"`
+}
+
+// Where a return pickup starts (the order's delivery address) and where it ends: the warehouse
+// that shipped it, else a hub or warehouse in the customer's state, else any warehouse.
+func (q *Queries) LogisticsReturnPickupInfo(ctx context.Context, id uuid.UUID) (LogisticsReturnPickupInfoRow, error) {
+	row := q.db.QueryRow(ctx, logisticsReturnPickupInfo, id)
+	var i LogisticsReturnPickupInfoRow
+	err := row.Scan(&i.ShipTo, &i.WarehouseID)
+	return i, err
+}
+
 const logisticsRevokeDevice = `-- name: LogisticsRevokeDevice :one
 update logistics.rider_devices set revoked_at = now() where id = $1 returning id, rider_id, device_id, platform, approved_by, approved_at, revoked_at, created_at
 `
@@ -1155,10 +1226,12 @@ func (q *Queries) LogisticsRevokeDevice(ctx context.Context, id uuid.UUID) (Logi
 }
 
 const logisticsRiderJobs = `-- name: LogisticsRiderJobs :many
-select j.id, j.kind, j.fulfilment_id, j.return_request_id, j.rider_id, j.zone_id, j.status, j.pickup_warehouse_id, j.pickup_address, j.dropoff_latitude, j.dropoff_longitude, j.route_sequence, j.window_start, j.window_end, j.attempts, j.assigned_by, j.assigned_at, j.delivered_at, j.recipient_name, j.otp_hash, j.otp_expires_at, j.otp_attempts, j.otp_verified_at, j.proof_method, j.proof_file_id, j.created_at, j.updated_at, f.order_id, o.order_number, o.ship_to, o.contact_phone, w.name as pickup_warehouse_name, w.address as pickup_warehouse_address
+select j.id, j.kind, j.fulfilment_id, j.return_request_id, j.rider_id, j.zone_id, j.status, j.pickup_warehouse_id, j.pickup_address, j.dropoff_latitude, j.dropoff_longitude, j.route_sequence, j.window_start, j.window_end, j.attempts, j.assigned_by, j.assigned_at, j.delivered_at, j.recipient_name, j.otp_hash, j.otp_expires_at, j.otp_attempts, j.otp_verified_at, j.proof_method, j.proof_file_id, j.created_at, j.updated_at, coalesce(f.order_id, rr.order_id) as order_id, o.order_number, o.ship_to, o.contact_phone, w.name as pickup_warehouse_name, w.address as pickup_warehouse_address,
+       rr.rma_number
 from logistics.delivery_jobs j
 left join sales.fulfilments f on f.id = j.fulfilment_id
-left join sales.orders o on o.id = f.order_id
+left join aftersales.return_requests rr on rr.id = j.return_request_id
+left join sales.orders o on o.id = coalesce(f.order_id, rr.order_id)
 left join inventory.warehouses w on w.id = j.pickup_warehouse_id
 where j.rider_id = $1 and (j.status in ('assigned', 'picked_up', 'en_route', 'failed') or j.updated_at > now() - interval '24 hours')
 order by j.route_sequence nulls last, j.window_start nulls last, j.created_at
@@ -1192,12 +1265,13 @@ type LogisticsRiderJobsRow struct {
 	ProofFileID            *uuid.UUID      `json:"proofFileId"`
 	CreatedAt              time.Time       `json:"createdAt"`
 	UpdatedAt              time.Time       `json:"updatedAt"`
-	OrderID                *uuid.UUID      `json:"orderId"`
+	OrderID                uuid.UUID       `json:"orderId"`
 	OrderNumber            *string         `json:"orderNumber"`
 	ShipTo                 json.RawMessage `json:"shipTo"`
 	ContactPhone           *string         `json:"contactPhone"`
 	PickupWarehouseName    *string         `json:"pickupWarehouseName"`
 	PickupWarehouseAddress *string         `json:"pickupWarehouseAddress"`
+	RmaNumber              *string         `json:"rmaNumber"`
 }
 
 // A rider's work: active jobs plus today's finished ones, with what the job screen needs.
@@ -1244,6 +1318,7 @@ func (q *Queries) LogisticsRiderJobs(ctx context.Context, riderID *uuid.UUID) ([
 			&i.ContactPhone,
 			&i.PickupWarehouseName,
 			&i.PickupWarehouseAddress,
+			&i.RmaNumber,
 		); err != nil {
 			return nil, err
 		}

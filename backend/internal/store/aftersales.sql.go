@@ -7,6 +7,7 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -30,7 +31,7 @@ func (q *Queries) AftersalesAddItem(ctx context.Context, arg AftersalesAddItemPa
 const aftersalesCreateReturn = `-- name: AftersalesCreateReturn :one
 insert into aftersales.return_requests (order_id, requested_by, reason, details, return_method, status, auto_approved)
 values ($1, $2, $3, $4, $5, $6, $7)
-returning id, rma_number, order_id, requested_by, reason, details, return_method, status, auto_approved, resolution, decided_by, rejection_reason, created_at, updated_at
+returning id, rma_number, order_id, requested_by, reason, details, return_method, status, auto_approved, resolution, decided_by, rejection_reason, created_at, updated_at, seller_dispute_reason, seller_disputed_at, seller_disputed_by, dispute_decision, dispute_note, dispute_decided_by, dispute_decided_at
 `
 
 type AftersalesCreateReturnParams struct {
@@ -69,12 +70,19 @@ func (q *Queries) AftersalesCreateReturn(ctx context.Context, arg AftersalesCrea
 		&i.RejectionReason,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.SellerDisputeReason,
+		&i.SellerDisputedAt,
+		&i.SellerDisputedBy,
+		&i.DisputeDecision,
+		&i.DisputeNote,
+		&i.DisputeDecidedBy,
+		&i.DisputeDecidedAt,
 	)
 	return i, err
 }
 
 const aftersalesDecide = `-- name: AftersalesDecide :one
-update aftersales.return_requests set status = $2, decided_by = $3, rejection_reason = $4 where id = $1 returning id, rma_number, order_id, requested_by, reason, details, return_method, status, auto_approved, resolution, decided_by, rejection_reason, created_at, updated_at
+update aftersales.return_requests set status = $2, decided_by = $3, rejection_reason = $4 where id = $1 returning id, rma_number, order_id, requested_by, reason, details, return_method, status, auto_approved, resolution, decided_by, rejection_reason, created_at, updated_at, seller_dispute_reason, seller_disputed_at, seller_disputed_by, dispute_decision, dispute_note, dispute_decided_by, dispute_decided_at
 `
 
 type AftersalesDecideParams struct {
@@ -107,32 +115,92 @@ func (q *Queries) AftersalesDecide(ctx context.Context, arg AftersalesDecidePara
 		&i.RejectionReason,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.SellerDisputeReason,
+		&i.SellerDisputedAt,
+		&i.SellerDisputedBy,
+		&i.DisputeDecision,
+		&i.DisputeNote,
+		&i.DisputeDecidedBy,
+		&i.DisputeDecidedAt,
+	)
+	return i, err
+}
+
+const aftersalesDecideDispute = `-- name: AftersalesDecideDispute :one
+update aftersales.return_requests set dispute_decision = $2, dispute_note = $3, dispute_decided_by = $4, dispute_decided_at = now()
+where id = $1 and seller_disputed_at is not null and dispute_decision is null returning id, rma_number, order_id, requested_by, reason, details, return_method, status, auto_approved, resolution, decided_by, rejection_reason, created_at, updated_at, seller_dispute_reason, seller_disputed_at, seller_disputed_by, dispute_decision, dispute_note, dispute_decided_by, dispute_decided_at
+`
+
+type AftersalesDecideDisputeParams struct {
+	ID               uuid.UUID  `json:"id"`
+	DisputeDecision  *string    `json:"disputeDecision"`
+	DisputeNote      *string    `json:"disputeNote"`
+	DisputeDecidedBy *uuid.UUID `json:"disputeDecidedBy"`
+}
+
+func (q *Queries) AftersalesDecideDispute(ctx context.Context, arg AftersalesDecideDisputeParams) (AftersalesReturnRequest, error) {
+	row := q.db.QueryRow(ctx, aftersalesDecideDispute,
+		arg.ID,
+		arg.DisputeDecision,
+		arg.DisputeNote,
+		arg.DisputeDecidedBy,
+	)
+	var i AftersalesReturnRequest
+	err := row.Scan(
+		&i.ID,
+		&i.RmaNumber,
+		&i.OrderID,
+		&i.RequestedBy,
+		&i.Reason,
+		&i.Details,
+		&i.ReturnMethod,
+		&i.Status,
+		&i.AutoApproved,
+		&i.Resolution,
+		&i.DecidedBy,
+		&i.RejectionReason,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.SellerDisputeReason,
+		&i.SellerDisputedAt,
+		&i.SellerDisputedBy,
+		&i.DisputeDecision,
+		&i.DisputeNote,
+		&i.DisputeDecidedBy,
+		&i.DisputeDecidedAt,
 	)
 	return i, err
 }
 
 const aftersalesGetReturn = `-- name: AftersalesGetReturn :one
-select r.id, r.rma_number, r.order_id, r.requested_by, r.reason, r.details, r.return_method, r.status, r.auto_approved, r.resolution, r.decided_by, r.rejection_reason, r.created_at, r.updated_at, o.order_number, o.customer_user_id from aftersales.return_requests r join sales.orders o on o.id = r.order_id
+select r.id, r.rma_number, r.order_id, r.requested_by, r.reason, r.details, r.return_method, r.status, r.auto_approved, r.resolution, r.decided_by, r.rejection_reason, r.created_at, r.updated_at, r.seller_dispute_reason, r.seller_disputed_at, r.seller_disputed_by, r.dispute_decision, r.dispute_note, r.dispute_decided_by, r.dispute_decided_at, o.order_number, o.customer_user_id from aftersales.return_requests r join sales.orders o on o.id = r.order_id
 where r.rma_number = $1
 `
 
 type AftersalesGetReturnRow struct {
-	ID              uuid.UUID  `json:"id"`
-	RmaNumber       string     `json:"rmaNumber"`
-	OrderID         uuid.UUID  `json:"orderId"`
-	RequestedBy     uuid.UUID  `json:"requestedBy"`
-	Reason          string     `json:"reason"`
-	Details         *string    `json:"details"`
-	ReturnMethod    *string    `json:"returnMethod"`
-	Status          string     `json:"status"`
-	AutoApproved    bool       `json:"autoApproved"`
-	Resolution      *string    `json:"resolution"`
-	DecidedBy       *uuid.UUID `json:"decidedBy"`
-	RejectionReason *string    `json:"rejectionReason"`
-	CreatedAt       time.Time  `json:"createdAt"`
-	UpdatedAt       time.Time  `json:"updatedAt"`
-	OrderNumber     string     `json:"orderNumber"`
-	CustomerUserID  *uuid.UUID `json:"customerUserId"`
+	ID                  uuid.UUID  `json:"id"`
+	RmaNumber           string     `json:"rmaNumber"`
+	OrderID             uuid.UUID  `json:"orderId"`
+	RequestedBy         uuid.UUID  `json:"requestedBy"`
+	Reason              string     `json:"reason"`
+	Details             *string    `json:"details"`
+	ReturnMethod        *string    `json:"returnMethod"`
+	Status              string     `json:"status"`
+	AutoApproved        bool       `json:"autoApproved"`
+	Resolution          *string    `json:"resolution"`
+	DecidedBy           *uuid.UUID `json:"decidedBy"`
+	RejectionReason     *string    `json:"rejectionReason"`
+	CreatedAt           time.Time  `json:"createdAt"`
+	UpdatedAt           time.Time  `json:"updatedAt"`
+	SellerDisputeReason *string    `json:"sellerDisputeReason"`
+	SellerDisputedAt    *time.Time `json:"sellerDisputedAt"`
+	SellerDisputedBy    *uuid.UUID `json:"sellerDisputedBy"`
+	DisputeDecision     *string    `json:"disputeDecision"`
+	DisputeNote         *string    `json:"disputeNote"`
+	DisputeDecidedBy    *uuid.UUID `json:"disputeDecidedBy"`
+	DisputeDecidedAt    *time.Time `json:"disputeDecidedAt"`
+	OrderNumber         string     `json:"orderNumber"`
+	CustomerUserID      *uuid.UUID `json:"customerUserId"`
 }
 
 func (q *Queries) AftersalesGetReturn(ctx context.Context, rmaNumber string) (AftersalesGetReturnRow, error) {
@@ -153,6 +221,13 @@ func (q *Queries) AftersalesGetReturn(ctx context.Context, rmaNumber string) (Af
 		&i.RejectionReason,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.SellerDisputeReason,
+		&i.SellerDisputedAt,
+		&i.SellerDisputedBy,
+		&i.DisputeDecision,
+		&i.DisputeNote,
+		&i.DisputeDecidedBy,
+		&i.DisputeDecidedAt,
 		&i.OrderNumber,
 		&i.CustomerUserID,
 	)
@@ -160,7 +235,7 @@ func (q *Queries) AftersalesGetReturn(ctx context.Context, rmaNumber string) (Af
 }
 
 const aftersalesGetReturnForUpdate = `-- name: AftersalesGetReturnForUpdate :one
-select id, rma_number, order_id, requested_by, reason, details, return_method, status, auto_approved, resolution, decided_by, rejection_reason, created_at, updated_at from aftersales.return_requests where rma_number = $1 for update
+select id, rma_number, order_id, requested_by, reason, details, return_method, status, auto_approved, resolution, decided_by, rejection_reason, created_at, updated_at, seller_dispute_reason, seller_disputed_at, seller_disputed_by, dispute_decision, dispute_note, dispute_decided_by, dispute_decided_at from aftersales.return_requests where rma_number = $1 for update
 `
 
 func (q *Queries) AftersalesGetReturnForUpdate(ctx context.Context, rmaNumber string) (AftersalesReturnRequest, error) {
@@ -181,6 +256,13 @@ func (q *Queries) AftersalesGetReturnForUpdate(ctx context.Context, rmaNumber st
 		&i.RejectionReason,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.SellerDisputeReason,
+		&i.SellerDisputedAt,
+		&i.SellerDisputedBy,
+		&i.DisputeDecision,
+		&i.DisputeNote,
+		&i.DisputeDecidedBy,
+		&i.DisputeDecidedAt,
 	)
 	return i, err
 }
@@ -233,36 +315,44 @@ const aftersalesItems = `-- name: AftersalesItems :many
 select ri.id, ri.order_line_id, ri.quantity, ol.fulfilment_id, f.delivery_fee_kobo,
        (select coalesce(sum(quantity), 0) from sales.order_lines x where x.fulfilment_id = ol.fulfilment_id and x.cancelled_at is null)::int as fulfilment_units, ol.product_name, ol.variant_name, ol.condition, ol.variant_id, ol.listing_id,
        ol.unit_price_kobo, ol.line_total_kobo, ol.quantity as line_quantity, ol.device_unit_id, f.seller_id,
+       f.fulfilled_by, f.delivered_at, s.type as seller_type, ol.vat_kobo, ol.seller_earning_kobo, ol.commission_bps,
        ins.grade, ins.disposition, ins.imei_match, ins.inspected_at
 from aftersales.return_items ri
 join sales.order_lines ol on ol.id = ri.order_line_id
 join sales.fulfilments f on f.id = ol.fulfilment_id
+join sellers.sellers s on s.id = f.seller_id
 left join aftersales.return_inspections ins on ins.return_item_id = ri.id
 where ri.return_request_id = $1
 order by ol.created_at
 `
 
 type AftersalesItemsRow struct {
-	ID              uuid.UUID  `json:"id"`
-	OrderLineID     uuid.UUID  `json:"orderLineId"`
-	Quantity        int32      `json:"quantity"`
-	FulfilmentID    uuid.UUID  `json:"fulfilmentId"`
-	DeliveryFeeKobo int64      `json:"deliveryFeeKobo"`
-	FulfilmentUnits int32      `json:"fulfilmentUnits"`
-	ProductName     string     `json:"productName"`
-	VariantName     string     `json:"variantName"`
-	Condition       string     `json:"condition"`
-	VariantID       uuid.UUID  `json:"variantId"`
-	ListingID       uuid.UUID  `json:"listingId"`
-	UnitPriceKobo   int64      `json:"unitPriceKobo"`
-	LineTotalKobo   int64      `json:"lineTotalKobo"`
-	LineQuantity    int32      `json:"lineQuantity"`
-	DeviceUnitID    *uuid.UUID `json:"deviceUnitId"`
-	SellerID        uuid.UUID  `json:"sellerId"`
-	Grade           *string    `json:"grade"`
-	Disposition     *string    `json:"disposition"`
-	ImeiMatch       *bool      `json:"imeiMatch"`
-	InspectedAt     *time.Time `json:"inspectedAt"`
+	ID                uuid.UUID  `json:"id"`
+	OrderLineID       uuid.UUID  `json:"orderLineId"`
+	Quantity          int32      `json:"quantity"`
+	FulfilmentID      uuid.UUID  `json:"fulfilmentId"`
+	DeliveryFeeKobo   int64      `json:"deliveryFeeKobo"`
+	FulfilmentUnits   int32      `json:"fulfilmentUnits"`
+	ProductName       string     `json:"productName"`
+	VariantName       string     `json:"variantName"`
+	Condition         string     `json:"condition"`
+	VariantID         uuid.UUID  `json:"variantId"`
+	ListingID         uuid.UUID  `json:"listingId"`
+	UnitPriceKobo     int64      `json:"unitPriceKobo"`
+	LineTotalKobo     int64      `json:"lineTotalKobo"`
+	LineQuantity      int32      `json:"lineQuantity"`
+	DeviceUnitID      *uuid.UUID `json:"deviceUnitId"`
+	SellerID          uuid.UUID  `json:"sellerId"`
+	FulfilledBy       string     `json:"fulfilledBy"`
+	DeliveredAt       *time.Time `json:"deliveredAt"`
+	SellerType        string     `json:"sellerType"`
+	VatKobo           int64      `json:"vatKobo"`
+	SellerEarningKobo *int64     `json:"sellerEarningKobo"`
+	CommissionBps     int32      `json:"commissionBps"`
+	Grade             *string    `json:"grade"`
+	Disposition       *string    `json:"disposition"`
+	ImeiMatch         *bool      `json:"imeiMatch"`
+	InspectedAt       *time.Time `json:"inspectedAt"`
 }
 
 func (q *Queries) AftersalesItems(ctx context.Context, returnRequestID uuid.UUID) ([]AftersalesItemsRow, error) {
@@ -291,6 +381,12 @@ func (q *Queries) AftersalesItems(ctx context.Context, returnRequestID uuid.UUID
 			&i.LineQuantity,
 			&i.DeviceUnitID,
 			&i.SellerID,
+			&i.FulfilledBy,
+			&i.DeliveredAt,
+			&i.SellerType,
+			&i.VatKobo,
+			&i.SellerEarningKobo,
+			&i.CommissionBps,
 			&i.Grade,
 			&i.Disposition,
 			&i.ImeiMatch,
@@ -306,33 +402,77 @@ func (q *Queries) AftersalesItems(ctx context.Context, returnRequestID uuid.UUID
 	return items, nil
 }
 
-const aftersalesOpenRiskCase = `-- name: AftersalesOpenRiskCase :one
-insert into risk.risk_cases (kind, subject_type, subject_id, reason, score, money_at_risk_kobo)
-values ($1, $2, $3, $4, $5, $6)
-returning id
+const aftersalesPickupJob = `-- name: AftersalesPickupJob :one
+select status, rider_id, delivered_at from logistics.delivery_jobs where return_request_id = $1 and status <> 'cancelled' order by created_at desc limit 1
 `
 
-type AftersalesOpenRiskCaseParams struct {
-	Kind            string    `json:"kind"`
-	SubjectType     string    `json:"subjectType"`
-	SubjectID       uuid.UUID `json:"subjectId"`
-	Reason          string    `json:"reason"`
-	Score           *int16    `json:"score"`
-	MoneyAtRiskKobo *int64    `json:"moneyAtRiskKobo"`
+type AftersalesPickupJobRow struct {
+	Status      string     `json:"status"`
+	RiderID     *uuid.UUID `json:"riderId"`
+	DeliveredAt *time.Time `json:"deliveredAt"`
 }
 
-func (q *Queries) AftersalesOpenRiskCase(ctx context.Context, arg AftersalesOpenRiskCaseParams) (uuid.UUID, error) {
-	row := q.db.QueryRow(ctx, aftersalesOpenRiskCase,
-		arg.Kind,
-		arg.SubjectType,
-		arg.SubjectID,
-		arg.Reason,
-		arg.Score,
-		arg.MoneyAtRiskKobo,
+func (q *Queries) AftersalesPickupJob(ctx context.Context, returnRequestID *uuid.UUID) (AftersalesPickupJobRow, error) {
+	row := q.db.QueryRow(ctx, aftersalesPickupJob, returnRequestID)
+	var i AftersalesPickupJobRow
+	err := row.Scan(&i.Status, &i.RiderID, &i.DeliveredAt)
+	return i, err
+}
+
+const aftersalesReturnByID = `-- name: AftersalesReturnByID :one
+select id, rma_number, order_id, requested_by, reason, details, return_method, status, auto_approved, resolution, decided_by, rejection_reason, created_at, updated_at, seller_dispute_reason, seller_disputed_at, seller_disputed_by, dispute_decision, dispute_note, dispute_decided_by, dispute_decided_at from aftersales.return_requests where id = $1 for update
+`
+
+func (q *Queries) AftersalesReturnByID(ctx context.Context, id uuid.UUID) (AftersalesReturnRequest, error) {
+	row := q.db.QueryRow(ctx, aftersalesReturnByID, id)
+	var i AftersalesReturnRequest
+	err := row.Scan(
+		&i.ID,
+		&i.RmaNumber,
+		&i.OrderID,
+		&i.RequestedBy,
+		&i.Reason,
+		&i.Details,
+		&i.ReturnMethod,
+		&i.Status,
+		&i.AutoApproved,
+		&i.Resolution,
+		&i.DecidedBy,
+		&i.RejectionReason,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.SellerDisputeReason,
+		&i.SellerDisputedAt,
+		&i.SellerDisputedBy,
+		&i.DisputeDecision,
+		&i.DisputeNote,
+		&i.DisputeDecidedBy,
+		&i.DisputeDecidedAt,
 	)
-	var id uuid.UUID
-	err := row.Scan(&id)
-	return id, err
+	return i, err
+}
+
+const aftersalesReturnRefundRow = `-- name: AftersalesReturnRefundRow :one
+select id, status, amount_kobo, allocation from payments.refunds where return_request_id = $1 order by created_at desc limit 1
+`
+
+type AftersalesReturnRefundRowRow struct {
+	ID         uuid.UUID       `json:"id"`
+	Status     string          `json:"status"`
+	AmountKobo int64           `json:"amountKobo"`
+	Allocation json.RawMessage `json:"allocation"`
+}
+
+func (q *Queries) AftersalesReturnRefundRow(ctx context.Context, returnRequestID *uuid.UUID) (AftersalesReturnRefundRowRow, error) {
+	row := q.db.QueryRow(ctx, aftersalesReturnRefundRow, returnRequestID)
+	var i AftersalesReturnRefundRowRow
+	err := row.Scan(
+		&i.ID,
+		&i.Status,
+		&i.AmountKobo,
+		&i.Allocation,
+	)
+	return i, err
 }
 
 const aftersalesReturnableLines = `-- name: AftersalesReturnableLines :many
@@ -421,26 +561,33 @@ func (q *Queries) AftersalesReturnableLines(ctx context.Context, orderID uuid.UU
 }
 
 const aftersalesReturnsForUser = `-- name: AftersalesReturnsForUser :many
-select r.id, r.rma_number, r.order_id, r.requested_by, r.reason, r.details, r.return_method, r.status, r.auto_approved, r.resolution, r.decided_by, r.rejection_reason, r.created_at, r.updated_at, o.order_number from aftersales.return_requests r join sales.orders o on o.id = r.order_id
+select r.id, r.rma_number, r.order_id, r.requested_by, r.reason, r.details, r.return_method, r.status, r.auto_approved, r.resolution, r.decided_by, r.rejection_reason, r.created_at, r.updated_at, r.seller_dispute_reason, r.seller_disputed_at, r.seller_disputed_by, r.dispute_decision, r.dispute_note, r.dispute_decided_by, r.dispute_decided_at, o.order_number from aftersales.return_requests r join sales.orders o on o.id = r.order_id
 where r.requested_by = $1 order by r.created_at desc limit 50
 `
 
 type AftersalesReturnsForUserRow struct {
-	ID              uuid.UUID  `json:"id"`
-	RmaNumber       string     `json:"rmaNumber"`
-	OrderID         uuid.UUID  `json:"orderId"`
-	RequestedBy     uuid.UUID  `json:"requestedBy"`
-	Reason          string     `json:"reason"`
-	Details         *string    `json:"details"`
-	ReturnMethod    *string    `json:"returnMethod"`
-	Status          string     `json:"status"`
-	AutoApproved    bool       `json:"autoApproved"`
-	Resolution      *string    `json:"resolution"`
-	DecidedBy       *uuid.UUID `json:"decidedBy"`
-	RejectionReason *string    `json:"rejectionReason"`
-	CreatedAt       time.Time  `json:"createdAt"`
-	UpdatedAt       time.Time  `json:"updatedAt"`
-	OrderNumber     string     `json:"orderNumber"`
+	ID                  uuid.UUID  `json:"id"`
+	RmaNumber           string     `json:"rmaNumber"`
+	OrderID             uuid.UUID  `json:"orderId"`
+	RequestedBy         uuid.UUID  `json:"requestedBy"`
+	Reason              string     `json:"reason"`
+	Details             *string    `json:"details"`
+	ReturnMethod        *string    `json:"returnMethod"`
+	Status              string     `json:"status"`
+	AutoApproved        bool       `json:"autoApproved"`
+	Resolution          *string    `json:"resolution"`
+	DecidedBy           *uuid.UUID `json:"decidedBy"`
+	RejectionReason     *string    `json:"rejectionReason"`
+	CreatedAt           time.Time  `json:"createdAt"`
+	UpdatedAt           time.Time  `json:"updatedAt"`
+	SellerDisputeReason *string    `json:"sellerDisputeReason"`
+	SellerDisputedAt    *time.Time `json:"sellerDisputedAt"`
+	SellerDisputedBy    *uuid.UUID `json:"sellerDisputedBy"`
+	DisputeDecision     *string    `json:"disputeDecision"`
+	DisputeNote         *string    `json:"disputeNote"`
+	DisputeDecidedBy    *uuid.UUID `json:"disputeDecidedBy"`
+	DisputeDecidedAt    *time.Time `json:"disputeDecidedAt"`
+	OrderNumber         string     `json:"orderNumber"`
 }
 
 func (q *Queries) AftersalesReturnsForUser(ctx context.Context, requestedBy uuid.UUID) ([]AftersalesReturnsForUserRow, error) {
@@ -467,6 +614,13 @@ func (q *Queries) AftersalesReturnsForUser(ctx context.Context, requestedBy uuid
 			&i.RejectionReason,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.SellerDisputeReason,
+			&i.SellerDisputedAt,
+			&i.SellerDisputedBy,
+			&i.DisputeDecision,
+			&i.DisputeNote,
+			&i.DisputeDecidedBy,
+			&i.DisputeDecidedAt,
 			&i.OrderNumber,
 		); err != nil {
 			return nil, err
@@ -479,8 +633,124 @@ func (q *Queries) AftersalesReturnsForUser(ctx context.Context, requestedBy uuid
 	return items, nil
 }
 
+const aftersalesSellerReturns = `-- name: AftersalesSellerReturns :many
+select r.id, r.rma_number, r.order_id, r.requested_by, r.reason, r.details, r.return_method, r.status, r.auto_approved, r.resolution, r.decided_by, r.rejection_reason, r.created_at, r.updated_at, r.seller_dispute_reason, r.seller_disputed_at, r.seller_disputed_by, r.dispute_decision, r.dispute_note, r.dispute_decided_by, r.dispute_decided_at, o.order_number from aftersales.return_requests r join sales.orders o on o.id = r.order_id
+where exists (select 1 from aftersales.return_items ri join sales.order_lines ol on ol.id = ri.order_line_id
+              where ri.return_request_id = r.id and ol.seller_id = $1)
+order by r.created_at desc limit 100
+`
+
+type AftersalesSellerReturnsRow struct {
+	ID                  uuid.UUID  `json:"id"`
+	RmaNumber           string     `json:"rmaNumber"`
+	OrderID             uuid.UUID  `json:"orderId"`
+	RequestedBy         uuid.UUID  `json:"requestedBy"`
+	Reason              string     `json:"reason"`
+	Details             *string    `json:"details"`
+	ReturnMethod        *string    `json:"returnMethod"`
+	Status              string     `json:"status"`
+	AutoApproved        bool       `json:"autoApproved"`
+	Resolution          *string    `json:"resolution"`
+	DecidedBy           *uuid.UUID `json:"decidedBy"`
+	RejectionReason     *string    `json:"rejectionReason"`
+	CreatedAt           time.Time  `json:"createdAt"`
+	UpdatedAt           time.Time  `json:"updatedAt"`
+	SellerDisputeReason *string    `json:"sellerDisputeReason"`
+	SellerDisputedAt    *time.Time `json:"sellerDisputedAt"`
+	SellerDisputedBy    *uuid.UUID `json:"sellerDisputedBy"`
+	DisputeDecision     *string    `json:"disputeDecision"`
+	DisputeNote         *string    `json:"disputeNote"`
+	DisputeDecidedBy    *uuid.UUID `json:"disputeDecidedBy"`
+	DisputeDecidedAt    *time.Time `json:"disputeDecidedAt"`
+	OrderNumber         string     `json:"orderNumber"`
+}
+
+// Returns that include items a shop shipped or owns, newest first.
+func (q *Queries) AftersalesSellerReturns(ctx context.Context, sellerID uuid.UUID) ([]AftersalesSellerReturnsRow, error) {
+	rows, err := q.db.Query(ctx, aftersalesSellerReturns, sellerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AftersalesSellerReturnsRow{}
+	for rows.Next() {
+		var i AftersalesSellerReturnsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.RmaNumber,
+			&i.OrderID,
+			&i.RequestedBy,
+			&i.Reason,
+			&i.Details,
+			&i.ReturnMethod,
+			&i.Status,
+			&i.AutoApproved,
+			&i.Resolution,
+			&i.DecidedBy,
+			&i.RejectionReason,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.SellerDisputeReason,
+			&i.SellerDisputedAt,
+			&i.SellerDisputedBy,
+			&i.DisputeDecision,
+			&i.DisputeNote,
+			&i.DisputeDecidedBy,
+			&i.DisputeDecidedAt,
+			&i.OrderNumber,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const aftersalesSetDispute = `-- name: AftersalesSetDispute :one
+update aftersales.return_requests set seller_dispute_reason = $2, seller_disputed_at = now(), seller_disputed_by = $3
+where id = $1 and seller_disputed_at is null returning id, rma_number, order_id, requested_by, reason, details, return_method, status, auto_approved, resolution, decided_by, rejection_reason, created_at, updated_at, seller_dispute_reason, seller_disputed_at, seller_disputed_by, dispute_decision, dispute_note, dispute_decided_by, dispute_decided_at
+`
+
+type AftersalesSetDisputeParams struct {
+	ID                  uuid.UUID  `json:"id"`
+	SellerDisputeReason *string    `json:"sellerDisputeReason"`
+	SellerDisputedBy    *uuid.UUID `json:"sellerDisputedBy"`
+}
+
+func (q *Queries) AftersalesSetDispute(ctx context.Context, arg AftersalesSetDisputeParams) (AftersalesReturnRequest, error) {
+	row := q.db.QueryRow(ctx, aftersalesSetDispute, arg.ID, arg.SellerDisputeReason, arg.SellerDisputedBy)
+	var i AftersalesReturnRequest
+	err := row.Scan(
+		&i.ID,
+		&i.RmaNumber,
+		&i.OrderID,
+		&i.RequestedBy,
+		&i.Reason,
+		&i.Details,
+		&i.ReturnMethod,
+		&i.Status,
+		&i.AutoApproved,
+		&i.Resolution,
+		&i.DecidedBy,
+		&i.RejectionReason,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.SellerDisputeReason,
+		&i.SellerDisputedAt,
+		&i.SellerDisputedBy,
+		&i.DisputeDecision,
+		&i.DisputeNote,
+		&i.DisputeDecidedBy,
+		&i.DisputeDecidedAt,
+	)
+	return i, err
+}
+
 const aftersalesSetStatus = `-- name: AftersalesSetStatus :one
-update aftersales.return_requests set status = $2, resolution = coalesce($3, resolution) where id = $1 returning id, rma_number, order_id, requested_by, reason, details, return_method, status, auto_approved, resolution, decided_by, rejection_reason, created_at, updated_at
+update aftersales.return_requests set status = $2, resolution = coalesce($3, resolution) where id = $1 returning id, rma_number, order_id, requested_by, reason, details, return_method, status, auto_approved, resolution, decided_by, rejection_reason, created_at, updated_at, seller_dispute_reason, seller_disputed_at, seller_disputed_by, dispute_decision, dispute_note, dispute_decided_by, dispute_decided_at
 `
 
 type AftersalesSetStatusParams struct {
@@ -507,6 +777,13 @@ func (q *Queries) AftersalesSetStatus(ctx context.Context, arg AftersalesSetStat
 		&i.RejectionReason,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.SellerDisputeReason,
+		&i.SellerDisputedAt,
+		&i.SellerDisputedBy,
+		&i.DisputeDecision,
+		&i.DisputeNote,
+		&i.DisputeDecidedBy,
+		&i.DisputeDecidedAt,
 	)
 	return i, err
 }
@@ -533,38 +810,52 @@ func (q *Queries) AftersalesSetUnitCondition(ctx context.Context, arg Aftersales
 }
 
 const aftersalesStaffList = `-- name: AftersalesStaffList :many
-select r.id, r.rma_number, r.order_id, r.requested_by, r.reason, r.details, r.return_method, r.status, r.auto_approved, r.resolution, r.decided_by, r.rejection_reason, r.created_at, r.updated_at, o.order_number from aftersales.return_requests r join sales.orders o on o.id = r.order_id
+select r.id, r.rma_number, r.order_id, r.requested_by, r.reason, r.details, r.return_method, r.status, r.auto_approved, r.resolution, r.decided_by, r.rejection_reason, r.created_at, r.updated_at, r.seller_dispute_reason, r.seller_disputed_at, r.seller_disputed_by, r.dispute_decision, r.dispute_note, r.dispute_decided_by, r.dispute_decided_at, o.order_number from aftersales.return_requests r join sales.orders o on o.id = r.order_id
 where ($1::text is null or r.status = $1)
-  and ($2::timestamptz is null or r.created_at < $2)
-order by r.created_at desc limit $3
+  and (not $2::bool or (r.seller_disputed_at is not null and r.dispute_decision is null))
+  and ($3::timestamptz is null or r.created_at < $3)
+order by r.created_at desc limit $4
 `
 
 type AftersalesStaffListParams struct {
-	Status *string    `json:"status"`
-	Before *time.Time `json:"before"`
-	Lim    int32      `json:"lim"`
+	Status   *string    `json:"status"`
+	Disputed bool       `json:"disputed"`
+	Before   *time.Time `json:"before"`
+	Lim      int32      `json:"lim"`
 }
 
 type AftersalesStaffListRow struct {
-	ID              uuid.UUID  `json:"id"`
-	RmaNumber       string     `json:"rmaNumber"`
-	OrderID         uuid.UUID  `json:"orderId"`
-	RequestedBy     uuid.UUID  `json:"requestedBy"`
-	Reason          string     `json:"reason"`
-	Details         *string    `json:"details"`
-	ReturnMethod    *string    `json:"returnMethod"`
-	Status          string     `json:"status"`
-	AutoApproved    bool       `json:"autoApproved"`
-	Resolution      *string    `json:"resolution"`
-	DecidedBy       *uuid.UUID `json:"decidedBy"`
-	RejectionReason *string    `json:"rejectionReason"`
-	CreatedAt       time.Time  `json:"createdAt"`
-	UpdatedAt       time.Time  `json:"updatedAt"`
-	OrderNumber     string     `json:"orderNumber"`
+	ID                  uuid.UUID  `json:"id"`
+	RmaNumber           string     `json:"rmaNumber"`
+	OrderID             uuid.UUID  `json:"orderId"`
+	RequestedBy         uuid.UUID  `json:"requestedBy"`
+	Reason              string     `json:"reason"`
+	Details             *string    `json:"details"`
+	ReturnMethod        *string    `json:"returnMethod"`
+	Status              string     `json:"status"`
+	AutoApproved        bool       `json:"autoApproved"`
+	Resolution          *string    `json:"resolution"`
+	DecidedBy           *uuid.UUID `json:"decidedBy"`
+	RejectionReason     *string    `json:"rejectionReason"`
+	CreatedAt           time.Time  `json:"createdAt"`
+	UpdatedAt           time.Time  `json:"updatedAt"`
+	SellerDisputeReason *string    `json:"sellerDisputeReason"`
+	SellerDisputedAt    *time.Time `json:"sellerDisputedAt"`
+	SellerDisputedBy    *uuid.UUID `json:"sellerDisputedBy"`
+	DisputeDecision     *string    `json:"disputeDecision"`
+	DisputeNote         *string    `json:"disputeNote"`
+	DisputeDecidedBy    *uuid.UUID `json:"disputeDecidedBy"`
+	DisputeDecidedAt    *time.Time `json:"disputeDecidedAt"`
+	OrderNumber         string     `json:"orderNumber"`
 }
 
 func (q *Queries) AftersalesStaffList(ctx context.Context, arg AftersalesStaffListParams) ([]AftersalesStaffListRow, error) {
-	rows, err := q.db.Query(ctx, aftersalesStaffList, arg.Status, arg.Before, arg.Lim)
+	rows, err := q.db.Query(ctx, aftersalesStaffList,
+		arg.Status,
+		arg.Disputed,
+		arg.Before,
+		arg.Lim,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -587,6 +878,13 @@ func (q *Queries) AftersalesStaffList(ctx context.Context, arg AftersalesStaffLi
 			&i.RejectionReason,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.SellerDisputeReason,
+			&i.SellerDisputedAt,
+			&i.SellerDisputedBy,
+			&i.DisputeDecision,
+			&i.DisputeNote,
+			&i.DisputeDecidedBy,
+			&i.DisputeDecidedAt,
 			&i.OrderNumber,
 		); err != nil {
 			return nil, err
