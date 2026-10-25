@@ -392,6 +392,66 @@ describe("Seller Centre", () => {
     assert.equal((await other.get(listingPath)).status, 200);
   });
 
+  test("seller support: ask a question, see staff's reply, answer it; returns page", async () => {
+    const b = browser();
+    await signUp(b, "Tunde", "Bello");
+    await b.get("/centre/open-shop");
+    const opened = await b.action("/centre/open-shop", "openShop", [
+      {},
+      form({
+        type: "individual",
+        displayName: `Tunde Tech ${randomInt(1000, 9999)}`,
+        stateCode: "LA",
+        city: "Ikeja",
+      }),
+    ]);
+    const shopId = opened.redirect!.split("/")[2];
+    assert.match(
+      textOf((await b.get(`/centre/${shopId}/returns`)).html),
+      /No returns/,
+    );
+    await b.get(`/centre/${shopId}/support/new`);
+    const asked = await b.action(
+      "/centre/[shopId]/support/new",
+      "openShopTicket",
+      [
+        shopId,
+        {},
+        form({
+          topic: "selling",
+          subject: "Verification time",
+          message: "How long does verification take?",
+        }),
+      ],
+      { url: `/centre/${shopId}/support/new` },
+    );
+    assert.match(
+      asked.redirect ?? "",
+      new RegExp(`^/centre/${shopId}/support/TKT-\\d+$`),
+      asked.raw.slice(-300),
+    );
+    const number = asked.redirect!.split("/").pop()!;
+    const staff = await staffToken("support_agent");
+    await api.post("/api/v1/staff/support/tickets/{number}/messages", {
+      token: staff,
+      path: { number },
+      body: { body: "Usually two working days." },
+    });
+    const page = textOf((await b.get(asked.redirect!)).html);
+    assert.match(page, /two working days/);
+    const reply = await b.action<Result>(
+      "/centre/[shopId]/support/[number]",
+      "replyShopTicket",
+      [shopId, number, {}, form({ message: "Thanks!" })],
+      { url: asked.redirect! },
+    );
+    assert.equal(reply.value.ok, true, reply.value.message);
+    assert.match(
+      textOf((await b.get(`/centre/${shopId}/support`)).html),
+      /Verification time/,
+    );
+  });
+
   test("Seller Centre pages need a session", async () => {
     const r = await browser().get("/centre");
     assert.match(r.url, /\/sign-in\?next=%2Fcentre$/);

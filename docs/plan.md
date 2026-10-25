@@ -817,3 +817,16 @@ Owner: "do m5 complete". M5 = returns → refunds (done in part), warranty, repa
 - **Accounting:** the ledger doesn't value stock, so a trade-in is booked as `expense:trade_in_purchases`. It's credited to `liability:store_credit:<user>` (paid at once) or `liability:trade_in_payable` (bank). When finance records the transfer, the payable moves to `bank:operating`. New journal kind `trade_in`. These are additions to the payments-finance.md §4.1 chart.
 - **Bank payouts:** the account is checked with a name enquiry and the number is sealed (encrypted). Finance (`refunds.approve`, fresh MFA) records the transfer reference. Whoever priced the device can't also pay it out.
 - **Devices without a catalogue match** (tablets, smartwatches): staff estimate them by hand, and must match them to a catalogue model at inspection so they can be stocked.
+
+## 2026-10-25 — M5 complete; later items logged
+
+M5 (after-sales, support, risk) is complete: backend, web, Seller Centre and both mobile apps.
+
+**Deliberately left for later:**
+- Split payments: store credit alongside a card.
+- Step-up at checkout (OTP or transfer-only) instead of a hold.
+- Trust-safety T3–T5: link graph, ban lists, KYC provider, seller metrics and enforcement, A-to-Z disputes, learned model.
+- Customer stolen-phone reports.
+- Paid out-of-warranty repairs (charged at the till; POS is M7).
+- Tracking when a seller collects a returned item at the hub.
+- A pending-customer reminder before auto-resolve.
