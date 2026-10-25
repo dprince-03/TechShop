@@ -43,10 +43,11 @@ export default function Today() {
           {title} ({list.length})
         </Text>
         {list.map((j) => (
-          <Card key={j.id} label={`${j.kind === "return" ? "Return" : "Delivery"} for ${j.recipientName}, ${j.address}`} onPress={() => router.push({ pathname: "/job/[id]", params: { id: j.id } })}>
+          <Card key={j.id} label={`${j.kind === "return_pickup" ? "Return pickup" : "Delivery"} for ${j.recipientName}, ${j.address}`} onPress={() => router.push({ pathname: "/job/[id]", params: { id: j.id } })}>
             <Text style={{ color: c.text, fontSize: tokens.fontSize.lg, fontWeight: "600" }}>{j.recipientName}</Text>
             <Body muted>{[j.address, j.city].filter(Boolean).join(", ")}</Body>
             {j.windowStart ? <Body small>Window {time(j.windowStart)}–{time(j.windowEnd)}</Body> : null}
+            {j.kind === "return_pickup" ? <Body small>Return pickup {j.rma}</Body> : null}
             {j.orderNumber ? <Body small muted>{j.orderNumber}</Body> : null}
           </Card>
         ))}

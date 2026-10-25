@@ -13,8 +13,8 @@ import { useLoad } from "@/features/catalogue/useLoad";
 import { api } from "@/lib/api";
 
 type Quote = Schema<"Quote">;
-type Provider = "paystack" | "opay" | "moniepoint";
-const PROVIDER: Record<string, string> = { paystack: "Card (Paystack)", opay: "OPay", moniepoint: "Bank transfer (Moniepoint)" };
+type Provider = "paystack" | "opay" | "moniepoint" | "store_credit";
+const PROVIDER: Record<string, string> = { paystack: "Card (Paystack)", opay: "OPay", moniepoint: "Bank transfer (Moniepoint)", store_credit: "Store credit" };
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**
@@ -28,12 +28,13 @@ export default function Checkout() {
   const router = useRouter();
   const c = useColors();
   const data = useLoad(async () => {
-    const [addresses, methods, states] = await Promise.all([
+    const [addresses, methods, states, credit] = await Promise.all([
       session.api.get("/api/v1/me/addresses"),
       session.api.get("/api/v1/checkout/payment-methods"),
       api.get("/api/v1/states"),
+      session.api.get("/api/v1/me/store-credit").catch(() => null),
     ]);
-    return { addresses: addresses ?? [], methods: (methods ?? []) as Provider[], states: states ?? [] };
+    return { addresses: addresses ?? [], methods: (methods ?? []) as Provider[], states: states ?? [], credit: credit?.balanceKobo ?? 0 };
   }, status);
   const [addressId, setAddressId] = useState<string | null>(null);
   const [provider, setProvider] = useState<Provider | null>(null);
@@ -100,6 +101,11 @@ export default function Checkout() {
     try {
       const placed = await session.api.post("/api/v1/orders", { idempotencyKey: key.current, body: { addressId, priceHash: quote.priceHash, provider } });
       await reloadCart();
+      if (placed.payment.status === "succeeded") {
+        // Store credit settles at once.
+        router.replace({ pathname: "/orders/[number]", params: { number: placed.orderNumber } });
+        return;
+      }
       if (placed.payment.transfer) {
         setTransfer(placed.payment.transfer);
         return;
@@ -168,6 +174,14 @@ export default function Checkout() {
         <Button label="Add a new address" onPress={() => setAdding(true)} />
       )}
       <Text accessibilityRole="header" style={{ color: c.text, fontSize: tokens.fontSize.xl, fontWeight: "600" }}>2. Payment method</Text>
+      {quote && (data.data?.credit ?? 0) >= quote.totalKobo ? (
+        <Pressable accessibilityRole="radio" accessibilityState={{ selected: provider === "store_credit" }} onPress={() => setProvider("store_credit")} style={choice(provider === "store_credit")}>
+          <Text style={{ color: c.text }}>{`Store credit (${formatKobo(data.data?.credit ?? 0)} available)`}</Text>
+        </Pressable>
+      ) : null}
+      {(data.data?.credit ?? 0) > 0 && quote && (data.data?.credit ?? 0) < quote.totalKobo ? (
+        <Body muted small>{`You have ${formatKobo(data.data?.credit ?? 0)} store credit. It can pay an order only when it covers the whole total.`}</Body>
+      ) : null}
       {(data.data?.methods ?? []).map((m) => (
         <Pressable key={m} accessibilityRole="radio" accessibilityState={{ selected: m === provider }} onPress={() => setProvider(m)} style={choice(m === provider)}>
           <Text style={{ color: c.text }}>{PROVIDER[m] ?? m}</Text>

@@ -1,15 +1,18 @@
 import { Redirect, useRouter } from "expo-router";
 import { useState } from "react";
 
-import { Body, Button, Card, Screen, Title } from "@techshop/mobile-ui";
+import { formatKobo } from "@techshop/api-client";
+import { Body, Button, Card, Notice, Screen, Title } from "@techshop/mobile-ui";
 
 import { useSession } from "@/features/auth/SessionProvider";
+import { useLoad } from "@/features/catalogue/useLoad";
 
-/** The signed-in customer, and sign-out (orders and addresses come with the next slice). */
+/** The signed-in customer: store credit, orders and after-sales, and sign-out. */
 export default function Account() {
-  const { status, me, signOut } = useSession();
+  const { status, me, signOut, session } = useSession();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const credit = useLoad(async () => (status === "signed-in" ? session.api.get("/api/v1/me/store-credit") : null), status);
   if (status === "signed-out") return <Redirect href="/sign-in" />;
   return (
     <Screen underHeader>
@@ -21,7 +24,12 @@ export default function Account() {
           {me.email ? <Body muted>{me.email}</Body> : null}
         </Card>
       ) : null}
+      {credit.data && credit.data.balanceKobo > 0 ? <Notice tone="success">{`You have ${formatKobo(credit.data.balanceKobo)} store credit. Use it at checkout when it covers the whole order.`}</Notice> : null}
       <Button label="Your orders" onPress={() => router.push("/orders")} />
+      <Button label="Returns" onPress={() => router.push("/returns")} />
+      <Button label="Warranty and repairs" onPress={() => router.push("/warranty")} />
+      <Button label="Trade-ins" onPress={() => router.push("/trade-in")} />
+      <Button label="Support" onPress={() => router.push("/support")} />
       <Body muted small>Addresses you add at checkout are saved to your account.</Body>
       <Button
         label="Sign out"
